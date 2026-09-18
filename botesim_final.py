@@ -54,28 +54,42 @@ def inicializar_banco():
     con.commit(); con.close()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = str(update.effective_chat.id); user = update.effective_user
-    con = conectar_banco(); cursor = con.cursor()
+    chat_id = str(update.effective_chat.id)
+    user = update.effective_user
+    saldo = 0.0  # 🔒 BLINDAGEM DE VARIÁVEL: Garante que o saldo nunca inicie vazio
+    
+    con = conectar_banco()
+    cursor = con.cursor()
     try:
-        cursor.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (chat_id,)) if "psycopg2" in str(type(con)) else cursor.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
+        if "psycopg2" in str(type(con)):
+            cursor.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (chat_id,))
+        else:
+            cursor.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
         res = cursor.fetchone()
-    except Exception: res = None
-    if not res:
+        if res:
+            saldo = float(next(iter(res)))
+        else:
+            if "psycopg2" in str(type(con)):
+                cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (%s, 0.0)", (chat_id,))
+            else:
+                cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,))
+            con.commit()
+    except Exception as e:
+        logging.error(f"Erro banco start: {e}")
+    finally:
         try:
-                if "psycopg2" in str(type(con)):
-                    cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (%s, 0.0)", (chat_id,))
-                else:
-                    cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,))
-                con.commit()
+            cursor.execute("SELECT produto_id, quantidade FROM estoque")
+            est_res = cursor.fetchall()
+            est = {row[0]: row[1] for row in est_res} if "psycopg2" in str(type(con)) else {row["produto_id"]: row["quantidade"] for row in est_res}
         except Exception:
-            pass
-        saldo = 0.0
-    con.close()
+            est = {}
+        con.close()
+
     texto = f"Olá, {user.first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
     botoes = [
-        [InlineKeyboardButton(f"Vivo 30GB - R\$ 25 ({est.get('vivo_30gb', 0)} un)", callback_data="buy_vivo_30gb")],
-        [InlineKeyboardButton(f"Tim 40GB - R\$ 30 ({est.get('tim_40gb', 0)} un)", callback_data="buy_tim_40gb")],
-        [InlineKeyboardButton(f"Claro 40GB - R\$ 35 ({est.get('claro_40gb', 0)} un)", callback_data="buy_claro_40gb")],
+        [InlineKeyboardButton(f"Vivo 30GB - R$ 25 ({est.get('vivo_30gb', 0)} un)", callback_data="buy_vivo_30gb")],
+        [InlineKeyboardButton(f"Tim 40GB - R$ 30 ({est.get('tim_40gb', 0)} un)", callback_data="buy_tim_40gb")],
+        [InlineKeyboardButton(f"Claro 40GB - R$ 35 ({est.get('claro_40gb', 0)} un)", callback_data="buy_claro_40gb")],
         [InlineKeyboardButton("➕ Adicionar Saldo (Pix)", callback_data="solicitar_recarga")]
     ]
     banner_url = "https://unsplash.com"
