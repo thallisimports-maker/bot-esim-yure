@@ -108,12 +108,12 @@ app.mount("/imagens", StaticFiles(directory=PASTA_IMAGENS), name="imagens")
 
 class LoginAdmin(BaseModel): senha: str
 
-@api_app.post("/api/admin/login")
+@app.post("/api/admin/login")
 def api_admin_login(dados: LoginAdmin):
     if dados.senha == SENHA_ADMIN_MINISITE: return {"status": "sucesso", "token": "sessao_admin_valida_yure"}
     raise HTTPException(status_code=401, detail="Senha incorreta")
 
-@api_app.post("/api/admin/cadastrar-chip")
+@app.post("/api/admin/cadastrar-chip")
 async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = File(...)):
     try:
         caminho = os.path.join(PASTA_IMAGENS, f"{produto_id}_{urllib.parse.quote(arquivo.filename)}")
@@ -135,7 +135,7 @@ def main() -> None:
     app.add_handler(CommandHandler("pix", generar_fluxo_pix))
     print("\n🤖 [STATUS] Servidor unificado pronto e estável!")
     import threading, uvicorn
-    threading.Thread(target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=10000), daemon=True).start()
+    threading.Thread(target=lambda: uvicorn.run("botesim_final:app", host="0.0.0.0", port=10000), daemon=True).start()
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
 if __name__ == "__main__": main()
