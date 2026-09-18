@@ -113,19 +113,29 @@ async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query; await query.answer(); chat_id = query.message.chat_id
-    url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
+    url_api = "https://pushinpay.com.br"
     headers = {"Authorization": f"Bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
-    dados = {"value": 2500, "webhook_url": "https://onrender.com", "external_id": str(chat_id), "split_rules": []}
+    dados = {
+        "value": 2500,
+        "webhook_url": "https://onrender.com",
+        "external_id": str(chat_id)
+    }
     try:
         req = urllib.request.Request(url_api, data=json.dumps(dados).encode("utf-8"), headers=headers, method="POST")
         with urllib.request.urlopen(req) as r:
             res_j = json.loads(r.read().decode("utf-8"))
-            msg = f"📥 **DADOS PAIX:**\n\nCopia e Cola:\n`{res_j.get('qr_code')}`"
-            await context.bot.send_photo(chat_id=chat_id, photo=res_j.get("qr_code_url"), caption=msg, parse_mode="Markdown")
+            copia_e_cola = res_j.get("qr_code")
+            imagem_qr_code = res_j.get("qr_code_url")
+            msg = (
+                "📥 **DADOS PARA ADICIONAR SALDO (PushinPay):**\n\n"
+                "1️⃣ Abra o aplicativo do seu banco e escaneie o **QR Code acima**.\n\n"
+                f"2️⃣ Se preferir, use o **PIX Copia e Cola** abaixo:\n`{copia_e_cola}`\n\n"
+                "3️⃣ O saldo entrara de forma automatica na sua carteira assim que o banco confirmar!"
+            )
+            await context.bot.send_photo(chat_id=chat_id, photo=imagem_qr_code, caption=msg, parse_mode="Markdown")
     except Exception as e:
         logging.error(f"Erro Pix: {e}")
-        await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro temporário. Tente novamente.")
-
+        await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro temporário ao gerar cobrança Pix. Verifique os logs do seu servidor.")
 
 api_app = FastAPI()
 api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
