@@ -112,20 +112,15 @@ async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     con.close()
 
 async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    # Captura os dados se vier do botão antigo ou se for comando direto
     message = update.message
     chat_id = update.effective_chat.id
     user = update.effective_user
     
-    # Se o usuário apenas clicou no botão sem digitar valor, avisa como usar
     if not context.args:
         msg_ajuda = (
             "➕ **COMO ADICIONAR SALDO:**\n\n"
             "Para gerar um QR Code Pix, digite o comando `/pix` seguido do valor desejado.\n\n"
-            "👉 **Exemplos:**\n"
-            "`/pix 10` (Adiciona R\$ 10,00)\n"
-            "`/pix 25` (Adiciona R\$ 25,00)\n"
-            "`/pix 50` (Adiciona R\$ 50,00)\n\n"
+            "👉 **Exemplo:** `/pix 25` (Adiciona R\$ 25,00)\n\n"
             "⚠️ *O valor mínimo aceito para recargas é de R\$ 10,00.*"
         )
         if update.callback_query:
@@ -136,23 +131,29 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         return
 
     try:
-        # Pega o valor digitado pelo cliente e converte para centavos (ex: 10 -> 1000)
         valor_digitado = float(context.args[0].replace(",", "."))
         if valor_digitado < 10.0:
             await message.reply_text("⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown")
             return
-        
         valor_centavos = int(valor_digitado * 100)
-    except ValueError:
+    except (ValueError, IndexError):
         await message.reply_text("❌ *Valor inválido! Digite apenas números. Exemplo: `/pix 15`*", parse_mode="Markdown")
         return
 
     url_api = "https://pushinpay.com.br"
     headers = {"Authorization": f"Bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
+    
+    # Payload oficial completo unificado com split e dados exigidos em produção
     dados = {
         "value": valor_centavos,
         "webhook_url": "https://onrender.com",
-        "external_id": str(chat_id)
+        "external_id": str(chat_id),
+        "split_rules": [],
+        "customer": {
+            "name": f"{user.first_name} {user.last_name or ''}".strip(),
+            "email": "cliente_esim@gmail.com",
+            "document": "03620633037"
+        }
     }
     
     try:
@@ -171,7 +172,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             await context.bot.send_photo(chat_id=chat_id, photo=imagem_qr_code, caption=msg, parse_mode="Markdown")
     except Exception as e:
         logging.error(f"Erro Pix: {e}")
-        await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro com a PushinPay. Certifique-se de que sua conta está ativa ou tente outro valor.")
+        await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro temporário ao gerar cobrança Pix. Verifique os logs do seu servidor.")
 
 api_app = FastAPI()
 api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
