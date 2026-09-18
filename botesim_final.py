@@ -12,12 +12,12 @@ except Exception as e:
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 TOKEN = "8826676433:AAH04c0lZ7g_QVgfyTQS4Ro2N5oLzl_f3pA"
-WEBAPP_URL = "https://github.io"
+WEBAPP_URL = "https://thallisimports-maker.github.io/botyure/"
 SEU_TELEGRAM_ID = 1890506390  
-LINK_DO_BANNER = "https://unsplash.com" 
+LINK_DO_BANNER = "https://chatgpt.com/s/m_6aab5a7bf33c81919a3625a128148666" 
 PUSHINPAY_TOKEN = "71008|0uzqn6ne0SG8EPMBU2pCkGPG1QlJ83SMj19bnNfy88fb3b8f"
-DATABASE_URL_NUVEM = "COLE_AQUI_SEU_EXTERNAL_DATABASE_URL"
-SENHA_ADMIN_MINISITE = "COLE_AQUI_SUA_SENHA_SECRETA"
+DATABASE_URL_NUVEM = "postgresql://botesim_db_user:r11cF5bt4O4C9sDbryQyGm8znkEVjaJK@dpg-dam451dbedkc73ak1k70-a.ohio-postgres.render.com/botesim_db"
+SENHA_ADMIN_MINISITE = "yuresantos"
 
 PASTA_IMAGENS = "imagens_esim"
 os.makedirs(PASTA_IMAGENS, exist_ok=True)
@@ -110,7 +110,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     query = update.callback_query; await query.answer(); chat_id = query.message.chat_id
     url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
     headers = {"Authorization": f"Bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
-    dados = {"value": 2500, "webhook_url": "https://github.io", "external_id": str(chat_id), "split_rules": []}
+    dados = {"value": 2500, "webhook_url": "https://onrender.com", "external_id": str(chat_id), "split_rules": []}
     try:
         req = urllib.request.Request(url_api, data=json.dumps(dados).encode("utf-8"), headers=headers, method="POST")
         with urllib.request.urlopen(req) as r:
