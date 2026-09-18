@@ -191,6 +191,7 @@ async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = 
 
 def main() -> None:
     inicializar_banco()
+    app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(processar_compra, pattern="^buy_"))
     app.add_handler(CallbackQueryHandler(generar_fluxo_pix, pattern="solicitar_recarga"))
@@ -198,8 +199,6 @@ def main() -> None:
     print("\n🤖 [STATUS] Servidor unificado pronto e estável!")
     import threading, uvicorn
     threading.Thread(target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=8000), daemon=True).start()
-
-        # 🔒 TRANCA MASTER: Limpa a fila e derruba o bot antigo do PC na mesma hora!
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
 if __name__ == "__main__":
