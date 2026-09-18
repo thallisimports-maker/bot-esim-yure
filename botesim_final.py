@@ -160,11 +160,12 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         }
     }
     
-    try:
+        try:
         resposta = requests.post(url_api, json=dados, headers=headers, timeout=15)
-        res_j = resposta.json()
         
+        # 🛡️ CAPTURA DE TEXTO BRUTO (Nos diz o erro real da conta na tela do Telegram)
         if resposta.status_code == 200 or resposta.status_code == 201:
+            res_j = resposta.json()
             copia_e_cola = res_j.get("qr_code")
             imagem_qr_code = res_j.get("qr_code_url")
             
@@ -179,10 +180,11 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             except Exception:
                 await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
         else:
-            await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro na PushinPay. Verifique se o seu token de produção está ativo no painel deles.")
+            txt_erro = resposta.text
+            await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de Resposta PushinPay (Status {resposta.status_code}):\n`{txt_erro}`")
     except Exception as e:
         logging.error(f"Erro Pix: {e}")
-        await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro de conexão com o gateway. Tente novamente.")
+        await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Falha de Conexão Crítica: {str(e)}")
 
 async def clique_botao_recarga(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query; await query.answer(); chat_id = query.message.chat_id
