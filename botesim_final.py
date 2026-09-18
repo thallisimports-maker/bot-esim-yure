@@ -114,13 +114,12 @@ async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = update.message
     chat_id = update.effective_chat.id
-    user = update.effective_user
     
     if not context.args:
         msg_ajuda = (
             "➕ **COMO ADICIONAR SALDO:**\n\n"
             "Para gerar um QR Code Pix, digite o comando `/pix` seguido do valor desejado.\n\n"
-            "👉 **Exemplo:** `/pix 25` (Adiciona R\$ 25,00)\n\n"
+            "👉 **Exemplo:** `/pix 15` (Adiciona R\$ 15,00)\n\n"
             "⚠️ *O valor mínimo aceito para recargas é de R\$ 10,00.*"
         )
         if update.callback_query:
@@ -143,17 +142,11 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     url_api = "https://pushinpay.com.br"
     headers = {"Authorization": f"Bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
     
-    # Payload oficial completo unificado com split e dados exigidos em produção
     dados = {
         "value": valor_centavos,
         "webhook_url": "https://onrender.com",
         "external_id": str(chat_id),
-        "split_rules": [],
-        "customer": {
-            "name": f"{user.first_name} {user.last_name or ''}".strip(),
-            "email": "cliente_esim@gmail.com",
-            "document": "03620633037"
-        }
+        "split_rules": []
     }
     
     try:
@@ -172,7 +165,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             await context.bot.send_photo(chat_id=chat_id, photo=imagem_qr_code, caption=msg, parse_mode="Markdown")
     except Exception as e:
         logging.error(f"Erro Pix: {e}")
-        await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro temporário ao gerar cobrança Pix. Verifique os logs do seu servidor.")
+        await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro temporário ao gerar cobrança Pix. Verifique se o valor está correto e tente novamente.")
 
 api_app = FastAPI()
 api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
