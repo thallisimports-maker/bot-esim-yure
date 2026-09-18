@@ -9,7 +9,7 @@ from pydantic import BaseModel
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 # 🔒 CREDENCIAIS ATUALIZADAS DE PRODUÇÃO
-TOKEN = "8826676433:AAG1hzAzX1dult6yvV2hBGuD5JIiqlpWwbo"
+TOKEN = "8826676433:AAGihzAzXlduLt6yvV2hBGuDSJIiqlppWbo"
 PUSHINPAY_TOKEN = "71053|LjuWp1DkvIpEAZvlJLMrmRVt4Ivv3ZkKhJL8isvY9d86777d"
 SENHA_ADMIN_MINISITE = "yure123"
 DATABASE_URL_NUVEM = "COLE_AQUI"
