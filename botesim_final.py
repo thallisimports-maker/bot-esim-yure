@@ -129,7 +129,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     dados = {"value": valor_centavos, "webhook_url": "https://onrender.com", "external_id": str(chat_id), "split_rules": [], "customer": {"name": f"{user.first_name} {user.last_name or ''}".strip() or "Cliente Pix", "email": "cliente_esim@gmail.com", "document": "03620633037"}}
     try:
         resposta = requests.post(url_api, json=dados, headers=headers, timeout=15)
-        if resposta.status_code in:
+            if resposta.status_code == 200 or resposta.status_code == 201:
             res_j = resposta.json(); copia_e_cola = res_j.get("qr_code"); imagem_qr_code = res_j.get("qr_code_url")
             msg = f"📥 **PIX DE R\$ {valor_digitado:.2f} GERADO COM SUCESSO!**\n\n🔗 **Link do QR Code para pagar:** {imagem_qr_code}\n\n2️⃣ **PIX Copia e Cola abaixo:**\n`{copia_e_cola}`\n\n3️⃣ O saldo entrara de forma automatica na sua carteira assim que o banco confirmar o pagamento!"
             try: await context.bot.send_photo(chat_id=chat_id, photo=imagem_qr_code, caption=msg, parse_mode="Markdown")
