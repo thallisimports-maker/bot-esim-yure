@@ -177,7 +177,7 @@ async def clique_botao_recarga(update: Update, context: ContextTypes.DEFAULT_TYP
 
 api_app = FastAPI()
 api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-api_app.mount("/imagens", StaticFiles(directory=PASTA_IMAGENS), name="imagens")
+
 
 class LoginAdmin(BaseModel): senha: str
 
