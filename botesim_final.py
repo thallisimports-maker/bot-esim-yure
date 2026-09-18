@@ -47,7 +47,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     banner_url = "https://freepik.com"
     await context.bot.send_photo(chat_id=chat_id, photo=banner_url, caption=texto, reply_markup=InlineKeyboardMarkup(botoes))
     async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query; await query.answer(); chat_id = str(query.message.chat_id); produto_id = query.data.replace("buy_", ""); precos = {"vivo_30gb": 25.0, "tim_40gb": 30.0, "claro_40gb": 35.0}; preco_item = precos.get(produto_id, 999.0); con = conectar_banco(); cur = con.cursor()
+        query = update.callback_query; await query.answer(); chat_id = str(query.message.chat_id); produto_id = query.data.replace("buy_", ""); precos = {"vivo_30gb": 25.0, "tim_40gb": 30.0, "claro_40gb": 35.0}; preco_item = precos.get(produto_id, 999.0); con = conectar_banco(); cur = con.cursor()
     try:
         cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
         res_saldo = cur.fetchone(); saldo = float(res_saldo["saldo"]) if res_saldo else 0.0
