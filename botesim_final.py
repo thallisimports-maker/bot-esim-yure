@@ -158,23 +158,23 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         try:
         resposta = requests.post(url_api, json=dados, headers=headers, timeout=15)
         if resposta.status_code == 200 or resposta.status_code == 201:
-            res_j = resposta.json()
-            copia_e_cola = res_j.get("qr_code")
+    res_j = resposta.json()
+    copia_e_cola = res_j.get("qr_code")
             
-            # 🎯 GERADOR AUTOMÁTICO DE QR CODE (Garante a imagem quadrada perfeita via Google API)
+      # 🎯 GERADOR AUTOMÁTICO DE QR CODE (Garante a imagem quadrada perfeita via Google API)
             google_qr_api = f"https://googleapis.com{urllib.parse.quote(copia_e_cola)}"
             
-            msg = (
-                f"📥 **PIX DE R\$ {valor_digitado:.2f} GERADO!**\n\n"
-                "1️⃣ Abra o aplicativo do seu banco e escaneie o **QR Code acima**.\n\n"
-                "2️⃣ **PIX COPIA E COLA:**\n"
-                f"`{copia_e_cola}`\n\n"
-                "💡 *O saldo entrará automaticamente na sua carteira assim que o banco confirmar o pagamento!*"
-            )
-            try:
-                await context.bot.send_photo(chat_id=chat_id, photo=google_qr_api, caption=msg, parse_mode="Markdown")
-            except Exception:
-                await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
+    msg = (
+    f"📥 **PIX DE R\$ {valor_digitado:.2f} GERADO!**\n\n"
+    "1️⃣ Abra o aplicativo do seu banco e escaneie o **QR Code acima**.\n\n"
+    "2️⃣ **PIX COPIA E COLA:**\n"
+    f"`{copia_e_cola}`\n\n"
+    "💡 *O saldo entrará automaticamente na sua carteira assim que o banco confirmar o pagamento!*"
+    )
+    try:
+        await context.bot.send_photo(chat_id=chat_id, photo=google_qr_api, caption=msg, parse_mode="Markdown")
+    except Exception:
+        await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
         else:
             await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de Resposta PushinPay (Status {resposta.status_code})")
     except Exception as e:
