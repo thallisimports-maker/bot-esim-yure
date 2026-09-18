@@ -60,14 +60,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         cursor.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (chat_id,)) if "psycopg2" in str(type(con)) else cursor.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
         res = cursor.fetchone()
     except Exception: res = None
-    if not res:
+            if not res:
         try: cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (%s, 0.0)", (chat_id,)) if "psycopg2" in str(type(con)) else cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,))
         except Exception: pass
         con.commit(); saldo = 0.0
-    else: saldo = float(res) if isinstance(res, (list, tuple)) else float(res)
-    try:
-        cursor.execute("SELECT produto_id, quantidade FROM estoque")
-        est_res = cursor.fetchall(); est = {row: row for row in est_res}
+    else:
+        linha_banco = list(res)
+        saldo = float(linha_banco[0])
     except Exception: est = {}
     con.close()
     texto = f"Olá, {user.first_name}!\n\n📥 **Carteira Saldo Virtual:** `R$ {saldo:.2f}`\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
