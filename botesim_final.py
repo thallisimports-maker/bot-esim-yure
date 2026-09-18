@@ -139,7 +139,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await message.reply_text("❌ *Valor inválido! Digite apenas números. Exemplo: `/pix 15`*", parse_mode="Markdown")
         return
 
-    url_api = "https://pushinpay.com.br"
+        url_api = "https://pushinpay.com.br"
     headers = {"Authorization": f"Bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
     
     dados = {
