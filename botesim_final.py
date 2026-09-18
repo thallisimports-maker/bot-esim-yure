@@ -17,7 +17,7 @@ logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s
 TOKEN = "8826676433:AAH04c0lZ7g_QVgfyTQS4Ro2N5oLzl_f3pA"
 PUSHINPAY_TOKEN = "2209|9zMvcoXm2UeT8mXvRoxl7F74eYfW2Z7zXv7zXv7z"
 SENHA_ADMIN_MINISITE = "yure123"
-DATABASE_URL_NUVEM = "postgres://botesim_db_user:mE7b9uXvRoxl7F74eYfW2Z7zXv7zXv7z@ep-cool-glade-a45678.us-east-2.aws.neon.tech/botesim_db"
+DATABASE_URL_NUVEM = "COLE_AQUI"
 
 PASTA_IMAGENS = "imagens_chips"
 if not os.path.exists(PASTA_IMAGENS):
