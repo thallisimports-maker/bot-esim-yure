@@ -14,7 +14,7 @@ from pydantic import BaseModel
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
-TOKEN = "8826676433:AAH04c0lZ7g_QVgfyTQS4Ro2N5oLzl_f3pA"
+TOKEN = "8826676433:AAGihzAzXlduLt6yvV2hBGuDSJIiqlppWbo"
 PUSHINPAY_TOKEN = "71037|z3q7oDUiZHaGhooOUPiRXJct31dt2nXkAjqJ0efzdb7ec317"
 SENHA_ADMIN_MINISITE = "yure123"
 DATABASE_URL_NUVEM = "COLE_AQUI"
