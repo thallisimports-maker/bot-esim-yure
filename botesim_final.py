@@ -141,7 +141,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await context.bot.send_message(chat_id=chat_id, text="❌ *Valor inválido! Digite apenas números. Exemplo: `/pix 15`*", parse_mode="Markdown")
         return
 
-    url_api = "https://pushinpay.com.br"
+    url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
     headers = {"Authorization": f"Bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
     dados = {
         "value": valor_centavos,
