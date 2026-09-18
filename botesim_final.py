@@ -24,26 +24,19 @@ if not os.path.exists(PASTA_IMAGENS):
     os.makedirs(PASTA_IMAGENS)
 
 def conectar_banco():
-    if DATABASE_URL_NUVEM and "COLE_AQUI" not in DATABASE_URL_NUVEM:
-        url = DATABASE_URL_NUVEM.replace("postgres://", "postgresql://")
-        import psycopg2
-        return psycopg2.connect(url)
-    else:
-        conexao = sqlite3.connect("banco_usuarios.db")
-        conexao.row_factory = sqlite3.Row
-        return conexao
+    conexao = sqlite3.connect("banco_usuarios.db")
+    conexao.row_factory = sqlite3.Row
+    return conexao
 
 def inicializar_banco():
     con = conectar_banco(); cursor = con.cursor()
     if hasattr(cursor, "execute"):
-        try: cursor.execute("CREATE TABLE IF NOT EXISTS carteira (chat_id TEXT PRIMARY KEY, saldo REAL DEFAULT 0)")
+        try: cursor.execute("CREATE TABLE IF NOT EXISTS carteira (chat_id TEXT PRIMARY KEY, saldo REAL DEFAULT 0.0)")
         except Exception: pass
         try: cursor.execute("CREATE TABLE IF NOT EXISTS estoque (produto_id TEXT PRIMARY KEY, quantidade INTEGER DEFAULT 0)")
         except Exception: pass
-        try: cursor.execute("CREATE TABLE IF NOT EXISTS estoque_codigos (id SERIAL PRIMARY KEY, produto_id TEXT, conteudo_esim TEXT)")
-        except Exception:
-            try: cursor.execute("CREATE TABLE IF NOT EXISTS estoque_codigos (id INTEGER PRIMARY KEY AUTOINCREMENT, produto_id TEXT, conteudo_esim TEXT)")
-            except Exception: pass
+        try: cursor.execute("CREATE TABLE IF NOT EXISTS estoque_codigos (id INTEGER PRIMARY KEY AUTOINCREMENT, produto_id TEXT, conteudo_esim TEXT)")
+        except Exception: pass
         try:
             cursor.execute("SELECT COUNT(*) FROM estoque")
             if cursor.fetchone() == 0:
@@ -54,37 +47,21 @@ def inicializar_banco():
     con.commit(); con.close()
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = str(update.effective_chat.id)
-    user = update.effective_user
-    saldo = 0.0  # 🔒 BLINDAGEM DE VARIÁVEL: Garante que o saldo nunca inicie vazio
-    
-    con = conectar_banco()
-    cursor = con.cursor()
+    chat_id = str(update.effective_chat.id); user = update.effective_user; saldo = 0.0
+    con = conectar_banco(); cursor = con.cursor()
     try:
-        if "psycopg2" in str(type(con)):
-            cursor.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (chat_id,))
-        else:
-            cursor.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
+        cursor.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
         res = cursor.fetchone()
-        if res:
-            saldo = float(next(iter(res)))
+        if res: saldo = float(res["saldo"])
         else:
-            if "psycopg2" in str(type(con)):
-                cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (%s, 0.0)", (chat_id,))
-            else:
-                cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,))
+            cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,))
             con.commit()
-    except Exception as e:
-        logging.error(f"Erro banco start: {e}")
-    finally:
-        try:
-            cursor.execute("SELECT produto_id, quantidade FROM estoque")
-            est_res = cursor.fetchall()
-            est = {row[0]: row[1] for row in est_res} if "psycopg2" in str(type(con)) else {row["produto_id"]: row["quantidade"] for row in est_res}
-        except Exception:
-            est = {}
-        con.close()
-
+    except Exception: pass
+    try:
+        cursor.execute("SELECT produto_id, quantidade FROM estoque")
+        est_res = cursor.fetchall(); est = {row["produto_id"]: row["quantidade"] for row in est_res}
+    except Exception: est = {}
+    con.close()
     texto = f"Olá, {user.first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
     botoes = [
         [InlineKeyboardButton(f"Vivo 30GB - R$ 25 ({est.get('vivo_30gb', 0)} un)", callback_data="buy_vivo_30gb")],
@@ -100,76 +77,61 @@ async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     precos = {"vivo_30gb": 25.0, "tim_40gb": 30.0, "claro_40gb": 35.0}; preco_item = precos.get(produto_id, 999.0)
     con = conectar_banco(); cursor = con.cursor()
     try:
-        cursor.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (chat_id,)) if "psycopg2" in str(type(con)) else cursor.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
-        res_saldo = cursor.fetchone(); saldo = float(res_saldo) if res_saldo else 0.0
+        cursor.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
+        res_saldo = cursor.fetchone(); saldo = float(res_saldo["saldo"]) if res_saldo else 0.0
     except Exception: saldo = 0.0
     if saldo < preco_item:
         await context.bot.send_message(chat_id=chat_id, text="⚠️ **Saldo Insuficiente!** Use o comando /pix valor para recarregar sua carteira.")
         con.close(); return
     try:
-        cursor.execute("SELECT id, conteudo_esim FROM estoque_codigos WHERE produto_id = %s LIMIT 1", (produto_id,)) if "psycopg2" in str(type(con)) else cursor.execute("SELECT id, conteudo_esim FROM estoque_codigos WHERE produto_id = ? LIMIT 1", (produto_id,))
+        cursor.execute("SELECT id, conteudo_esim FROM estoque_codigos WHERE produto_id = ? LIMIT 1", (produto_id,))
         chip = cursor.fetchone()
     except Exception: chip = None
     if not chip:
         await context.bot.send_message(chat_id=chat_id, text="❌ **Estoque esgotado** para este plano! Tente novamente mais tarde.")
         con.close(); return
-    chip_id, caminho_foto = chip, chip
+    chip_id, caminho_foto = chip["id"], chip["conteudo_esim"]
     try:
-        if "psycopg2" in str(type(con)):
-            cursor.execute("UPDATE carteira SET saldo = saldo - %s WHERE chat_id = %s", (preco_item, chat_id))
-            cursor.execute("DELETE FROM estoque_codigos WHERE id = %s", (chip_id,))
-            cursor.execute("UPDATE estoque SET quantidade = quantidade - 1 WHERE produto_id = %s", (produto_id,))
-        else:
-            cursor.execute("UPDATE carteira SET saldo = saldo - ? WHERE chat_id = ?", (preco_item, chat_id))
-            cursor.execute("DELETE FROM estoque_codigos WHERE id = ?", (chip_id,))
-            cursor.execute("UPDATE estoque SET quantidade = quantidade - 1 WHERE produto_id = ?", (produto_id,))
+        cursor.execute("UPDATE carteira SET saldo = saldo - ? WHERE chat_id = ?", (preco_item, chat_id))
+        cursor.execute("DELETE FROM estoque_codigos WHERE id = ?", (chip_id,))
+        cursor.execute("UPDATE estoque SET quantidade = quantidade - 1 WHERE produto_id = ?", (produto_id,))
         con.commit()
     except Exception: pass
     con.close()
     try:
-        with open(caminhi_foto, "rb") as f: await context.bot.send_photo(chat_id=chat_id, photo=f, caption=f"🎉 **COMPRA REALIZADA!**\n\nAqui está o QR Code do seu e-SIM ({produto_id.upper()}). Basta escanear para ativar!")
+        with open(caminho_foto, "rb") as f: await context.bot.send_photo(chat_id=chat_id, photo=f, caption=f"🎉 **COMPRA REALIZADA!**\n\nAqui está o QR Code do seu e-SIM ({produto_id.upper()}). Basta escanear para ativar!")
     except Exception: await context.bot.send_message(chat_id=chat_id, text="🎉 **COMPRA REALIZADA!**\n\nErro ao carregar a foto do chip, solicite suporte.")
 async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     import requests
+    import qrcode
     message = update.message; chat_id = update.effective_chat.id; user = update.effective_user
-    
     if not context.args:
         msg_ajuda = "➕ **COMO ADICIONAR SALDO:**\n\nPara gerar um QR Code Pix, digite o comando `/pix` seguido do valor desejado.\n\n👉 **Exemplo:** `/pix 25` (Adiciona R\$ 25,00)\n\n⚠️ *O valor mínimo aceito para recargas é de R\$ 10,00.*"
-        if update.callback_query: 
-            await update.callback_query.answer()
-            await context.bot.send_message(chat_id=chat_id, text=msg_ajuda, parse_mode="Markdown")
-        else: 
-            await message.reply_text(msg_ajuda, parse_mode="Markdown")
+        if update.callback_query: await update.callback_query.answer(); await context.bot.send_message(chat_id=chat_id, text=msg_ajuda, parse_mode="Markdown")
+        else: await message.reply_text(msg_ajuda, parse_mode="Markdown")
         return
-        
     try:
         texto_valor = "".join(context.args).replace(",", ".")
         valor_digitado = float(texto_valor)
-        if valor_digitado < 10.0:
-            await context.bot.send_message(chat_id=chat_id, text="⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown")
-            return
+        if valor_digitado < 10.0: await context.bot.send_message(chat_id=chat_id, text="⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown"); return
         valor_centavos = int(valor_digitado * 100)
-    except Exception:
-        await context.bot.send_message(chat_id=chat_id, text="❌ *Valor inválido! Digite apenas números. Exemplo: `/pix 15`*", parse_mode="Markdown")
-        return
-
-    url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
+    except Exception: await context.bot.send_message(chat_id=chat_id, text="❌ *Valor inválido! Digite apenas números. Exemplo: `/pix 15`*", parse_mode="Markdown"); return
+    url_api = "https://pushinpay.com.br"
     headers = {"Authorization": f"Bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
     dados = {"value": valor_centavos, "webhook_url": "https://onrender.com", "external_id": str(chat_id), "split_rules": [], "customer": {"name": f"{user.first_name} {user.last_name or ''}".strip() or "Cliente Pix", "email": "cliente_esim@gmail.com", "document": "03620633037"}}
-    
     try:
         resposta = requests.post(url_api, json=dados, headers=headers, timeout=15)
-                                if resposta.status_code == 200 or resposta.status_code == 201:
-            import qrcode; res_j = resposta.json(); copia_e_cola = res_j.get("qr_code"); qr_arquivo = f"pix_{chat_id}.png"; qr = qrcode.QRCode(version=1, box_size=10, border=4); qr.add_data(copia_e_cola); qr.make(fit=True); img = qr.make_image(fill_color="black", back_color="white"); img.save(qr_arquivo)
+        if resposta.status_code == 200 or resposta.status_code == 201:
+            res_j = resposta.json(); copia_e_cola = res_j.get("qr_code")
+            qr_arquivo = f"pix_{chat_id}.png"; qr = qrcode.QRCode(version=1, box_size=10, border=4); qr.add_data(copia_e_cola); qr.make(fit=True); img = qr.make_image(fill_color="black", back_color="white"); img.save(qr_arquivo)
             msg = f"📥 **PIX DE R\$ {valor_digitado:.2f} GERADO COM SUCESSO!**\n\n1️⃣ Abra o aplicativo do seu banco e escaneie o **QR Code acima**.\n\n2️⃣ **PIX COPIA E COLA:**\n`{copia_e_cola}`\n\n💡 *O saldo entrará automaticamente na sua carteira assim que o banco confirmar o pagamento!*"
-            try: 
+            try:
                 with open(qr_arquivo, "rb") as f: await context.bot.send_photo(chat_id=chat_id, photo=f, caption=msg, parse_mode="Markdown")
             except Exception: await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
-        else: 
-            await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de Resposta PushinPay (Status {resposta.status_code}):\n`{resposta.text}`")
-    except Exception as e: 
-        logging.error(f"Erro Pix: {e}")
-        await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Falha de Conexão Crítica: {str(e)}")
+            finally:
+                if os.path.exists(qr_arquivo): os.remove(qr_arquivo)
+        else: await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de Resposta PushinPay (Status {resposta.status_code})")
+    except Exception as e: logging.error(f"Erro Pix: {e}"); await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro de conexão com o gateway.")
 
 async def clique_botao_recarga(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query; await query.answer(); chat_id = query.message.chat_id
@@ -178,7 +140,7 @@ async def clique_botao_recarga(update: Update, context: ContextTypes.DEFAULT_TYP
 
 api_app = FastAPI()
 api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-
+api_app.mount("/imagens", StaticFiles(directory=PASTA_IMAGENS), name="imagens")
 
 class LoginAdmin(BaseModel): senha: str
 
@@ -193,12 +155,8 @@ async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = 
         caminho = os.path.join(PASTA_IMAGENS, f"{produto_id}_{urllib.parse.quote(arquivo.filename)}")
         with open(caminho, "wb") as b: shutil.copyfileobj(arquivo.file, b)
         con = conectar_banco(); cursor = con.cursor()
-        if "psycopg2" in str(type(con)):
-            cursor.execute("INSERT INTO estoque_codigos (produto_id, conteudo_esim) VALUES (%s, %s)", (produto_id, caminho))
-            cursor.execute("UPDATE estoque SET quantidade = quantidade + 1 WHERE produto_id = %s", (produto_id,))
-        else:
-            cursor.execute("INSERT INTO estoque_codigos (produto_id, conteudo_esim) VALUES (?, ?)", (produto_id, caminho))
-            cursor.execute("UPDATE estoque SET quantidade = quantidade + 1 WHERE produto_id = ?", (produto_id,))
+        cursor.execute("INSERT INTO estoque_codigos (produto_id, conteudo_esim) VALUES (?, ?)", (produto_id, caminho))
+        cursor.execute("UPDATE estoque SET quantidade = quantidade + 1 WHERE produto_id = ?", (produto_id,))
         con.commit(); con.close(); return {"status": "sucesso"}
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
