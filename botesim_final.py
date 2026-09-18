@@ -128,7 +128,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         return
         
     try:
-        valor_digitado = float(context.args.replace(",", "."))
+           valor_digitado = float(context.args[0].replace(",", "."))
         if valor_digitado < 10.0: 
             await context.bot.send_message(chat_id=chat_id, text="⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown")
             return
