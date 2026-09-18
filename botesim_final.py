@@ -247,7 +247,6 @@ def main() -> None:
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(processar_compra, pattern="^buy_"))
-    app.add_handler(CallbackQueryHandler(generar_fluxo_pix, pattern="solicitar_recarga"))
     app.add_handler(CommandHandler("pix", generar_fluxo_pix))
     print("\n🤖 [STATUS] Servidor unificado pronto e estável!")
     import threading, uvicorn
