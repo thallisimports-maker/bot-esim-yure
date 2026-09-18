@@ -102,9 +102,9 @@ async def clique_botao_recarga(update: Update, context: ContextTypes.DEFAULT_TYP
     msg_ajuda = "➕ **COMO ADICIONAR SALDO:**\n\nDigite o comando `/pix` seguido do valor desejado.\n\n👉 **Exemplo:**\n`/pix 10` (Adiciona R\$ 10,00)\n`/pix 25` (Adiciona R\$ 25,00)"
     await context.bot.send_message(chat_id=chat_id, text=msg_ajuda, parse_mode="Markdown")
 
-api_app = FastAPI()
-api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-api_app.mount("/imagens", StaticFiles(directory=PASTA_IMAGENS), name="imagens")
+app = FastAPI()
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.mount("/imagens", StaticFiles(directory=PASTA_IMAGENS), name="imagens")
 
 class LoginAdmin(BaseModel): senha: str
 
