@@ -10,7 +10,7 @@ logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 # 🔒 CREDENCIAIS ATUALIZADAS DE PRODUÇÃO
 TOKEN = "8826676433:AAGihzAzXlduLt6yvV2hBGuDSJIiqlppWbo"
-PUSHINPAY_TOKEN = "71066|GUYHmykKHerPgzTrX25qbJqgMhJsFLaXc9SoNLVD62e6412e"
+PUSHINPAY_TOKEN = "71067|pld7jJIxFtcvN74KDLhxhK6m7xoK6dcj1vMhILXOc5d12204"
 SENHA_ADMIN_MINISITE = "yure123"
 DATABASE_URL_NUVEM = "COLE_AQUI"
 PASTA_IMAGENS = "imagens_chips"
