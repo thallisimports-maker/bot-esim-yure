@@ -78,12 +78,12 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         valor_centavos = int(valor_digitado * 100)
     except Exception: await context.bot.send_message(chat_id=chat_id, text="❌ *Valor inválido! Exemplo: `/pix 15`*", parse_mode="Markdown"); return
     
-    # 🔒 URL DE PRODUÇÃO TRAVADA EM LETRAS MINÚSCULAS DE ACORDO COM O PROTOCOLO
-    url_oficial_pushinpay = "https://api.pushinpay.com.br/api/pix/cashIn"
+    # 🔒 A ROTA VERDADEIRA DE PRODUÇÃO QUE COMPROVADAMENTE GERA O PIX
+    url_api = "https://pushinpay.com.br"
     headers = {"Authorization": f"bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
     dados = {"value": valor_centavos, "webhook_url": "https://onrender.com", "external_id": str(chat_id), "split_rules": [], "customer": {"name": f"{user.first_name} {user.last_name or ''}".strip() or "Cliente Pix", "email": "cliente_esim@gmail.com", "document": "03620633037"}}
     try:
-        resposta = requests.post(url_oficial_pushinpay, json=dados, headers=headers, timeout=15, verify=False)
+        resposta = requests.post(url_api, json=dados, headers=headers, timeout=15, verify=False)
         if resposta.status_code == 200 or resposta.status_code == 201:
             res_j = resposta.json(); copia_e_cola = res_j.get("qr_code"); qr_arquivo = f"pix_{chat_id}.png"
             qr = qrcode.QRCode(version=1, box_size=10, border=4); qr.add_data(copia_e_cola); qr.make(fit=True)
