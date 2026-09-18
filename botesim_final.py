@@ -36,7 +36,7 @@ def conectar_banco():
 def inicializar_banco():
     con = conectar_banco(); cursor = con.cursor()
     if hasattr(cursor, "execute"):
-        try: cursor.execute("CREATE TABLE IF NOT EXISTS carteira (chat_id TEXT PRIMARY KEY, saldo REAL DEFAULT 0.0)")
+        try: cursor.execute("CREATE TABLE IF NOT EXISTS carteira (chat_id TEXT PRIMARY KEY, saldo REAL DEFAULT 0)")
         except Exception: pass
         try: cursor.execute("CREATE TABLE IF NOT EXISTS estoque (produto_id TEXT PRIMARY KEY, quantidade INTEGER DEFAULT 0)")
         except Exception: pass
