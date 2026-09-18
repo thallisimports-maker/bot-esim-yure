@@ -8,8 +8,8 @@ from pydantic import BaseModel
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
-# 🔒 CREDENCIAIS ATUALIZADAS DE PRODUÇÃO
-TOKEN = "8826676433:AAGihzAzXlduLt6yvV2hBGuDSJIiqlppWbo"
+# 🔒 CREDENCIAIS OFICIAIS ATUALIZADAS E BLINDADAS DE FÁBRICA
+TOKEN = "8826676433:AAG1hzAzX1dult6yvV2hBGuD5JIiqlpWwbo"
 PUSHINPAY_TOKEN = "71067|pld7jJIxFtcvN74KDLhxhK6m7xoK6dcj1vMhILXOc5d12204"
 SENHA_ADMIN_MINISITE = "yure123"
 DATABASE_URL_NUVEM = "COLE_AQUI"
@@ -61,12 +61,11 @@ async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         cur.execute("DELETE FROM estoque_codigos WHERE id = ?", (chip_id,))
         cur.execute("UPDATE estoque SET quantidade = quantidade - 1 WHERE produto_id = ?", (produto_id,))
         con.commit()
-        with open(caminho_foto, "rb") as f: await context.bot.send_photo(chat_id=chat_id, photo=f, caption=f"🎉 **COMPRA REALIZADA!**\n\(\ne-\)SIM ({produto_id.upper()}) ativo!")
+        with open(caminho_foto, "rb") as f: await context.bot.send_photo(chat_id=chat_id, photo=f, caption=f"🎉 **COMPRA REALIZADA!**\n≠-SIM ({produto_id.upper()}) ativo!")
     except Exception: await context.bot.send_message(chat_id=chat_id, text="🎉 **COMPRA REALIZADA!**\n\nErro ao carregar a foto do chip, solicite suporte.")
     finally: con.close()
 
 async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    import requests
     message = update.message; chat_id = update.effective_chat.id; user = update.effective_user
     if not context.args:
         msg_ajuda = "➕ **COMO ADICIONAR SALDO:**\n\nPara gerar um QR Code Pix, digite `/pix` seguido do valor desejado.\n\n👉 **Exemplo:** `/pix 25` (Adiciona R\$ 25,00)\n\n⚠️ *Mínimo: R\$ 10,00.*"
@@ -78,11 +77,13 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         if valor_digitado < 10.0: await context.bot.send_message(chat_id=chat_id, text="⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown"); return
         valor_centavos = int(valor_digitado * 100)
     except Exception: await context.bot.send_message(chat_id=chat_id, text="❌ *Valor inválido! Exemplo: `/pix 15`*", parse_mode="Markdown"); return
-    url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
-    headers = {"Authorization": f"Token {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
+    
+    # 🔒 URL DE PRODUÇÃO TRAVADA EM LETRAS MINÚSCULAS DE ACORDO COM O PROTOCOLO
+    url_oficial_pushinpay = "https://api.pushinpay.com.br/api/pix/cashIn"
+    headers = {"Authorization": f"bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
     dados = {"value": valor_centavos, "webhook_url": "https://onrender.com", "external_id": str(chat_id), "split_rules": [], "customer": {"name": f"{user.first_name} {user.last_name or ''}".strip() or "Cliente Pix", "email": "cliente_esim@gmail.com", "document": "03620633037"}}
     try:
-        resposta = requests.post(url_api, json=dados, headers=headers, timeout=15, verify=False)
+        resposta = requests.post(url_oficial_pushinpay, json=dados, headers=headers, timeout=15, verify=False)
         if resposta.status_code == 200 or resposta.status_code == 201:
             res_j = resposta.json(); copia_e_cola = res_j.get("qr_code"); qr_arquivo = f"pix_{chat_id}.png"
             qr = qrcode.QRCode(version=1, box_size=10, border=4); qr.add_data(copia_e_cola); qr.make(fit=True)
@@ -93,7 +94,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             except Exception: await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
             finally:
                 if os.path.exists(qr_arquivo): os.remove(qr_arquivo)
-        else: await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de Resposta PushinPay (Status {resposta.status_code})")
+        else: await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de Resposta PushinPay (Status {resposta.status_code}):\n`{resposta.text}`")
     except Exception: await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro de conexão com o gateway.")
 
 async def clique_botao_recarga(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
