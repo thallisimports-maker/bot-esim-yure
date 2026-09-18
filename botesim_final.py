@@ -62,13 +62,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except Exception: res = None
     if not res:
         try:
-            if "psycopg2" in str(type(con)):
-                cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (%s, 0.0)", (chat_id,))
-            else:
-                cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,))
-            con.commit()
+                if "psycopg2" in str(type(con)):
+                    cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (%s, 0.0)", (chat_id,))
+                else:
+                    cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,))
+                con.commit()
         except Exception:
-    pass
+        pass
         saldo = 0.0
     except Exception: est = {}
     con.close()
