@@ -15,7 +15,7 @@ TOKEN = "8826676433:AAH04c0lZ7g_QVgfyTQS4Ro2N5oLzl_f3pA"
 WEBAPP_URL = "https://thallisimports-maker.github.io/botyure/"
 SEU_TELEGRAM_ID = 1890506390  
 LINK_DO_BANNER = "https://chatgpt.com/s/m_6aab5a7bf33c81919a3625a128148666" 
-PUSHINPAY_TOKEN = "71008|0uzqn6ne0SG8EPMBU2pCkGPG1QlJ83SMj19bnNfy88fb3b8f"
+PUSHINPAY_TOKEN = "71037|z3q7oDUiZHaGhooOUPiRXJct31dt2nXkAjqJ0efzdb7ec317"
 DATABASE_URL_NUVEM = "postgres://botesim_db_user:r11cF5bt4O4C9sDbryQyGm8znkEVjaJK@dpg-dam451dbedkc73ak1k70-a.ohio-postgres.render.com/botesim_db"
 SENHA_ADMIN_MINISITE = "yuresantos"
 
