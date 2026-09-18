@@ -112,6 +112,7 @@ async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     con.close()
 
 async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    import requests
     message = update.message
     chat_id = update.effective_chat.id
     
@@ -119,7 +120,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         msg_ajuda = (
             "➕ **COMO ADICIONAR SALDO:**\n\n"
             "Para gerar um QR Code Pix, digite o comando `/pix` seguido do valor desejado.\n\n"
-            "👉 **Exemplo:** `/pix 15` (Adiciona R\$ 15,00)\n\n"
+            "👉 **Exemplo:** `/pix 25` (Adiciona R\$ 25,00)\n\n"
             "⚠️ *O valor mínimo aceito para recargas é de R\$ 10,00.*"
         )
         if update.callback_query:
@@ -139,9 +140,12 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await message.reply_text("❌ *Valor inválido! Digite apenas números. Exemplo: `/pix 15`*", parse_mode="Markdown")
         return
 
-        url_api = "https://pushinpay.com.br"
-    headers = {"Authorization": f"Bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
-    
+    url_api = "https://pushinpay.com.br"
+    headers = {
+        "Authorization": f"Bearer {PUSHINPAY_TOKEN}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
     dados = {
         "value": valor_centavos,
         "webhook_url": "https://onrender.com",
@@ -150,9 +154,11 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     }
     
     try:
-        req = urllib.request.Request(url_api, data=json.dumps(dados).encode("utf-8"), headers=headers, method="POST")
-        with urllib.request.urlopen(req) as r:
-            res_j = json.loads(r.read().decode("utf-8"))
+        # 🔥 MOTOR ULTRA VELOZ: Abre o túnel seguro com a API de Produção instantaneamente
+        resposta = requests.post(url_api, json=dados, headers=headers, timeout=15)
+        res_j = resposta.json()
+        
+        if resposta.status_code in:
             copia_e_cola = res_j.get("qr_code")
             imagem_qr_code = res_j.get("qr_code_url")
             
@@ -163,9 +169,12 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
                 "3️⃣ O saldo entrara de forma automatica assim que o banco confirmar o pagamento!"
             )
             await context.bot.send_photo(chat_id=chat_id, photo=imagem_qr_code, caption=msg, parse_mode="Markdown")
+        else:
+            detalhe = res_j.get("message", "Erro desconhecido")
+            await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro na PushinPay: {detalhe}")
     except Exception as e:
         logging.error(f"Erro Pix: {e}")
-        await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro temporário ao gerar cobrança Pix. Verifique se o valor está correto e tente novamente.")
+        await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro de conexão com o gateway. Tente novamente.")
 
 api_app = FastAPI()
 api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
