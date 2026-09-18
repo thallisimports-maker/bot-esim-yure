@@ -122,9 +122,7 @@ async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = 
         con.commit(); return {"status": "sucesso"}
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
     finally: con.close()
-
-def main() -> None:
-    try: inicializar_banco()
+if __name__ == "__main__": main()
     except Exception: pass
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
