@@ -24,8 +24,13 @@ os.makedirs(PASTA_IMAGENS, exist_ok=True)
 
 def conectar_banco():
     if DATABASE_URL_NUVEM and "COLE_AQUI" not in DATABASE_URL_NUVEM:
-        return psycopg2.connect(DATABASE_URL_NUVEM.replace("postgres://", "postgresql://"))
-    con = sqlite3.connect("banco_usuarios.db"); con.row_factory = sqlite3.Row; return con
+        url = DATABASE_URL_NUVEM.replace("postgres://", "postgresql://")
+        import psycopg2
+        return psycopg2.connect(url)
+    else:
+        conexao = sqlite3.connect("banco_usuarios.db")
+        conexao.row_factory = sqlite3.Row
+        return conexao
 
 def inicializar_banco():
     con = conectar_banco(); cursor = con.cursor()
