@@ -70,8 +70,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         except Exception:
             pass
         saldo = 0.0
-    except Exception: est = {}
-        con.close()
+    con.close()
         texto = f"Olá, {user.first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
     botoes = [
         [InlineKeyboardButton(f"Vivo 30GB - R\$ 25 ({est.get('vivo_30gb', 0)} un)", callback_data="buy_vivo_30gb")],
