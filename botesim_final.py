@@ -119,7 +119,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         if update.callback_query: await update.callback_query.answer(); await context.bot.send_message(chat_id=chat_id, text=msg_ajuda, parse_mode="Markdown")
         else: await message.reply_text(msg_ajuda, parse_mode="Markdown")
         return
-            try:
+        try:
         valor_digitado = float(context.args[0].replace(",", "."))
         if valor_digitado < 10.0: await context.bot.send_message(chat_id=chat_id, text="⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown"); return
         valor_centavos = int(valor_digitado * 100)
@@ -127,7 +127,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             url_api = "https://pushinpay.com.br"
             headers = {"Authorization": f"Bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
             dados = {"value": valor_centavos, "webhook_url": "https://onrender.com", "external_id": str(chat_id), "split_rules": [], "customer": {"name": f"{user.first_name} {user.last_name or ''}".strip() or "Cliente Pix", "email": "cliente_esim@gmail.com", "document": "03620633037"}}
-            try:
+        try:
                     resposta = requests.post(url_api, json=dados, headers=headers, timeout=15)
         if resposta.status_code == 200 or resposta.status_code == 201:
             res_j = resposta.json(); copia_e_cola = res_j.get("qr_code"); imagem_qr_code = res_j.get("qr_code_url")
