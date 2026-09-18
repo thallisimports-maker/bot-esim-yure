@@ -10,7 +10,7 @@ logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 # 🔒 CREDENCIAIS OFICIAIS ATUALIZADAS E BLINDADAS DE FÁBRICA
 TOKEN = "8826676433:AAHy2DkXR1TH7u4T-JO8FaOCQebFdryOg-M"
-PUSHINPAY_TOKEN = "71067|pld7jJIxFtcvN74KDLhxhK6m7xoK6dcj1vMhILXOc5d12204"
+PUSHINPAY_TOKEN = "71074|34qxCyv1Pdh5r0aNai4wVrNBtoAHkbxAhOziybPqfddf9ac4"
 SENHA_ADMIN_MINISITE = "yure123"
 DATABASE_URL_NUVEM = "COLE_AQUI"
 PASTA_IMAGENS = "imagens_chips"
