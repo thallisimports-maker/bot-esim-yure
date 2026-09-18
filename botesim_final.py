@@ -40,7 +40,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if res: saldo = float(res["saldo"])
         else: cur.execute("INSERT INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,)); con.commit()
         cur.execute("SELECT produto_id, quantidade FROM estoque")
-        est = {row["produto_id"]: row["quantidade"] for row in cur.fetchall()}
+            est = {row["produto_id"]: row["quantidade"] for row in cur.fetchall()}
     except Exception: est = {}
     finally: con.close()
     texto = f"Olá, {user.first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
