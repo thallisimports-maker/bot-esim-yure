@@ -133,11 +133,11 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     try:
         valor_digitado = float(context.args[0].replace(",", "."))
         if valor_digitado < 10.0:
-            await message.reply_text("⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown")
+            await context.bot.send_message(chat_id=chat_id, text="⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown")
             return
         valor_centavos = int(valor_digitado * 100)
-    except (ValueError, IndexError):
-        await message.reply_text("❌ *Valor inválido! Digite apenas números. Exemplo: `/pix 15`*", parse_mode="Markdown")
+    except Exception:
+        await context.bot.send_message(chat_id=chat_id, text="❌ *Valor inválido! Digite apenas números. Exemplo: `/pix 15`*", parse_mode="Markdown")
         return
 
     url_api = "https://pushinpay.com.br"
@@ -154,10 +154,8 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     }
     
     try:
-        # 🔥 MOTOR ULTRA VELOZ: Abre o túnel seguro com a API de Produção instantaneamente
         resposta = requests.post(url_api, json=dados, headers=headers, timeout=15)
         res_j = resposta.json()
-        
         
         if resposta.status_code == 200 or resposta.status_code == 201:
             copia_e_cola = res_j.get("qr_code")
@@ -165,17 +163,63 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             
             msg = (
                 f"📥 **PIX DE R\$ {valor_digitado:.2f} GERADO COM SUCESSO!**\n\n"
-                "1️⃣ Abra o aplicativo do seu banco e escaneie o **QR Code acima**.\n\n"
-                f"2️⃣ Se preferir, use o **PIX Copia e Cola** abaixo:\n`{copia_e_cola}`\n\n"
-                "3️⃣ O saldo entrara de forma automatica assim que o banco confirmar o pagamento!"
+                f"🔗 **Link do QR Code para pagar:** {imagem_qr_code}\n\n"
+                f"2️⃣ **PIX Copia e Cola abaixo:**\n`{copia_e_cola}`\n\n"
+                "3️⃣ O saldo entrara de forma automatica na sua carteira assim que o banco confirmar o pagamento!"
             )
-            await context.bot.send_photo(chat_id=chat_id, photo=imagem_qr_code, caption=msg, parse_mode="Markdown")
+            try:
+                await context.bot.send_photo(chat_id=chat_id, photo=imagem_qr_code, caption=msg, parse_mode="Markdown")
+            except Exception:
+                await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
         else:
-            detalhe = res_j.get("message", "Erro desconhecido")
-            await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro na PushinPay: {detalhe}")
+            await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro na PushinPay. Verifique se o seu token está ativo.")
     except Exception as e:
         logging.error(f"Erro Pix: {e}")
         await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro de conexão com o gateway. Tente novamente.")
+
+api_app = FastAPI()
+api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+api_app.mount("/imagens", StaticFiles(directory=PASTA_IMAGENS), name="imagens")
+
+class LoginAdmin(BaseModel):
+    senha: str
+
+@api_app.post("/api/admin/login")
+def api_admin_login(dados: LoginAdmin):
+    if dados.senha == SENHA_ADMIN_MINISITE:
+        return {"status": "sucesso", "token": "sessao_admin_valida_yure"}
+    raise HTTPException(status_code=401, detail="Senha incorreta")
+
+@api_app.post("/api/admin/cadastrar-chip")
+async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = File(...)):
+    try:
+        caminho = os.path.join(PASTA_IMAGENS, f"{produto_id}_{urllib.parse.quote(arquivo.filename)}")
+        with open(caminho, "wb") as b:
+            shutil.copyfileobj(arquivo.file, b)
+        con = conectar_banco()
+        cursor = con.cursor()
+        cursor.execute("INSERT INTO estoque_codigos (produto_id, conteudo_esim) VALUES (?, ?)", (produto_id, caminho))
+        cursor.execute("UPDATE estoque SET quantidade = quantidade + 1 WHERE produto_id = ?", (produto_id,))
+        con.commit()
+        con.close()
+        return {"status": "sucesso"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+def main() -> None:
+    inicializar_banco()
+    app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(processar_compra, pattern="^buy_"))
+    app.add_handler(CallbackQueryHandler(generar_fluxo_pix, pattern="solicitar_recarga"))
+    app.add_handler(CommandHandler("pix", generar_fluxo_pix))
+    print("\n🤖 [STATUS] Servidor unificado pronto e estável!")
+    import threading, uvicorn
+    threading.Thread(target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=8000), daemon=True).start()
+    app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
+
+if __name__ == "__main__":
+    main()
 
 api_app = FastAPI()
 api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
