@@ -112,30 +112,66 @@ async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     con.close()
 
 async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query; await query.answer(); chat_id = query.message.chat_id
+    # Captura os dados se vier do botão antigo ou se for comando direto
+    message = update.message
+    chat_id = update.effective_chat.id
+    user = update.effective_user
+    
+    # Se o usuário apenas clicou no botão sem digitar valor, avisa como usar
+    if not context.args:
+        msg_ajuda = (
+            "➕ **COMO ADICIONAR SALDO:**\n\n"
+            "Para gerar um QR Code Pix, digite o comando `/pix` seguido do valor desejado.\n\n"
+            "👉 **Exemplos:**\n"
+            "`/pix 10` (Adiciona R\$ 10,00)\n"
+            "`/pix 25` (Adiciona R\$ 25,00)\n"
+            "`/pix 50` (Adiciona R\$ 50,00)\n\n"
+            "⚠️ *O valor mínimo aceito para recargas é de R\$ 10,00.*"
+        )
+        if update.callback_query:
+            await update.callback_query.answer()
+            await context.bot.send_message(chat_id=chat_id, text=msg_ajuda, parse_mode="Markdown")
+        else:
+            await message.reply_text(msg_ajuda, parse_mode="Markdown")
+        return
+
+    try:
+        # Pega o valor digitado pelo cliente e converte para centavos (ex: 10 -> 1000)
+        valor_digitado = float(context.args[0].replace(",", "."))
+        if valor_digitado < 10.0:
+            await message.reply_text("⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown")
+            return
+        
+        valor_centavos = int(valor_digitado * 100)
+    except ValueError:
+        await message.reply_text("❌ *Valor inválido! Digite apenas números. Exemplo: `/pix 15`*", parse_mode="Markdown")
+        return
+
     url_api = "https://pushinpay.com.br"
     headers = {"Authorization": f"Bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
     dados = {
-        "value": 2500,
+        "value": valor_centavos,
         "webhook_url": "https://onrender.com",
         "external_id": str(chat_id)
     }
+    
     try:
         req = urllib.request.Request(url_api, data=json.dumps(dados).encode("utf-8"), headers=headers, method="POST")
         with urllib.request.urlopen(req) as r:
             res_j = json.loads(r.read().decode("utf-8"))
             copia_e_cola = res_j.get("qr_code")
             imagem_qr_code = res_j.get("qr_code_url")
+            
             msg = (
-                "📥 **DADOS PARA ADICIONAR SALDO (PushinPay):**\n\n"
+                f"📥 **PIX DE R\$ {valor_digitado:.2f} GERADO COM SUCESSO!**\n\n"
                 "1️⃣ Abra o aplicativo do seu banco e escaneie o **QR Code acima**.\n\n"
                 f"2️⃣ Se preferir, use o **PIX Copia e Cola** abaixo:\n`{copia_e_cola}`\n\n"
-                "3️⃣ O saldo entrara de forma automatica na sua carteira assim que o banco confirmar!"
+                "3️⃣ O saldo entrara de forma automatica assim que o banco confirmar o pagamento!"
             )
             await context.bot.send_photo(chat_id=chat_id, photo=imagem_qr_code, caption=msg, parse_mode="Markdown")
     except Exception as e:
         logging.error(f"Erro Pix: {e}")
-        await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro temporário ao gerar cobrança Pix. Verifique os logs do seu servidor.")
+        await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro com a PushinPay. Certifique-se de que sua conta está ativa ou tente outro valor.")
 
 api_app = FastAPI()
 api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
