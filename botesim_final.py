@@ -191,7 +191,7 @@ async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = 
 
 def main() -> None:
     inicializar_banco()
-        app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(processar_compra, pattern="^buy_"))
     app.add_handler(CallbackQueryHandler(generar_fluxo_pix, pattern="solicitar_recarga"))
     app.add_handler(CommandHandler("pix", generar_fluxo_pix))
