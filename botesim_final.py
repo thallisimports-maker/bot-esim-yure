@@ -8,8 +8,8 @@ from pydantic import BaseModel
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
-TOKEN = "8826676433:AAG1hzAzX1dult6yvV2hBGuD5JIiqlpWwbo"
-PUSHINPAY_TOKEN = "771048|ARGXZD0I0mHC5iSTNQRgVChXGVn4yrZ3aplv7A9Heebc4e49"
+TOKEN = "71048|ARGXZD0I0mHC5iSTNQRgVChXGVn4yrZ3aplv7A9Heebc4e49"
+PUSHINPAY_TOKEN = "8826676433:AAGihzAzXlduLt6yvV2hBGuDSJIiqlppWbo"
 SENHA_ADMIN_MINISITE = "yure123"
 DATABASE_URL_NUVEM = "COLE_AQUI"
 PASTA_IMAGENS = "imagens_chips"
@@ -46,8 +46,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     botoes = [[InlineKeyboardButton(f"Vivo 30GB - R$ 25 ({est.get('vivo_30gb', 0)} un)", callback_data="buy_vivo_30gb")], [InlineKeyboardButton(f"Tim 40GB - R$ 30 ({est.get('tim_40gb', 0)} un)", callback_data="buy_tim_40gb")], [InlineKeyboardButton(f"Claro 40GB - R$ 35 ({est.get('claro_40gb', 0)} un)", callback_data="buy_claro_40gb")], [InlineKeyboardButton("➕ Adicionar Saldo (Pix)", callback_data="solicitar_recarga")]]
     banner_url = "https://freepik.com"
     await context.bot.send_photo(chat_id=chat_id, photo=banner_url, caption=texto, reply_markup=InlineKeyboardMarkup(botoes))
-    async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        query = update.callback_query; await query.answer(); chat_id = str(query.message.chat_id); produto_id = query.data.replace("buy_", ""); precos = {"vivo_30gb": 25.0, "tim_40gb": 30.0, "claro_40gb": 35.0}; preco_item = precos.get(produto_id, 999.0); con = conectar_banco(); cur = con.cursor()
+async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query; await query.answer(); chat_id = str(query.message.chat_id); produto_id = query.data.replace("buy_", ""); precos = {"vivo_30gb": 25.0, "tim_40gb": 30.0, "claro_40gb": 35.0}; preco_item = precos.get(produto_id, 999.0); con = conectar_banco(); cur = con.cursor()
     try:
         cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
         res_saldo = cur.fetchone(); saldo = float(res_saldo["saldo"]) if res_saldo else 0.0
@@ -122,7 +122,9 @@ async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = 
         con.commit(); return {"status": "sucesso"}
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
     finally: con.close()
-if __name__ == "__main__": main()
+
+def main() -> None:
+    try: inicializar_banco()
     except Exception: pass
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
@@ -135,4 +137,3 @@ if __name__ == "__main__": main()
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
 if __name__ == "__main__": main()
-
