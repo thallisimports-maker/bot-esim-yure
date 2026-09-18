@@ -8,8 +8,8 @@ from pydantic import BaseModel
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
-TOKEN = "71048|ARGXZD0I0mHC5iSTNQRgVChXGVn4yrZ3aplv7A9Heebc4e49"
-PUSHINPAY_TOKEN = "8826676433:AAGihzAzXlduLt6yvV2hBGuDSJIiqlppWbo"
+TOKEN = "8826676433:AAGihzAzXlduLt6yvV2hBGuDSJIiqlppWbo"
+PUSHINPAY_TOKEN = "71048|ARGXZD0I0mHC5iSTNQRgVChXGVn4yrZ3aplv7A9Heebc4e49"
 SENHA_ADMIN_MINISITE = "yure123"
 DATABASE_URL_NUVEM = "COLE_AQUI"
 PASTA_IMAGENS = "imagens_chips"
