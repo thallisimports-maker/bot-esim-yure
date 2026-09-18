@@ -60,15 +60,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         cursor.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (chat_id,)) if "psycopg2" in str(type(con)) else cursor.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
         res = cursor.fetchone()
     except Exception: res = None
-                    if not res:
+    if not res:
         try:
             if "psycopg2" in str(type(con)):
-                cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (%s, 0.0)", (chat_id,))
+            cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (%s, 0.0)", (chat_id,))
             else:
-                cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,))
+            cursor.execute("INSERT INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,))
             con.commit()
-        except Exception:
-            pass
+         except Exception:
+    pass
         saldo = 0.0
     else:
         saldo = float(next(iter(res)))
