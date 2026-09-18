@@ -199,10 +199,11 @@ def main() -> None:
     import threading, uvicorn
     threading.Thread(target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=8000), daemon=True).start()
 
-    # 🔒 TRANCA MASTER: Limpa a fila e derruba o bot antigo do PC na mesma hora!
+        # 🔒 TRANCA MASTER: Limpa a fila e derruba o bot antigo do PC na mesma hora!
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
-.start()
-    app.run_polling(allowed_updates=Update.ALL_TYPES)
+
+if __name__ == "__main__":
+    main()
 
 if __name__ == "__main__": main()
   
