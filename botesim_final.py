@@ -79,7 +79,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     except Exception: await context.bot.send_message(chat_id=chat_id, text="❌ *Valor inválido! Exemplo: `/pix 15`*", parse_mode="Markdown"); return
     
     # 🔒 A ROTA VERDADEIRA DE PRODUÇÃO QUE COMPROVADAMENTE GERA O PIX
-    url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
+    url_api = "https://pushinpay.com.br"
     headers = {"Authorization": f"bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
     dados = {"value": valor_centavos, "webhook_url": "https://onrender.com", "external_id": str(chat_id), "split_rules": [], "customer": {"name": f"{user.first_name} {user.last_name or ''}".strip() or "Cliente Pix", "email": "cliente_esim@gmail.com", "document": "03620633037"}}
     try:
