@@ -127,7 +127,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             await message.reply_text(msg_ajuda, parse_mode="Markdown")
         return
         
-        try:
+    try:
         texto_valor = "".join(context.args).replace(",", ".")
         valor_digitado = float(texto_valor)
         if valor_digitado < 10.0:
