@@ -160,10 +160,10 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     try:
         resposta = requests.post(url_api, json=dados, headers=headers, timeout=15)
         if resposta.status_code == 200 or resposta.status_code == 201:
-        res_j = resposta.json(); copia_e_cola = res_j.get("qr_code"); link_qrcode_imagem = f"https://quickchart.io{urllib.parse.quote(copia_e_cola)}&size=300"
-        msg = f"📥 **PIX DE R\$ {valor_digitado:.2f} GERADO COM SUCESSO!**\n\n1️⃣ Abra o aplicativo do seu banco e escaneie o **QR Code acima**.\n\n2️⃣ **PIX COPIA E COLA:**\n`{copia_e_cola}`\n\n💡 *O saldo entrará automaticamente na sua carteira assim que o banco confirmar o pagamento!*"
-        try: await context.bot.send_photo(chat_id=chat_id, photo=link_qrcode_imagem, caption=msg, parse_mode="Markdown")
-        except Exception: await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
+            res_j = resposta.json(); copia_e_cola = res_j.get("qr_code"); link_qrcode_imagem = f"https://quickchart.io{urllib.parse.quote(copia_e_cola)}&size=300"
+            msg = f"📥 **PIX DE R\$ {valor_digitado:.2f} GERADO COM SUCESSO!**\n\n1️⃣ Abra o aplicativo do seu banco e escaneie o **QR Code acima**.\n\n2️⃣ **PIX COPIA E COLA:**\n`{copia_e_cola}`\n\n💡 *O saldo entrará automaticamente na sua carteira assim que o banco confirmar o pagamento!*"
+            try: await context.bot.send_photo(chat_id=chat_id, photo=link_qrcode_imagem, caption=msg, parse_mode="Markdown")
+            except Exception: await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
         else: 
             await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de Resposta PushinPay (Status {resposta.status_code}):\n`{resposta.text}`")
     except Exception as e: 
