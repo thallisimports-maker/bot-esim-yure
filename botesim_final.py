@@ -115,6 +115,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     import requests
     message = update.message
     chat_id = update.effective_chat.id
+    user = update.effective_user
     
     if not context.args:
         msg_ajuda = (
@@ -131,7 +132,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         return
 
     try:
-        valor_digitado = float(context.args[0].replace(",", "."))
+        valor_digitado = float(context.args.replace(",", "."))
         if valor_digitado < 10.0:
             await context.bot.send_message(chat_id=chat_id, text="⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown")
             return
@@ -146,11 +147,18 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         "Content-Type": "application/json",
         "Accept": "application/json"
     }
+    
+    # 🔐 PAYLOAD COMPLETO HOMOLOGADO (Com split e dados do pagador exigidos em produção)
     dados = {
         "value": valor_centavos,
         "webhook_url": "https://onrender.com",
         "external_id": str(chat_id),
-        "split_rules": []
+        "split_rules": [],
+        "customer": {
+            "name": f"{user.first_name} {user.last_name or ''}".strip() or "Cliente Pix",
+            "email": "cliente_esim@gmail.com",
+            "document": "03620633037"
+        }
     }
     
     try:
@@ -172,7 +180,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             except Exception:
                 await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
         else:
-            await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro na PushinPay. Verifique se o seu token está ativo.")
+            await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro na PushinPay. Verifique se o seu token de produção está ativo no painel deles.")
     except Exception as e:
         logging.error(f"Erro Pix: {e}")
         await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro de conexão com o gateway. Tente novamente.")
