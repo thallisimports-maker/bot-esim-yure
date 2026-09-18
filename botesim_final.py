@@ -113,29 +113,64 @@ async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     import requests
-    message = update.message; chat_id = update.effective_chat.id; user = update.effective_user
+    message = update.message
+    chat_id = update.effective_chat.id
+    user = update.effective_user
+    
     if not context.args:
-        msg_ajuda = "➕ **COMO ADICIONAR SALDO:**\n\nPara gerar um QR Code Pix, digite o comando `/pix` seguido do valor desejado.\n\n👉 **Exemplo:** `/pix 25` (Adiciona R\$ 25,00)\n\n⚠️ *O valor mínimo aceito para recargas é de R\$ 10,00.*"
-        if update.callback_query: await update.callback_query.answer(); await context.bot.send_message(chat_id=chat_id, text=msg_ajuda, parse_mode="Markdown")
-        else: await message.reply_text(msg_ajuda, parse_mode="Markdown")
+        msg_ajuda = (
+            "➕ **COMO ADICIONAR SALDO:**\n\n"
+            "Para gerar um QR Code Pix, digite o comando `/pix` seguido do valor desejado.\n\n"
+            "👉 **Exemplo:** `/pix 25` (Adiciona R\$ 25,00)\n\n"
+            "⚠️ *O valor mínimo aceito para recargas é de R\$ 10,00.*"
+        )
+        if update.callback_query:
+            await update.callback_query.answer()
+            await context.bot.send_message(chat_id=chat_id, text=msg_ajuda, parse_mode="Markdown")
+        else:
+            await message.reply_text(msg_ajuda, parse_mode="Markdown")
         return
-        try:
+
+    try:
         valor_digitado = float(context.args[0].replace(",", "."))
-        if valor_digitado < 10.0: await context.bot.send_message(chat_id=chat_id, text="⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown"); return
+        if valor_digitado < 10.0:
+            await context.bot.send_message(chat_id=chat_id, text="⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown")
+            return
         valor_centavos = int(valor_digitado * 100)
-        except Exception: await context.bot.send_message(chat_id=chat_id, text="❌ *Valor inválido! Digite apenas números. Exemplo: `/pix 15`*", parse_mode="Markdown"); return
-            url_api = "https://pushinpay.com.br"
-            headers = {"Authorization": f"Bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
-            dados = {"value": valor_centavos, "webhook_url": "https://onrender.com", "external_id": str(chat_id), "split_rules": [], "customer": {"name": f"{user.first_name} {user.last_name or ''}".strip() or "Cliente Pix", "email": "cliente_esim@gmail.com", "document": "03620633037"}}
-        try:
-                    resposta = requests.post(url_api, json=dados, headers=headers, timeout=15)
+    except Exception:
+        await context.bot.send_message(chat_id=chat_id, text="❌ *Valor inválido! Digite apenas números. Exemplo: `/pix 15`*", parse_mode="Markdown")
+        return
+
+    url_api = "https://pushinpay.com.br"
+    headers = {"Authorization": f"Bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
+    dados = {
+        "value": valor_centavos,
+        "webhook_url": "https://onrender.com",
+        "external_id": str(chat_id),
+        "split_rules": [],
+        "customer": {
+            "name": f"{user.first_name} {user.last_name or ''}".strip() or "Cliente Pix",
+            "email": "cliente_esim@gmail.com",
+            "document": "03620633037"
+        }
+    }
+    
+    try:
+        resposta = requests.post(url_api, json=dados, headers=headers, timeout=15)
         if resposta.status_code == 200 or resposta.status_code == 201:
-            res_j = resposta.json(); copia_e_cola = res_j.get("qr_code"); imagem_qr_code = res_j.get("qr_code_url")
+            res_j = resposta.json()
+            copia_e_cola = res_j.get("qr_code")
+            imagem_qr_code = res_j.get("qr_code_url")
             msg = f"📥 **PIX DE R\$ {valor_digitado:.2f} GERADO COM SUCESSO!**\n\n🔗 **Link do QR Code para pagar:** {imagem_qr_code}\n\n2️⃣ **PIX Copia e Cola abaixo:**\n`{copia_e_cola}`\n\n3️⃣ O saldo entrara de forma automatica na sua carteira assim que o banco confirmar o pagamento!"
-            try: await context.bot.send_photo(chat_id=chat_id, photo=imagem_qr_code, caption=msg, parse_mode="Markdown")
-            except Exception: await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
-        else: await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de Resposta PushinPay (Status {resposta.status_code}):\n`{resposta.text}`")
-                except Exception as e: logging.error(f"Erro Pix: {e}"); await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Falha de Conexão Crítica: {str(e)}")
+            try:
+                await context.bot.send_photo(chat_id=chat_id, photo=imagem_qr_code, caption=msg, parse_mode="Markdown")
+            except Exception:
+                await context.bot.send_message(chat_id=chat_id, text=msg, parse_mode="Markdown")
+        else:
+            await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de Resposta PushinPay (Status {resposta.status_code}):\n`{resposta.text}`")
+    except Exception as e:
+        logging.error(f"Erro Pix: {e}")
+        await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Falha de Conexão Crítica: {str(e)}")
 
 async def clique_botao_recarga(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query; await query.answer(); chat_id = query.message.chat_id
