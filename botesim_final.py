@@ -132,7 +132,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         return
 
     try:
-        valor_digitado = float(context.args.replace(",", "."))
+        valor_digitado = float(context.args[0].replace(",", "."))
         if valor_digitado < 10.0:
             await context.bot.send_message(chat_id=chat_id, text="⚠️ *O valor mínimo para gerar o Pix é de R\$ 10,00.*", parse_mode="Markdown")
             return
@@ -148,7 +148,6 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         "Accept": "application/json"
     }
     
-    # 🔐 PAYLOAD COMPLETO HOMOLOGADO (Com split e dados do pagador exigidos em produção)
     dados = {
         "value": valor_centavos,
         "webhook_url": "https://onrender.com",
@@ -185,6 +184,18 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         logging.error(f"Erro Pix: {e}")
         await context.bot.send_message(chat_id=chat_id, text="⚠️ Erro de conexão com o gateway. Tente novamente.")
 
+async def clique_botao_recarga(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query; await query.answer(); chat_id = query.message.chat_id
+    msg_ajuda = (
+        "➕ **COMO ADICIONAR SALDO:**\n\n"
+        "Para gerar um QR Code Pix, use o teclado do celular e digite o comando `/pix` seguido do valor desejado.\n\n"
+        "👉 **Exemplo:**\n"
+        "`/pix 10` (Adiciona R\$ 10,00)\n"
+        "`/pix 25` (Adiciona R\$ 25,00)\n\n"
+        "⚠️ *O valor mínimo aceito para recargas é de R\$ 10,00.*"
+    )
+    await context.bot.send_message(chat_id=chat_id, text=msg_ajuda, parse_mode="Markdown")
+
 api_app = FastAPI()
 api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 api_app.mount("/imagens", StaticFiles(directory=PASTA_IMAGENS), name="imagens")
@@ -204,49 +215,9 @@ async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = 
         caminho = os.path.join(PASTA_IMAGENS, f"{produto_id}_{urllib.parse.quote(arquivo.filename)}")
         with open(caminho, "wb") as b:
             shutil.copyfileobj(arquivo.file, b)
-        con = conectar_banco()
-        cursor = con.cursor()
-        cursor.execute("INSERT INTO estoque_codigos (produto_id, conteudo_esim) VALUES (?, ?)", (produto_id, caminho))
-        cursor.execute("UPDATE estoque SET quantidade = quantidade + 1 WHERE produto_id = ?", (produto_id,))
-        con.commit()
-        con.close()
-        return {"status": "sucesso"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-def main() -> None:
-    inicializar_banco()
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(processar_compra, pattern="^buy_"))
-    app.add_handler(CommandHandler("pix", generar_fluxo_pix))
-    print("\n🤖 [STATUS] Servidor unificado pronto e estável!")
-    import threading, uvicorn
-    threading.Thread(target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=8000), daemon=True).start()
-    app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
-
-if __name__ == "__main__":
-    main()
-
-api_app = FastAPI()
-api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-api_app.mount("/imagens", StaticFiles(directory=PASTA_IMAGENS), name="imagens")
-
-class LoginAdmin(BaseModel): senha: str
-
-@api_app.post("/api/admin/login")
-def api_admin_login(dados: LoginAdmin):
-    if dados.senha == SENHA_ADMIN_MINISITE: return {"status": "sucesso", "token": "sessao_admin_valida_yure"}
-    raise HTTPException(status_code=401, detail="Senha incorreta")
-
-@api_app.post("/api/admin/cadastrar-chip")
-async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = File(...)):
-    try:
-        caminho = os.path.join(PASTA_IMAGENS, f"{produto_id}_{urllib.parse.quote(arquivo.filename)}")
-        with open(caminho, "wb") as b: shutil.copyfileobj(arquivo.file, b)
         con = conectar_banco(); cursor = con.cursor()
         cursor.execute("INSERT INTO estoque_codigos (produto_id, conteudo_esim) VALUES (?, ?)", (produto_id, caminho))
-        cursor.execute("UPDATE estoque SET quantity = quantity + 1 WHERE produto_id = ?", (produto_id,))
+        cursor.execute("UPDATE estoque SET quantidade = quantidade + 1 WHERE produto_id = ?", (produto_id,))
         con.commit(); con.close(); return {"status": "sucesso"}
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
@@ -255,6 +226,7 @@ def main() -> None:
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(processar_compra, pattern="^buy_"))
+    app.add_handler(CallbackQueryHandler(clique_botao_recarga, pattern="solicitar_recarga"))
     app.add_handler(CommandHandler("pix", generar_fluxo_pix))
     print("\n🤖 [STATUS] Servidor unificado pronto e estável!")
     import threading, uvicorn
