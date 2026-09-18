@@ -158,7 +158,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         resposta = requests.post(url_api, json=dados, headers=headers, timeout=15)
         res_j = resposta.json()
         
-        if resposta.status_code in:
+            if resposta.status_code == 200 or resposta.status_code == 201:
             copia_e_cola = res_j.get("qr_code")
             imagem_qr_code = res_j.get("qr_code_url")
             
