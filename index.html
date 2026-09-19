@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yure e-SIM Store — Área do Cliente</title>
-    <script src="https://telegram.org"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
             --bg-principal: #0b0f19;
@@ -37,7 +37,7 @@
     <div class="container">
         <h1>📶 Yure e-SIM Store</h1>
         <div class="subtitulo">Sua Área Virtual de Telecomunicação Móvel</div>
-        <img src="https://unsplash.com" class="banner" alt="Banner Tecnologia">
+        <img src="https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800" class="banner" alt="Banner Tecnologia">
         
         <div class="secao-titulo">Escolha seu plano e-SIM</div>
         <div class="card-plano"><div class="info-plano"><div class="nome-operadora">Vivo 30GB</div><div class="preco-plano">R$ 25,00</div></div><button class="btn btn-comprar" onclick="escolherPlano('Vivo 30GB', 25)">Comprar</button></div>
@@ -57,35 +57,67 @@
             </div>
         </div>
     </div>
+
     <script>
-        if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand(); }
-        function escolherPlano(nome, preco) { document.getElementById('valorPix').value = preco; }
+        if (window.Telegram && window.Telegram.WebApp) { 
+            window.Telegram.WebApp.ready(); 
+            window.Telegram.WebApp.expand(); 
+        }
+
+        function escolherPlano(nome, preco) { 
+            document.getElementById('valorPix').value = preco; 
+        }
         
         async function solicitarPix() {
-            var valorInput = document.getElementById("valorPix").value;
-            var btn = document.getElementById("btnGerar");
-            var caixa = document.getElementById("caixaSucesso");
-            if (!valorInput || parseFloat(valorInput) < 10) { alert("⚠️ O valor mínimo é R$ 10,00."); return; }
+            const valorInput = document.getElementById("valorPix").value;
+            const btn = document.getElementById("btnGerar");
+            const caixa = document.getElementById("caixaSucesso");
             
-            btn.disabled = true; btn.innerText = "Fabricando PIX..."; caixa.style.display = "none";
+            // URL EXATA DA SUA API NA RENDER COM A ROTA DA PUSHINPAY
+            const URL_API_RENDER = "https://thallisimports-maker.github.io/bot-esim-yure";
+
+            if (!valorInput || parseFloat(valorInput) < 10) { 
+                alert("⚠️ O valor mínimo é R$ 10,00."); 
+                return; 
+            }
+            
+            btn.disabled = true; 
+            btn.innerText = "Fabricando PIX..."; 
+            caixa.style.display = "none";
+
             try {
-                // 🚀 PONTE 100% SEGURA: ENVIA APENAS O VALOR PARA A RENDER SEM EXPOR SEU TOKEN
-                var resposta = await fetch('https://onrender.com', {
+                const resposta = await fetch(URL_API_RENDER, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ valor: parseFloat(valorInput) })
                 });
-                var dados = await resposta.json();
-                if (dados && dados.qr_code) {
+
+                const dados = await resposta.json();
+
+                if (resposta.ok && dados.status === "sucesso" && dados.qr_code) {
                     document.getElementById('copiaColaTexto').value = dados.qr_code;
                     caixa.style.display = "block";
-                } else { alert("⚠️ Resposta do Servidor: " + JSON.stringify(dados)); }
-            } catch (erro) { alert("❌ Falha de conexão com o bot na Render. Certifique-se de que o bot está ativo."); }
-            finally { btn.disabled = false; btn.innerText = "Fabricar QR Code Pix"; }
+                } else { 
+                    alert("⚠️ Erro na resposta: " + (dados.detalhe || JSON.stringify(dados))); 
+                }
+            } catch (erro) { 
+                console.error("Erro na comunicação:", erro);
+                alert("❌ Falha de conexão com a API na Render. Verifique se o servidor está ativo."); 
+            } finally { 
+                btn.disabled = false; 
+                btn.innerText = "Fabricar QR Code Pix"; 
+            }
         }
+
         function copiarChave() {
-            var texto = document.getElementById('copiaColaTexto'); texto.select(); document.execCommand('copy');
-            alert("📋 Código Copiado!");
+            const texto = document.getElementById('copiaColaTexto'); 
+            texto.select(); 
+            navigator.clipboard.writeText(texto.value).then(() => {
+                alert("📋 Código Pix copiado para a área de transferência!");
+            }).catch(() => {
+                document.execCommand('copy');
+                alert("📋 Código Copiado!");
+            });
         }
     </script>
 </body>
