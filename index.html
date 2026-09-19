@@ -184,12 +184,17 @@
                 return;
             }
 
-            // 🚀 REDIRECIONA PARA O CHECKOUT AUTOMÁTICO SEGURO DA PUSHINPAY (FURA QUALQUER BLOQUEIO)
+            // 🚀 LINK DE CHECKOUT CORRIGIDO COM CRASE E FORMATO DA VARIABLE CORRETO
             const linkCheckout = `https://pushinpay.com.br{PUSHINPAY_TOKEN}&value=${valorInput}&external_id=site_web_${Date.now()}`;
             
-            // Abre o checkout direto na tela do cliente para ele ver o QR Code
-            window.location.href = linkCheckout;
+            // Avisa o Telegram que uma ação foi tomada e abre o link com segurança dentro do MiniApp
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.openLink(linkCheckout);
+            } else {
+                window.location.href = linkCheckout;
+            }
         }
+
         
         function copiarChave() {
             const texto = document.getElementById('copiaColaTexto');
