@@ -217,7 +217,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         [InlineKeyboardButton(f"Claro 40GB - R$ 35 ({est.get('claro_40gb', 0)} un)", callback_data="buy_claro_40gb")],
         [InlineKeyboardButton("➕ Adicionar Saldo (Pix)", url="https://thallisimports-maker.github.io/bot-esim-yure/")]
     ]
-    banner_url = "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800"
+    banner_url = "https://chatgpt.com/s/m_6aab5a7bf33c81919a3625a128148666"
     await context.bot.send_photo(chat_id=chat_id, photo=banner_url, caption=texto, reply_markup=InlineKeyboardMarkup(botoes))
 
 async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
