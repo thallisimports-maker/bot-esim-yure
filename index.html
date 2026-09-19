@@ -642,109 +642,137 @@
     </div>
 
     <script>
-        // TELEGRAM WEB APP INITIALIZATION
-        if (window.Telegram && window.Telegram.WebApp) {
-            const tg = window.Telegram.WebApp;
-            tg.ready();
-            tg.expand();
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                document.getElementById('userName').innerText = tg.initDataUnsafe.user.first_name || 'Yure';
-                document.getElementById('telegramId').innerText = tg.initDataUnsafe.user.id || 'N/A';
-                document.getElementById('telegramUser').innerText = '@' + (tg.initDataUnsafe.user.username || 'usuario');
+    let telegramChatId = null;
+    const URL_API_RENDER = "https://bot-esim-yure.onrender.com";
+
+    // 1. INICIALIZAÇÃO DO TELEGRAM E CARREGAMENTO DE SALDO REAL
+    if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            telegramChatId = String(tg.initDataUnsafe.user.id);
+            document.getElementById('userName').innerText = tg.initDataUnsafe.user.first_name || 'Yure';
+            document.getElementById('telegramId').innerText = telegramChatId;
+            document.getElementById('telegramUser').innerText = '@' + (tg.initDataUnsafe.user.username || 'usuario');
+
+            // Carrega o saldo real diretamente do banco de dados
+            carregarDadosUsuario(telegramChatId);
+        }
+    }
+
+    async function carregarDadosUsuario(chatId) {
+        try {
+            const res = await fetch(`${URL_API_RENDER}/api/usuario/${chatId}`);
+            const dados = await res.json();
+            if (dados.status === "sucesso") {
+                document.getElementById('userSaldo').innerText = dados.saldo.toFixed(2);
             }
+        } catch (e) {
+            console.error("Erro ao carregar dados do usuário:", e);
+        }
+    }
+
+    // 2. COMPRA DIRETA NO MINIAPP USANDO O SALDO DA CARTEIRA
+    async function comprarNoBot(planoId, preco) {
+        if (!telegramChatId) {
+            alert("⚠️ Abra este MiniApp diretamente pelo Telegram para realizar compras.");
+            return;
         }
 
-        // TAB NAVIGATION
-        function switchTab(tabName, el) {
-            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
-            document.getElementById('tab-' + tabName).classList.add('active');
-            el.classList.add('active');
-        }
+        if (!confirm(`Deseja confirmar a compra do ${planoId} por R$ ${preco},00?`)) return;
 
-        // FILTER PRODUCTS BY OPERATOR
-        function filtrarPlanos() {
-            const op = document.getElementById('operadoraSelect').value;
-            const cards = document.querySelectorAll('.product-card');
-            cards.forEach(card => {
-                if (op === 'todas' || card.getAttribute('data-op') === op) {
-                    card.style.display = 'flex';
-                } else {
-                    card.style.display = 'none';
-                }
+        try {
+            const resposta = await fetch(`${URL_API_RENDER}/api/comprar-esim`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: telegramChatId,
+                    produto_id: planoId.toLowerCase().replace(' ', '_')
+                })
             });
-        }
 
-        // REDIRECT / BUY IN BOT
-        function comprarNoBot(plano, preco) {
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.sendData(JSON.stringify({ acao: 'comprar', plano: plano, preco: preco }));
-                window.Telegram.WebApp.close();
+            const resultado = await resposta.json();
+
+            if (resultado.status === "sucesso") {
+                alert(`🎉 COMPRA REALIZADA COM SUCESSO!\n\nSeu e-SIM:\n${resultado.conteudo_esim}`);
+                document.getElementById('userSaldo').innerText = resultado.novo_saldo.toFixed(2);
             } else {
-                alert("Para concluir a compra de " + plano + ", acesse via Telegram Bot.");
+                alert(`❌ Erro: ${resultado.detalhe}`);
             }
+        } catch (erro) {
+            alert("❌ Falha na conexão ao realizar a compra.");
+        }
+    }
+
+    // 3. NAVEGAÇÃO DE ABAS
+    function switchTab(tabName, el) {
+        document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
+        document.getElementById('tab-' + tabName).classList.add('active');
+        el.classList.add('active');
+    }
+
+    // 4. FILTRO DE OPERADORAS
+    function filtrarPlanos() {
+        const op = document.getElementById('operadoraSelect').value;
+        const cards = document.querySelectorAll('.product-card');
+        cards.forEach(card => {
+            if (op === 'todas' || card.getAttribute('data-op') === op) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    // 5. SOLICITAR PIX
+    async function solicitarPix() {
+        const valorInput = document.getElementById("valorPix").value;
+        const btn = document.getElementById("btnGerar");
+        const caixa = document.getElementById("caixaSucesso");
+        const imgQrCode = document.getElementById("imgQrCode");
+
+        if (!valorInput || parseFloat(valorInput) < 10) { 
+            alert("⚠️ O valor mínimo é R$ 10,00."); 
+            return; 
         }
 
-        // GERAR PIX REAL VIA FASTAPI (RENDER)
-        async function solicitarPix() {
-            const valorInput = document.getElementById("valorPix").value;
-            const btn = document.getElementById("btnGerar");
-            const caixa = document.getElementById("caixaSucesso");
-            const imgQrCode = document.getElementById("imgQrCode");
-            
-            const URL_API_RENDER = "https://bot-esim-yure.onrender.com/api/admin/gerar-pix-site";
+        btn.disabled = true; 
+        btn.innerText = "Gerando PIX..."; 
+        caixa.style.display = "none";
+        imgQrCode.style.display = "none";
 
-            if (!valorInput || parseFloat(valorInput) < 10) { 
-                alert("⚠️ O valor mínimo é R$ 10,00."); 
-                return; 
-            }
-            
-            btn.disabled = true; 
-            btn.innerText = "Gerando PIX..."; 
-            caixa.style.display = "none";
-            imgQrCode.style.display = "none";
-
-            try {
-                const resposta = await fetch(URL_API_RENDER, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ valor: parseFloat(valorInput) })
-                });
-
-                const dados = await resposta.json();
-
-                if (resposta.ok && dados.status === "sucesso" && dados.qr_code) {
-                    document.getElementById('copiaColaTexto').value = dados.qr_code;
-
-                    if (dados.qr_code_base64) {
-                        imgQrCode.src = dados.qr_code_base64.startsWith('data:') ? dados.qr_code_base64 : 'data:image/png;base64,' + dados.qr_code_base64;
-                    } else {
-                        imgQrCode.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(dados.qr_code);
-                    }
-                    imgQrCode.style.display = "block";
-                    caixa.style.display = "block";
-                } else { 
-                    alert("⚠️ Erro na resposta: " + (dados.detalhe || JSON.stringify(dados))); 
-                }
-            } catch (erro) { 
-                console.error("Erro na comunicação:", erro);
-                alert("❌ Falha de conexão com a API na Render."); 
-            } finally { 
-                btn.disabled = false; 
-                btn.innerText = "Gerar QR Code Pix"; 
-            }
-        }
-
-        function copiarChave() {
-            const texto = document.getElementById('copiaColaTexto'); 
-            texto.select(); 
-            navigator.clipboard.writeText(texto.value).then(() => {
-                alert("📋 Código Pix copiado!");
-            }).catch(() => {
-                document.execCommand('copy');
-                alert("📋 Código Copiado!");
+        try {
+            const resposta = await fetch(`${URL_API_RENDER}/api/admin/gerar-pix-site`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ valor: parseFloat(valorInput) })
             });
+
+            const dados = await resposta.json();
+
+            if (resposta.ok && dados.status === "sucesso" && dados.qr_code) {
+                document.getElementById('copiaColaTexto').value = dados.qr_code;
+                imgQrCode.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(dados.qr_code);
+                imgQrCode.style.display = "block";
+                caixa.style.display = "block";
+            } else { 
+                alert("⚠️ Erro na resposta: " + (dados.detalhe || JSON.stringify(dados))); 
+            }
+        } catch (erro) { 
+            alert("❌ Falha de conexão com a API na Render."); 
+        } finally { 
+            btn.disabled = false; 
+            btn.innerText = "Gerar QR Code Pix"; 
         }
-    </script>
-</body>
-</html>
+    }
+
+    function copiarChave() {
+        const texto = document.getElementById('copiaColaTexto'); 
+        texto.select(); 
+        navigator.clipboard.writeText(texto.value).then(() => {
+            alert("📋 Código Pix copiado!");
+        });
+    }
+</script>
