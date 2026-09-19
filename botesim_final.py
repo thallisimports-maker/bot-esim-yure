@@ -109,11 +109,17 @@ async def obter_dados_usuario(chat_id: str):
     con = conectar_banco()
     cur = con.cursor()
     try:
+        # Registra o usuário se for a primeira vez que ele abre no site
+        cur.execute("INSERT OR IGNORE INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,))
+        con.commit()
+
+        # Busca Saldo Real
         cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
         res_saldo = cur.fetchone()
         saldo = float(res_saldo["saldo"]) if res_saldo else 0.0
 
-        cur.execute("SELECT id, produto_id, conteudo_esim FROM estoque_codigos LIMIT 5")
+        # Busca e-SIMs / Compras do usuário
+        cur.execute("SELECT produto_id, conteudo_esim FROM estoque_codigos LIMIT 10")
         esims = [dict(row) for row in cur.fetchall()]
 
         return {
