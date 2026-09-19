@@ -91,13 +91,13 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
             try:
                 with open(qr_arquivo, "rb") as f: await context.bot.send_photo(chat_id=chat_id, photo=f, caption=msg, parse_mode="Markdown")
             except Exception as e_foto:
-                await context.bot.send_message(chat_id=chat_id, text=f"{msg}\n\n⚠️ Erro ao enviar foto: {str(e_foto)}", parse_mode="Markdown")
+                await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro ao enviar foto do QR Code no chat: {str(e_foto)}")
             finally:
                 if os.path.exists(qr_arquivo): os.remove(qr_arquivo)
         else:
-            await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de Resposta PushinPay (Status {resposta.status_code}):\n`{resposta.text}`")
+            await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de Resposta PushinPay (Status {resposta.status_code}):\n\n`{resposta.text}`")
     except Exception as e_conexao:
-        await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro crítico na requisição: {str(e_conexao)}")
+        await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Falha crítica de conexão com o gateway: {str(e_conexao)}")
 
 async def clique_botao_recarga(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query; await query.answer(); chat_id = query.message.chat_id
