@@ -158,24 +158,26 @@
             document.getElementById('valorPix').value = preco;
         }
 
-        function solicitarPix() {
-            const valorInput = document.getElementById('valorPix').value;
+                  function solicitarPix() {
+            var valorInput = document.getElementById('valorPix').value;
             
             if (!valorInput || parseFloat(valorInput) < 10) {
-                alert("⚠️ ATENÇÃO: O valor mínimo estipulado para gerar o Pix é de R\$ 10,00.");
+                alert("⚠️ ATENÇÃO: O valor mínimo estipulado para gerar o Pix é de R$ 10,00.");
                 return;
             }
 
-            // 🚀 LINK DE CHECKOUT CORRIGIDO DE FORMA LITERAL E VINCULADO À VARIÁVEL MINÚSCULA CORRETA
-            const linkCheckout = `https://pushinpay.com.br{pushinpay_token}&value=${valorInput}&external_id=site_web_${Date.now()}`;
+            // 🚀 LINK TRANCADO VIA CONCATENAÇÃO PURA (IMPEDE ERRO DE SINTAXE E BUFFER DO COOKIE)
+            var tokenFixo = "71067|pld7jJIxFtcvN74KDLhxhK6m7xoK6dcj1vMhILXOc5d12204";
+            var linkCheckout = "https://pushinpay.com.br" + tokenFixo + "&value=" + valorInput + "&external_id=site_web_" + Date.now();
             
-            // Verifica o ambiente e executa a abertura segura para evitar erros de DNS ou escape do MiniApp
+            // Força a ponte nativa se estiver dentro do Telegram ou redireciona no navegador comum
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
                 window.Telegram.WebApp.openLink(linkCheckout);
             } else {
                 window.location.href = linkCheckout;
             }
         }
+
     </script>
 </body>
 </html>
