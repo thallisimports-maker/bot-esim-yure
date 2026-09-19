@@ -78,28 +78,53 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         valor_centavos = int(valor_digitado * 100)
     except Exception: await context.bot.send_message(chat_id=chat_id, text="❌ *Valor inválido! Exemplo: `/pix 15`*", parse_mode="Markdown"); return
     
-    # 🔒 URL DE PRODUÇÃO CORRETA E OFICIAL DA PUSHINPAY
-    url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
-    headers = {"Authorization": f"bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
-    dados = {"value": valor_centavos, "webhook_url": "https://onrender.com", "external_id": str(chat_id), "split_rules": [], "customer": {"name": f"{user.first_name} {user.last_name or ''}".strip() or "Cliente Pix", "email": "cliente_esim@gmail.com", "document": "03620633037"}}
+    # 🚀 ROTA ATUALIZADA PARA ACEITAR POST E OPTIONS, ACABANDO COM O BLOQUEIO DE PREFLIGHT DO CHROME
+@api_app.route("/api/admin/gerar-pix-site", methods=["POST", "OPTIONS"])
+async def api_gerar_pix_site(request, response: Response):
+    # Trata a requisição de teste secreta do Google Chrome (OPTIONS)
+    if request.method == "OPTIONS":
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
+        return {"status": "ok"}
+
+    # Fluxo normal do POST quando o cliente clica no botão
+    dados_corpo = await request.json()
+    valor_input = dados_corpo.get("valor", 10.0)
+    valor_centavos = int(valor_input * 100)
+    
+    # 🔒 SUA URL DE PRODUÇÃO REAL HOMOLOGADA E FIXA
+    url_api = "https://pushinpay.com.br"
+    headers = {
+        "Authorization": f"bearer {PUSHINPAY_TOKEN}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+    payload = {
+        "value": valor_centavos,
+        # 📡 SEU LINK DE WEBHOOK CORRETO DA RENDER
+        "webhook_url": "https://onrender.com",
+        "external_id": "venda_site_web",
+        "split_rules": [],
+        "customer": {
+            "name": "Cliente Web Store",
+            "email": "cliente_esim@gmail.com",
+            "document": "03620633037"
+        }
+    }
+    
+    # 🔓 INJEÇÃO NATIVA DE CABEÇALHOS CORS PARA O NAVEGADOR DESTRAVAR
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    
     try:
-        # 🚀 O ENVIO DEVE SER STRICTLY POST
-        resposta = requests.post(url_api, json=dados, headers=headers, timeout=15, verify=False)
+        resposta = requests.post(url_api, json=payload, headers=headers, timeout=15, verify=False)
         if resposta.status_code == 200 or resposta.status_code == 201:
-            res_j = resposta.json(); copia_e_cola = res_j.get("qr_code"); qr_arquivo = f"pix_{chat_id}.png"
-            qr = qrcode.QRCode(version=1, box_size=10, border=4); qr.add_data(copia_e_cola); qr.make(fit=True)
-            qr.make_image(fill_color="black", back_color="white").save(qr_arquivo)
-            msg = f"📥 **PIX DE R\$ {valor_digitado:.2f} GERADO COM SUCESSO!**\n\n1️⃣ Abra o app do seu banco e escaneie o **QR Code acima**.\n\n2️⃣ **PIX COPIA E COLA:**\n`{copia_e_cola}`\n\n💡 *O saldo entrará automaticamente após o pagamento!*"
-            try:
-                with open(qr_arquivo, "rb") as f: await context.bot.send_photo(chat_id=chat_id, photo=f, caption=msg, parse_mode="Markdown")
-            except Exception as e_foto:
-                await context.bot.send_message(chat_id=chat_id, text=f"{msg}\n\n⚠️ Erro ao enviar foto: {str(e_foto)}", parse_mode="Markdown")
-            finally:
-                if os.path.exists(qr_arquivo): os.remove(qr_arquivo)
-        else:
-            await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de Resposta PushinPay (Status {resposta.status_code}):\n`{resposta.text}`")
-    except Exception as e_conexao:
-        await context.bot.send_message(chat_id=chat_id, text=f"⚠️ Erro de conexão com o gateway: {str(e_conexao)}")
+            return {"status": "sucesso", "qr_code": resposta.json().get("qr_code")}
+        return {"status": "erro", "detalhe": resposta.text}
+    except Exception as e:
+        return {"status": "erro", "detalhe": str(e)}
 
 async def clique_botao_recarga(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query; await query.answer(); chat_id = query.message.chat_id
