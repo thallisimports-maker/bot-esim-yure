@@ -581,16 +581,18 @@
         }
 
         async function carregarDadosUsuario(chatId) {
-            try {
-                const res = await fetch(`${URL_API_RENDER}/api/usuario/${chatId}`);
-                const dados = await res.json();
-                if (dados.status === "sucesso") {
-                    document.getElementById('userSaldo').innerText = dados.saldo.toFixed(2);
-                }
-            } catch (e) {
-                console.error("Erro ao carregar saldo:", e);
+        try {
+            const res = await fetch(`${URL_API_RENDER}/api/usuario/${chatId}`);
+            const dados = await res.json();
+            
+            if (dados.status === "sucesso") {
+                // Atualiza o Saldo Dinâmico
+                document.getElementById('userSaldo').innerText = dados.saldo.toFixed(2);
             }
+        } catch (e) {
+            console.error("Erro ao carregar dados do usuário:", e);
         }
+    }
 
         // 2. NAVEGAÇÃO ENTRE ABAS
         function switchTab(tabName, el) {
