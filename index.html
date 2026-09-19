@@ -172,7 +172,8 @@
             var tokenCompleto = parteA + parteB;
 
             // URL MONTADA 100% COM ASPAS DUPLAS E SINAL DE MAIS PARA EVITAR ERRO DE SINTAXE DO CONSOLE
-            var linkCheckout = "https://pushinpay.com.br" + tokenCompleto + "&value=" + valorInput + "&external_id=site_web_" + Date.now();
+                        // 🚀 CORREÇÃO CIRÚRGICA: DECODIFICA A BARRA VERTICAL DO TOKEN PARA EVITAR ERRO DE URL INVÁLIDA NO CONSOLE
+            var linkCheckout = "https://pushinpay.com.br" + encodeURIComponent(tokenCompleto) + "&value=" + valorInput + "&external_id=site_web_" + Date.now();
 
             
             // Dispara a ponte de MiniApp nativa ou redireciona em navegadores externos
