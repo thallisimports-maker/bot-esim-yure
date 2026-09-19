@@ -258,6 +258,8 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            position: relative;
+            z-index: 5;
         }
 
         .product-info h3 {
@@ -277,11 +279,13 @@
             background: var(--green-success);
             color: #ffffff;
             border: none;
-            padding: 8px 18px;
+            padding: 10px 18px;
             border-radius: var(--radius-sm);
             font-size: 13px;
             font-weight: 700;
             cursor: pointer;
+            position: relative;
+            z-index: 10;
         }
 
         /* RECHARGE BLOCK (CARTEIRA) */
@@ -500,24 +504,23 @@
                     <h3>Vivo 30GB</h3>
                     <p>R$ 25,00</p>
                 </div>
-                <button class="btn-buy" onclick="comprarNoBot('Vivo 30GB', 25)">Comprar</button>
+                <button class="btn-buy" onclick="comprarNoBot('vivo_30gb', 25)">Comprar</button>
             </div>
             <div class="product-card" data-op="tim">
                 <div class="product-info">
                     <h3>Tim 40GB</h3>
                     <p>R$ 30,00</p>
                 </div>
-                <button class="btn-buy" onclick="comprarNoBot('Tim 40GB', 30)">Comprar</button>
+                <button class="btn-buy" onclick="comprarNoBot('tim_40gb', 30)">Comprar</button>
             </div>
             <div class="product-card" data-op="claro">
                 <div class="product-info">
                     <h3>Claro 40GB</h3>
                     <p>R$ 35,00</p>
                 </div>
-                <button class="btn-buy" onclick="comprarNoBot('Claro 40GB', 35)">Comprar</button>
+                <button class="btn-buy" onclick="comprarNoBot('claro_40gb', 35)">Comprar</button>
             </div>
         </div>
-    </div>
 
     <!-- TAB 2: CONSULTAS / MEUS ESIMS -->
     <div id="tab-consultas" class="tab-content">
