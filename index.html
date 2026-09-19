@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yure e-SIM Store — Área do Cliente</title>
-    <!-- 📱 COMPONENTE DE INTEGRAÇÃO OFICIAL DOS MINIAPPS DO TELEGRAM -->
     <script src="https://telegram.org"></script>
     <style>
         :root {
@@ -30,6 +29,8 @@
         .btn-recarga { background: var(--cor-neon); color: white; width: 100%; padding: 14px; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
         .bloco-recarga { background: #111827; border: 1px dashed #374151; border-radius: 12px; padding: 20px; margin-top: 25px; }
         .input-recarga { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #374151; background: var(--bg-principal); color: white; text-align: center; font-size: 18px; font-weight: bold; box-sizing: border-box; outline: none; }
+        .modal-sucesso { background: #16a34a; color: white; padding: 15px; border-radius: 8px; margin-top: 15px; font-size: 14px; display: none; text-align: left; }
+        .txt-copia { width: 100%; height: 70px; background: #0f172a; color: #38bdf8; border: 1px solid #334155; border-radius: 6px; padding: 8px; margin-top: 8px; box-sizing: border-box; font-family: monospace; font-size: 12px; resize: none; }
     </style>
 </head>
 <body>
@@ -37,44 +38,54 @@
         <h1>📶 Yure e-SIM Store</h1>
         <div class="subtitulo">Sua Área Virtual de Telecomunicação Móvel</div>
         <img src="https://unsplash.com" class="banner" alt="Banner Tecnologia">
+        
         <div class="secao-titulo">Escolha seu plano e-SIM</div>
         <div class="card-plano"><div class="info-plano"><div class="nome-operadora">Vivo 30GB</div><div class="preco-plano">R$ 25,00</div></div><button class="btn btn-comprar" onclick="escolherPlano('Vivo 30GB', 25)">Comprar</button></div>
         <div class="card-plano"><div class="info-plano"><div class="nome-operadora">Tim 40GB</div><div class="preco-plano">R$ 30,00</div></div><button class="btn btn-comprar" onclick="escolherPlano('Tim 40GB', 30)">Comprar</button></div>
         <div class="card-plano"><div class="info-plano"><div class="nome-operadora">Claro 40GB</div><div class="preco-plano">R$ 35,00</div></div><button class="btn btn-comprar" onclick="escolherPlano('Claro 40GB', 35)">Comprar</button></div>
+        
         <div class="bloco-recarga">
             <div class="secao-titulo" style="margin-top: 0; border-left-color: #a855f7;">Adicionar Saldo Instantâneo</div>
             <p style="font-size: 13px; color: var(--texto-escuro); margin: 0 0 15px 0; text-align: left;">Insira o valor abaixo para fabricar o seu QR Code Pix de produção.</p>
             <input type="number" id="valorPix" class="input-recarga" min="10" value="10">
             <button id="btnGerar" class="btn btn-recarga" onclick="solicitarPix()">Fabricar QR Code Pix</button>
+            
+            <div id="caixaSucesso" class="modal-sucesso">
+                <strong>📥 PIX GERADO COM SUCESSO!</strong><br>Cole o código abaixo no aplicativo do seu banco:
+                <textarea id="copiaColaTexto" class="txt-copia" readonly></textarea>
+                <button class="btn" style="background: white; color: black; margin-top: 8px; width: 100%;" onclick="copiarChave()">📋 Copiar Código Pix</button>
+            </div>
         </div>
     </div>
     <script>
-        if (window.Telegram && window.Telegram.WebApp) { 
-            window.Telegram.WebApp.ready(); 
-            window.Telegram.WebApp.expand(); 
-        }
+        if (window.Telegram && window.Telegram.WebApp) { window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand(); }
         function escolherPlano(nome, preco) { document.getElementById('valorPix').value = preco; }
         
-        function solicitarPix() {
+        async function solicitarPix() {
             var valorInput = document.getElementById("valorPix").value;
+            var btn = document.getElementById("btnGerar");
+            var caixa = document.getElementById("caixaSucesso");
             if (!valorInput || parseFloat(valorInput) < 10) { alert("⚠️ O valor mínimo é R$ 10,00."); return; }
             
-            // 🔒 CONFIGURAÇÃO DA CHAVE COMPLETA SEM ADIVINHAÇÃO
-            var tokenCompleto = "71067|pld7jJIxFtcvN74KDLhxhK6m7xoK6dcj1vMhILXOc5d12204";
-            
-            // 🚀 A URL EXATA E HOMOLOGADA DE GATEWAY DE CHECKOUT DA PUSHINPAY PARA SITES WEB
-            var urlGateway = "https://pushinpay.com.br";
-            
-            // Parâmetros obrigatórios estruturados de forma limpa usando a codificação padrão de URI do navegador
-            var queryParams = "?token=" + encodeURIComponent(tokenCompleto) + "&value=" + encodeURIComponent(valorInput) + "&external_id=" + encodeURIComponent("site_web_" + Date.now());
-            var linkFinal = urlGateway + queryParams;
-            
-            // Executa a abertura de forma blindada isolando os escopos do MiniApp
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
-                window.Telegram.Telegram.WebApp.openLink(linkFinal);
-            } else {
-                window.location.href = linkFinal;
-            }
+            btn.disabled = true; btn.innerText = "Fabricando PIX..."; caixa.style.display = "none";
+            try {
+                // 🚀 PONTE 100% SEGURA: ENVIA APENAS O VALOR PARA A RENDER SEM EXPOR SEU TOKEN
+                var resposta = await fetch('https://onrender.com', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ valor: parseFloat(valorInput) })
+                });
+                var dados = await resposta.json();
+                if (dados && dados.qr_code) {
+                    document.getElementById('copiaColaTexto').value = dados.qr_code;
+                    caixa.style.display = "block";
+                } else { alert("⚠️ Resposta do Servidor: " + JSON.stringify(dados)); }
+            } catch (erro) { alert("❌ Falha de conexão com o bot na Render. Certifique-se de que o bot está ativo."); }
+            finally { btn.disabled = false; btn.innerText = "Fabricar QR Code Pix"; }
+        }
+        function copiarChave() {
+            var texto = document.getElementById('copiaColaTexto'); texto.select(); document.execCommand('copy');
+            alert("📋 Código Copiado!");
         }
     </script>
 </body>
