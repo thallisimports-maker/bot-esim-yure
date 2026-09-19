@@ -3,77 +3,689 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yure e-SIM Store — Área do Cliente</title>
+    <title>Yure e-SIM Store — MiniApp</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-principal: #0b0f19;
-            --bg-card: #111827;
-            --cor-neon: #3b82f6;
-            --cor-sucesso: #10b981;
-            --texto-claro: #f3f4f6;
-            --texto-escuro: #9ca3af;
+            --bg-body: #0b0d14;
+            --bg-card: #131722;
+            --bg-card-hover: #1c2232;
+            --bg-input: #1a202c;
+            --purple-main: #8b5cf6;
+            --purple-gradient: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+            --purple-badge: #7c3aed;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-purple: #c084fc;
+            --green-success: #10b981;
+            --border-color: #262d3d;
+            --radius-main: 16px;
+            --radius-sm: 10px;
         }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg-principal); color: var(--texto-claro); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        .container { max-width: 550px; width: 100%; background: var(--bg-card); padding: 25px; border-radius: 16px; border: 1px solid #1f2937; box-shadow: 0 10px 25px rgba(0,0,0,0.5); box-sizing: border-box; text-align: center; }
-        h1 { font-size: 26px; margin: 0 0 5px 0; background: linear-gradient(to right, #3b82f6, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .subtitulo { color: var(--texto-escuro); font-size: 14px; margin-bottom: 25px; }
-        .banner { width: 100%; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2); }
-        .secao-titulo { text-align: left; font-size: 16px; font-weight: 600; margin: 20px 0 10px 0; color: var(--texto-claro); border-left: 4px solid var(--cor-neon); padding-left: 10px; }
-        .card-plano { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-        .info-plano { text-align: left; }
-        .nome-operadora { font-size: 18px; font-weight: bold; }
-        .preco-plano { color: var(--cor-sucesso); font-size: 16px; font-weight: 600; margin-top: 4px; }
-        .btn { padding: 10px 18px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; border: none; }
-        .btn-comprar { background: var(--cor-sucesso); color: white; }
-        .btn-recarga { background: var(--cor-neon); color: white; width: 100%; padding: 14px; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-        .bloco-recarga { background: #111827; border: 1px dashed #374151; border-radius: 12px; padding: 20px; margin-top: 25px; }
-        .input-recarga { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #374151; background: var(--bg-principal); color: white; text-align: center; font-size: 18px; font-weight: bold; box-sizing: border-box; outline: none; }
-        .modal-sucesso { background: #16a34a; color: white; padding: 15px; border-radius: 8px; margin-top: 15px; font-size: 14px; display: none; text-align: center; }
-        .img-qrcode { width: 200px; height: 200px; margin: 15px auto; display: block; border-radius: 8px; border: 4px solid white; }
-        .txt-copia { width: 100%; height: 70px; background: #0f172a; color: #38bdf8; border: 1px solid #334155; border-radius: 6px; padding: 8px; margin-top: 8px; box-sizing: border-box; font-family: monospace; font-size: 12px; resize: none; text-align: left; }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            padding: 12px;
+            padding-bottom: 75px;
+            min-height: 100vh;
+        }
+
+        /* TOP BAR NAV */
+        .top-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            gap: 8px;
+        }
+
+        .nav-icons {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .icon-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .saldo-badge {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--text-main);
+        }
+
+        .saldo-badge span {
+            color: var(--purple-main);
+        }
+
+        /* USER HEADER CARD */
+        .user-card {
+            background: linear-gradient(135deg, #00d2ff 0%, #0052d4 100%);
+            border-radius: var(--radius-main);
+            padding: 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 25px rgba(0, 210, 255, 0.35);
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .user-info h2 {
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.85);
+        }
+
+        .user-info h1 {
+            font-size: 20px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .user-info p {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.9);
+            margin-top: 2px;
+        }
+
+        /* CATEGORIES GRID */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .cat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .cat-card.active {
+            background: var(--purple-gradient);
+            color: #ffffff;
+            border-color: transparent;
+            box-shadow: 0 4px 12px rgba(0, 210, 255, 0.3);
+        }
+
+        /* BANNER HERO */
+        .hero-banner {
+            background: linear-gradient(180deg, rgba(0, 82, 212, 0.3) 0%, rgba(13, 19, 34, 1) 100%);
+            border: 1px solid #0052d4;
+            border-radius: var(--radius-main);
+            padding: 18px;
+            margin-bottom: 20px;
+            position: relative;
+            box-shadow: inset 0 0 15px rgba(0, 210, 255, 0.1);
+        }
+
+        .hero-badge {
+            background: var(--purple-badge);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 12px;
+            display: inline-block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .hero-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .hero-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* SECTION TITLES */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* FORM SELECTOR */
+        .form-group {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-main);
+            padding: 14px;
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .custom-select {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* PRODUCTS LIST */
+        .product-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-main);
+            padding: 16px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .product-info h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .product-info p {
+            font-size: 13px;
+            color: var(--green-success);
+            font-weight: 700;
+            margin-top: 4px;
+        }
+
+        .btn-buy {
+            background: var(--green-success);
+            color: #ffffff;
+            border: none;
+            padding: 8px 18px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* RECHARGE BLOCK (CARTEIRA) */
+        .recharge-box {
+            background: var(--bg-card);
+            border: 1px dashed var(--purple-main);
+            border-radius: var(--radius-main);
+            padding: 18px;
+            text-align: center;
+        }
+
+        .recharge-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 800;
+            text-align: center;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            margin: 12px 0;
+            outline: none;
+        }
+
+        .btn-purple {
+            width: 100%;
+            background: var(--purple-gradient);
+            color: #ffffff;
+            border: none;
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            font-size: 15px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .modal-pix {
+            background: #064e3b;
+            border: 1px solid #10b981;
+            border-radius: var(--radius-main);
+            padding: 16px;
+            margin-top: 14px;
+            display: none;
+            text-align: center;
+        }
+
+        .qr-img {
+            width: 180px;
+            height: 180px;
+            border-radius: 8px;
+            border: 3px solid #ffffff;
+            margin: 12px auto;
+            display: block;
+        }
+
+        .pix-textarea {
+            width: 100%;
+            height: 60px;
+            background: #022c22;
+            border: 1px solid #059669;
+            color: #6ee7b7;
+            font-family: monospace;
+            font-size: 11px;
+            border-radius: 6px;
+            padding: 8px;
+            resize: none;
+            margin-bottom: 8px;
+        }
+
+        /* LIST ITEM STYLES (HISTÓRICO / PEDIDOS / MEUS ESIMS) */
+        .history-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .history-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .history-subtitle {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .badge-status {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .status-paid {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--green-success);
+        }
+
+        /* BOTTOM NAVBAR */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(19, 23, 34, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            width: 20%;
+        }
+
+        .nav-item.active {
+            color: var(--text-purple);
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📶 Yure e-SIM Store</h1>
-        <div class="subtitulo">Sua Área Virtual de Telecomunicação Móvel</div>
-        <img src="https://chatgpt.com/s/m_6aab5a7bf33c81919a3625a128148666">
-        
-        <div class="secao-titulo">Escolha seu plano e-SIM</div>
-        <div class="card-plano"><div class="info-plano"><div class="nome-operadora">Vivo 30GB</div><div class="preco-plano">R$ 25,00</div></div><button class="btn btn-comprar" onclick="escolherPlano('Vivo 30GB', 25)">Comprar</button></div>
-        <div class="card-plano"><div class="info-plano"><div class="nome-operadora">Tim 40GB</div><div class="preco-plano">R$ 30,00</div></div><button class="btn btn-comprar" onclick="escolherPlano('Tim 40GB', 30)">Comprar</button></div>
-        <div class="card-plano"><div class="info-plano"><div class="nome-operadora">Claro 40GB</div><div class="preco-plano">R$ 35,00</div></div><button class="btn btn-comprar" onclick="escolherPlano('Claro 40GB', 35)">Comprar</button></div>
-        
-        <div class="bloco-recarga">
-            <div class="secao-titulo" style="margin-top: 0; border-left-color: #a855f7;">Adicionar Saldo Instantâneo</div>
-            <p style="font-size: 13px; color: var(--texto-escuro); margin: 0 0 15px 0; text-align: left;">Insira o valor abaixo para fabricar o seu QR Code Pix de produção.</p>
-            <input type="number" id="valorPix" class="input-recarga" min="10" value="10">
-            <button id="btnGerar" class="btn btn-recarga" onclick="solicitarPix()">Fabricar QR Code Pix</button>
-            
-            <div id="caixaSucesso" class="modal-sucesso">
-                <strong>📥 PIX GERADO COM SUCESSO!</strong><br>
-                <span style="font-size: 12px;">Efetue o pagamento lendo a imagem ou copiando a chave:</span>
-                
-                <!-- Imagem do QR Code -->
-                <img id="imgQrCode" class="img-qrcode" src="" alt="QR Code Pix" style="display: none;">
-                
-                <textarea id="copiaColaTexto" class="txt-copia" readonly></textarea>
-                <button class="btn" style="background: white; color: black; margin-top: 8px; width: 100%;" onclick="copiarChave()">📋 Copiar Código Pix</button>
+
+    <!-- TOP NAVIGATION BAR -->
+    <div class="top-nav">
+        <div class="nav-icons">
+            <div class="icon-btn">🌐</div>
+            <div class="icon-btn">🇧🇷</div>
+            <div class="icon-btn">🎨</div>
+            <div class="icon-btn">💬</div>
+        </div>
+        <div class="saldo-badge">
+            💳 <span>R$ <span id="userSaldo">0.00</span></span>
+        </div>
+    </div>
+
+    <!-- USER HEADER CARD -->
+    <div class="user-card">
+        <div class="user-avatar">👑</div>
+        <div class="user-info">
+            <h2>Bem-vindo à loja premium,</h2>
+            <h1 id="userName">Yure</h1>
+            <p>✨ Navegue pelo estoque e escolha seu produto.</p>
+        </div>
+    </div>
+
+    <!-- TAB 1: LOJA (HOME) -->
+    <div id="tab-loja" class="tab-content active">
+        <!-- CATEGORIES GRID -->
+        <div class="category-grid">
+            <div class="cat-card active">📱 eSIMs</div>
+            <div class="cat-card">⚡ Recargas</div>
+            <div class="cat-card">🌐 Dados Int.</div>
+            <div class="cat-card">⚙️ Suporte</div>
+        </div>
+
+        <!-- HERO BANNER -->
+        <div class="hero-banner">
+            <div class="hero-badge">Ativação Imediata</div>
+            <div class="hero-title">Conectado em qualquer lugar</div>
+            <div class="hero-desc">Compre planos eSIM com alta franquia de dados e ative em poucos minutos.</div>
+        </div>
+
+        <!-- SECTION SELECTOR -->
+        <div class="section-header">
+            <div class="section-title">📶 Selecionar Pacote</div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">📲 1. ESCOLHA A OPERADORA</label>
+            <select class="custom-select" id="operadoraSelect" onchange="filtrarPlanos()">
+                <option value="todas">-- Todas as Operadoras --</option>
+                <option value="vivo">Vivo</option>
+                <option value="tim">Tim</option>
+                <option value="claro">Claro</option>
+            </select>
+        </div>
+
+        <!-- PRODUCTS LIST -->
+        <div id="listaProdutos">
+            <div class="product-card" data-op="vivo">
+                <div class="product-info">
+                    <h3>Vivo 30GB</h3>
+                    <p>R$ 25,00</p>
+                </div>
+                <button class="btn-buy" onclick="comprarNoBot('Vivo 30GB', 25)">Comprar</button>
+            </div>
+            <div class="product-card" data-op="tim">
+                <div class="product-info">
+                    <h3>Tim 40GB</h3>
+                    <p>R$ 30,00</p>
+                </div>
+                <button class="btn-buy" onclick="comprarNoBot('Tim 40GB', 30)">Comprar</button>
+            </div>
+            <div class="product-card" data-op="claro">
+                <div class="product-info">
+                    <h3>Claro 40GB</h3>
+                    <p>R$ 35,00</p>
+                </div>
+                <button class="btn-buy" onclick="comprarNoBot('Claro 40GB', 35)">Comprar</button>
             </div>
         </div>
     </div>
 
+    <!-- TAB 2: CONSULTAS / MEUS ESIMS -->
+    <div id="tab-consultas" class="tab-content">
+        <div class="section-header">
+            <div class="section-title">📲 Meus e-SIMs Disponíveis</div>
+        </div>
+        <div id="listaEsimsAdquiridos">
+            <div class="history-item">
+                <div>
+                    <div class="history-title">Vivo 30GB - Ativo</div>
+                    <div class="history-subtitle">QR Code: 89550214892019482</div>
+                </div>
+                <span class="badge-status status-paid">Disponível</span>
+            </div>
+            <div class="history-item" style="opacity: 0.6;">
+                <div>
+                    <div class="history-title">Tim 40GB - Utilizado</div>
+                    <div class="history-subtitle">Resgatado em 12/09/2026</div>
+                </div>
+                <span class="badge-status" style="background:#374151; color:#9ca3af;">Inativo</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 3: PEDIDOS -->
+    <div id="tab-pedidos" class="tab-content">
+        <div class="section-header">
+            <div class="section-title">📦 Histórico de Pedidos</div>
+        </div>
+        <div id="listaPedidos">
+            <div class="history-item">
+                <div>
+                    <div class="history-title">Pedido #1048 — Vivo 30GB</div>
+                    <div class="history-subtitle">19/09/2026 • R$ 25,00</div>
+                </div>
+                <span class="badge-status status-paid">Entregue</span>
+            </div>
+            <div class="history-item">
+                <div>
+                    <div class="history-title">Pedido #1012 — Tim 40GB</div>
+                    <div class="history-subtitle">10/09/2026 • R$ 30,00</div>
+                </div>
+                <span class="badge-status status-paid">Entregue</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 4: CARTEIRA (HISTÓRICO DE PAGAMENTOS + ADICIONAR SALDO) -->
+    <div id="tab-carteira" class="tab-content">
+        <div class="recharge-box">
+            <div class="section-title" style="justify-content: center; color: var(--text-purple);">💳 Adicionar Saldo Instantâneo</div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Insira o valor em Reais para gerar o Pix:</p>
+            <input type="number" id="valorPix" class="recharge-input" min="10" value="10">
+            <button id="btnGerar" class="btn-purple" onclick="solicitarPix()">Gerar QR Code Pix</button>
+
+            <div id="caixaSucesso" class="modal-pix">
+                <strong style="color: #6ee7b7; font-size: 14px;">📥 PIX GERADO COM SUCESSO!</strong>
+                <img id="imgQrCode" class="qr-img" src="" alt="QR Code Pix" style="display: none;">
+                <textarea id="copiaColaTexto" class="pix-textarea" readonly></textarea>
+                <button class="btn-buy" style="width: 100%; background: #ffffff; color: #000000;" onclick="copiarChave()">📋 Copiar Código Pix</button>
+            </div>
+        </div>
+
+        <div class="section-header" style="margin-top: 24px;">
+            <div class="section-title">💸 Histórico de Pagamentos</div>
+        </div>
+        <div id="listaPagamentos">
+            <div class="history-item">
+                <div>
+                    <div class="history-title">Recarga Pix</div>
+                    <div class="history-subtitle">19/09/2026 • 18:30</div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="badge-status status-paid">+ R$ 25,00</span>
+                </div>
+            </div>
+            <div class="history-item">
+                <div>
+                    <div class="history-title">Recarga Pix</div>
+                    <div class="history-subtitle">10/09/2026 • 14:15</div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="badge-status status-paid">+ R$ 50,00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB 5: CONTA -->
+    <div id="tab-conta" class="tab-content">
+        <div class="section-header">
+            <div class="section-title">👤 Minha Conta</div>
+        </div>
+        <div class="form-group">
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">ID do Telegram: <strong id="telegramId" style="color: white;">123456789</strong></p>
+            <p style="font-size: 13px; color: var(--text-muted);">Nome de Usuário: <strong id="telegramUser" style="color: white;">@YureStore</strong></p>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVBAR -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('loja', this)">
+            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+            Loja
+        </div>
+        <div class="nav-item" onclick="switchTab('consultas', this)">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            Consultas
+        </div>
+        <div class="nav-item" onclick="switchTab('pedidos', this)">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+            Pedidos
+        </div>
+        <div class="nav-item" onclick="switchTab('carteira', this)">
+            <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
+            Carteira
+        </div>
+        <div class="nav-item" onclick="switchTab('conta', this)">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            Conta
+        </div>
+    </div>
+
     <script>
-        if (window.Telegram && window.Telegram.WebApp) { 
-            window.Telegram.WebApp.ready(); 
-            window.Telegram.WebApp.expand(); 
+        // TELEGRAM WEB APP INITIALIZATION
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                document.getElementById('userName').innerText = tg.initDataUnsafe.user.first_name || 'Yure';
+                document.getElementById('telegramId').innerText = tg.initDataUnsafe.user.id || 'N/A';
+                document.getElementById('telegramUser').innerText = '@' + (tg.initDataUnsafe.user.username || 'usuario');
+            }
         }
 
-        function escolherPlano(nome, preco) { 
-            document.getElementById('valorPix').value = preco; 
+        // TAB NAVIGATION
+        function switchTab(tabName, el) {
+            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            el.classList.add('active');
         }
-        
+
+        // FILTER PRODUCTS BY OPERATOR
+        function filtrarPlanos() {
+            const op = document.getElementById('operadoraSelect').value;
+            const cards = document.querySelectorAll('.product-card');
+            cards.forEach(card => {
+                if (op === 'todas' || card.getAttribute('data-op') === op) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        // REDIRECT / BUY IN BOT
+        function comprarNoBot(plano, preco) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.sendData(JSON.stringify({ acao: 'comprar', plano: plano, preco: preco }));
+                window.Telegram.WebApp.close();
+            } else {
+                alert("Para concluir a compra de " + plano + ", acesse via Telegram Bot.");
+            }
+        }
+
+        // GERAR PIX REAL VIA FASTAPI (RENDER)
         async function solicitarPix() {
             const valorInput = document.getElementById("valorPix").value;
             const btn = document.getElementById("btnGerar");
@@ -88,7 +700,7 @@
             }
             
             btn.disabled = true; 
-            btn.innerText = "Fabricando PIX..."; 
+            btn.innerText = "Gerando PIX..."; 
             caixa.style.display = "none";
             imgQrCode.style.display = "none";
 
@@ -102,29 +714,24 @@
                 const dados = await resposta.json();
 
                 if (resposta.ok && dados.status === "sucesso" && dados.qr_code) {
-                    // Preenche o texto Copia e Cola
                     document.getElementById('copiaColaTexto').value = dados.qr_code;
 
-                    // Se a PushinPay devolver o QR Code em imagem (base64 ou URL), exibe na tela
                     if (dados.qr_code_base64) {
                         imgQrCode.src = dados.qr_code_base64.startsWith('data:') ? dados.qr_code_base64 : 'data:image/png;base64,' + dados.qr_code_base64;
-                        imgQrCode.style.display = "block";
                     } else {
-                        // Caso a PushinPay não envie a imagem pronta, geramos via API pública externa instantânea
                         imgQrCode.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(dados.qr_code);
-                        imgQrCode.style.display = "block";
                     }
-
+                    imgQrCode.style.display = "block";
                     caixa.style.display = "block";
                 } else { 
                     alert("⚠️ Erro na resposta: " + (dados.detalhe || JSON.stringify(dados))); 
                 }
             } catch (erro) { 
                 console.error("Erro na comunicação:", erro);
-                alert("❌ Falha de conexão com a API na Render. Verifique se o servidor está ativo."); 
+                alert("❌ Falha de conexão com a API na Render."); 
             } finally { 
                 btn.disabled = false; 
-                btn.innerText = "Fabricar QR Code Pix"; 
+                btn.innerText = "Gerar QR Code Pix"; 
             }
         }
 
@@ -132,7 +739,7 @@
             const texto = document.getElementById('copiaColaTexto'); 
             texto.select(); 
             navigator.clipboard.writeText(texto.value).then(() => {
-                alert("📋 Código Pix copiado para a área de transferência!");
+                alert("📋 Código Pix copiado!");
             }).catch(() => {
                 document.execCommand('copy');
                 alert("📋 Código Copiado!");
