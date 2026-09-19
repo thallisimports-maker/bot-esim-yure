@@ -7,7 +7,6 @@
     <!-- 📱 COMPONENTE DE INTEGRAÇÃO OFICIAL DOS MINIAPPS DO TELEGRAM -->
     <script src="https://telegram.org"></script>
     <style>
-        /* 🎨 DESIGN TÉCNICO ESCURO COM NEON PREMIUM (MODERNO) */
         :root {
             --bg-principal: #0b0f19;
             --bg-card: #111827;
@@ -16,87 +15,17 @@
             --texto-claro: #f3f4f6;
             --texto-escuro: #9ca3af;
         }
-
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background-color: var(--bg-principal);
-            color: var(--texto-claro);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 550px;
-            width: 100%;
-            background: var(--bg-card);
-            padding: 25px;
-            border-radius: 16px;
-            border: 1px solid #1f2937;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-            box-sizing: border-box;
-        }
-
-        h1 {
-            font-size: 26px;
-            margin: 0 0 5px 0;
-            background: linear-gradient(to right, #3b82f6, #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .subtitulo {
-            color: var(--texto-escuro);
-            font-size: 14px;
-            margin-bottom: 25px;
-        }
-
-        .banner {
-            width: 100%;
-            border-radius: 12px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
-        }
-
-        .secao-titulo {
-            text-align: left;
-            font-size: 16px;
-            font-weight: 600;
-            margin: 20px 0 10px 0;
-            color: var(--texto-claro);
-            border-left: 4px solid var(--cor-neon);
-            padding-left: 10px;
-        }
-
-        /* 📶 CARDS DOS PLANOS DE CHIPS */
-        .card-plano {
-            background: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 18px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg-principal); color: var(--texto-claro); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        .container { max-width: 550px; width: 100%; background: var(--bg-card); padding: 25px; border-radius: 16px; border: 1px solid #1f2937; box-shadow: 0 10px 25px rgba(0,0,0,0.5); box-sizing: border-box; text-align: center; }
+        h1 { font-size: 26px; margin: 0 0 5px 0; background: linear-gradient(to right, #3b82f6, #60a5fa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitulo { color: var(--texto-escuro); font-size: 14px; margin-bottom: 25px; }
+        .banner { width: 100%; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2); }
+        .secao-titulo { text-align: left; font-size: 16px; font-weight: 600; margin: 20px 0 10px 0; color: var(--texto-claro); border-left: 4px solid var(--cor-neon); padding-left: 10px; }
+        .card-plano { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 18px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
         .info-plano { text-align: left; }
         .nome-operadora { font-size: 18px; font-weight: bold; }
         .preco-plano { color: var(--cor-sucesso); font-size: 16px; font-weight: 600; margin-top: 4px; }
-
-        /* 🔘 BOTÕES E INPUTS ESTILIZADOS */
-        .btn {
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            border: none;
-        }
-
+        .btn { padding: 10px 18px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; border: none; }
         .btn-comprar { background: var(--cor-sucesso); color: white; }
         .btn-recarga { background: var(--cor-neon); color: white; width: 100%; padding: 14px; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
         .bloco-recarga { background: #111827; border: 1px dashed #374151; border-radius: 12px; padding: 20px; margin-top: 25px; }
@@ -104,83 +33,47 @@
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>📶 Yure e-SIM Store</h1>
         <div class="subtitulo">Sua Área Virtual de Telecomunicação Móvel</div>
-        
         <img src="https://unsplash.com" class="banner" alt="Banner Tecnologia">
-
         <div class="secao-titulo">Escolha seu plano e-SIM</div>
-
-        <div class="card-plano">
-            <div class="info-plano">
-                <div class="nome-operadora">Vivo 30GB</div>
-                <div class="preco-plano">R$ 25,00</div>
-            </div>
-            <button class="btn btn-comprar" onclick="escolherPlano('Vivo 30GB', 25)">Comprar</button>
-        </div>
-
-        <div class="card-plano">
-            <div class="info-plano">
-                <div class="nome-operadora">Tim 40GB</div>
-                <div class="preco-plano">R$ 30,00</div>
-            </div>
-            <button class="btn btn-comprar" onclick="escolherPlano('Tim 40GB', 30)">Comprar</button>
-        </div>
-
-        <div class="card-plano">
-            <div class="info-plano">
-                <div class="nome-operadora">Claro 40GB</div>
-                <div class="preco-plano">R$ 35,00</div>
-            </div>
-            <button class="btn btn-comprar" onclick="escolherPlano('Claro 40GB', 35)">Comprar</button>
-        </div>
-
+        <div class="card-plano"><div class="info-plano"><div class="nome-operadora">Vivo 30GB</div><div class="preco-plano">R$ 25,00</div></div><button class="btn btn-comprar" onclick="escolherPlano('Vivo 30GB', 25)">Comprar</button></div>
+        <div class="card-plano"><div class="info-plano"><div class="nome-operadora">Tim 40GB</div><div class="preco-plano">R$ 30,00</div></div><button class="btn btn-comprar" onclick="escolherPlano('Tim 40GB', 30)">Comprar</button></div>
+        <div class="card-plano"><div class="info-plano"><div class="nome-operadora">Claro 40GB</div><div class="preco-plano">R$ 35,00</div></div><button class="btn btn-comprar" onclick="escolherPlano('Claro 40GB', 35)">Comprar</button></div>
         <div class="bloco-recarga">
             <div class="secao-titulo" style="margin-top: 0; border-left-color: #a855f7;">Adicionar Saldo Instantâneo</div>
             <p style="font-size: 13px; color: var(--texto-escuro); margin: 0 0 15px 0; text-align: left;">Insira o valor abaixo para fabricar o seu QR Code Pix de produção.</p>
-            
-            <input type="number" id="valorPix" class="input-recarga" min="10" value="10" placeholder="R$ 10">
+            <input type="number" id="valorPix" class="input-recarga" min="10" value="10">
             <button id="btnGerar" class="btn btn-recarga" onclick="solicitarPix()">Fabricar QR Code Pix</button>
         </div>
     </div>
-
     <script>
-        // Inicializa o WebApp do Telegram para garantir as pontes nativas de MiniApp
-        if (window.Telegram && window.Telegram.WebApp) {
-            window.Telegram.WebApp.ready();
-            window.Telegram.WebApp.expand();
+        if (window.Telegram && window.Telegram.WebApp) { 
+            window.Telegram.WebApp.ready(); 
+            window.Telegram.WebApp.expand(); 
         }
-
-        function escolherPlano(nome, preco) {
-            alert("🎉 PLANO SELECIONADO!\n\nVocê escolheu o plano " + nome + " por R$ " + preco + ",00.\n\n👉 Agora, clique no botão de recarga abaixo para efetuar o pagamento e receber o e-SIM.");
-            document.getElementById('valorPix').value = preco;
-        }
-
-                function solicitarPix() {
+        function escolherPlano(nome, preco) { document.getElementById('valorPix').value = preco; }
+        
+        function solicitarPix() {
             var valorInput = document.getElementById("valorPix").value;
+            if (!valorInput || parseFloat(valorInput) < 10) { alert("⚠️ O valor mínimo é R$ 10,00."); return; }
             
-            if (!valorInput || parseFloat(valorInput) < 10) {
-                alert("⚠️ ATENÇÃO: O valor mínimo estipulado para gerar o Pix é de R$ 10,00.");
-                return;
-            }
-
-            // 🚀 TOKENS COMBINADOS VIA CONCATENAÇÃO TRADICIONAL BLINDADA
-            var parteA = "71067|pld7jJIxFtcvN74KDLhxhK6m";
-            var parteB = "7xoK6dcj1vMhILXOc5d12204";
-            var tokenCompleto = parteA + parteB;
-
-            // URL MONTADA 100% COM ASPAS DUPLAS E SINAL DE MAIS PARA EVITAR ERRO DE SINTAXE DO CONSOLE
-                        // 🚀 CORREÇÃO CIRÚRGICA: DECODIFICA A BARRA VERTICAL DO TOKEN PARA EVITAR ERRO DE URL INVÁLIDA NO CONSOLE
-            var linkCheckout = "https://pushinpay.com.br" + encodeURIComponent(tokenCompleto) + "&value=" + valorInput + "&external_id=site_web_" + Date.now();
-
+            // 🔒 CONFIGURAÇÃO DA CHAVE COMPLETA SEM ADIVINHAÇÃO
+            var tokenCompleto = "71067|pld7jJIxFtcvN74KDLhxhK6m7xoK6dcj1vMhILXOc5d12204";
             
-            // Dispara a ponte de MiniApp nativa ou redireciona em navegadores externos
+            // 🚀 A URL EXATA E HOMOLOGADA DE GATEWAY DE CHECKOUT DA PUSHINPAY PARA SITES WEB
+            var urlGateway = "https://pushinpay.com.br";
+            
+            // Parâmetros obrigatórios estruturados de forma limpa usando a codificação padrão de URI do navegador
+            var queryParams = "?token=" + encodeURIComponent(tokenCompleto) + "&value=" + encodeURIComponent(valorInput) + "&external_id=" + encodeURIComponent("site_web_" + Date.now());
+            var linkFinal = urlGateway + queryParams;
+            
+            // Executa a abertura de forma blindada isolando os escopos do MiniApp
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
-                window.Telegram.WebApp.openLink(linkCheckout);
+                window.Telegram.Telegram.WebApp.openLink(linkFinal);
             } else {
-                window.location.href = linkCheckout;
+                window.location.href = linkFinal;
             }
         }
     </script>
