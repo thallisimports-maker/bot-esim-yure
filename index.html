@@ -70,7 +70,7 @@
             btn.disabled = true; btn.innerText = "Fabricando PIX..."; caixa.style.display = "none";
             try {
                 // 🚀 PONTE 100% SEGURA: ENVIA APENAS O VALOR PARA A RENDER SEM EXPOR SEU TOKEN
-                var resposta = await fetch('https://onrender.com', {
+                var resposta = await fetch('https://bot-esim-yure.onrender.com', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ valor: parseFloat(valorInput) })
