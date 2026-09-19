@@ -139,7 +139,7 @@ def main() -> None:
     app.add_handler(CommandHandler("pix", generar_fluxo_pix))
         print("\n🤖 [STATUS] Servidor unificado pronto e estável!")
     import threading, uvicorn
-    threading.Thread(target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=10000), daemon=True).start()
+    threading.Thread(target=lambda: uvicorn.run(app, host="0.0.0.0", port=10000), daemon=True).start()
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
 if __name__ == "__main__": main()
