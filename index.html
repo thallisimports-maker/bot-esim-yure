@@ -608,12 +608,18 @@
             }
         }
 
-        // 3. ABRIR SUPORTE
+        // 3. ABRIR SUPORTE (VERSÃO CORRIGIDA PARA MINIAPP)
         function abrirSuporte() {
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.openTelegramLink("https://t.me/yure_suporte");
+            // Substitua 'yure_suporte' pelo seu @username real do Telegram sem o @
+            const suporteUsername = "yure_suporte"; 
+            const linkTelegram = `https://t.me/${suporteUsername}`;
+
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+                // Abre diretamente o chat no aplicativo do Telegram do cliente
+                window.Telegram.WebApp.openTelegramLink(linkTelegram);
             } else {
-                window.open("https://t.me/yure_suporte", "_blank");
+                // Caso o cliente esteja testando pelo navegador comum
+                window.open(linkTelegram, "_blank");
             }
         }
 
