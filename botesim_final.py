@@ -6,7 +6,7 @@ import requests
 import threading
 import uvicorn
 
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -210,7 +210,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     finally:
         con.close()
 
-    # URL OFICIAL DO SEU MINIAPP NO GITHUB PAGES
+    # URL DO SEU MINIAPP NO GITHUB PAGES
     url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
 
     texto = f"Olá, {user.first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
