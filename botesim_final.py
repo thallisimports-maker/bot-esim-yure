@@ -1,11 +1,8 @@
 import os
 import json
 import logging
-import urllib.parse
-import shutil
 import sqlite3
 import requests
-import qrcode
 import threading
 import uvicorn
 
@@ -26,12 +23,12 @@ PASTA_IMAGENS = "imagens_chips"
 if not os.path.exists(PASTA_IMAGENS):
     os.makedirs(PASTA_IMAGENS)
 
-# 🚀 INICIALIZAÇÃO DO FASTAPI E CORS NATIVO (Resolve o Preflight OPTIONS do Chrome)
+# 🚀 INICIALIZAÇÃO DO FASTAPI E CORS
 app = FastAPI(title="eSIM Bot & Web API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permite chamadas do GitHub Pages e de qualquer origem
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -59,16 +56,23 @@ def inicializar_banco():
     finally:
         con.close()
 
-# 🌐 SCHEMAS E ROTAS DO FASTAPI (SITE WEB / GITHUB PAGES)
+# 🌐 SCHEMAS DO FASTAPI
 class PixSitePayload(BaseModel):
     valor: float = Field(..., gte=10.0, description="Valor do Pix em Reais (Mínimo R$ 10,00)")
 
+class CompraMiniAppPayload(BaseModel):
+    chat_id: str
+    produto_id: str
+
+class AdminAddEsimPayload(BaseModel):
+    senha_admin: str
+    produto_id: str
+    conteudo_esim: str
+
+# 🌐 ROTAS DA API WEB (MINIAPP & ADMIN)
+
 @app.post("/api/admin/gerar-pix-site")
 async def api_gerar_pix_site(payload: PixSitePayload):
-    """
-    Rota para o index.html (GitHub Pages) solicitar a geração de Pix de forma segura.
-    O CORS é tratado nativamente pelo CORSMiddleware.
-    """
     valor_centavos = int(payload.valor * 100)
     url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
     
@@ -81,13 +85,7 @@ async def api_gerar_pix_site(payload: PixSitePayload):
     body = {
         "value": valor_centavos,
         "webhook_url": "https://thallisimports-maker.github.io/bot-esim-yure/",
-        "external_id": "venda_site_web",
-        "split_rules": [],
-        "customer": {
-            "name": "Cliente Web Store",
-            "email": "cliente_esim@gmail.com",
-            "document": "03620633037"
-        }
+        "external_id": "venda_site_web"
     }
     
     try:
@@ -105,6 +103,90 @@ async def api_gerar_pix_site(payload: PixSitePayload):
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f"Erro na comunicação com a PushinPay: {str(e)}"
         )
+
+@app.get("/api/usuario/{chat_id}")
+async def obter_dados_usuario(chat_id: str):
+    con = conectar_banco()
+    cur = con.cursor()
+    try:
+        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
+        res_saldo = cur.fetchone()
+        saldo = float(res_saldo["saldo"]) if res_saldo else 0.0
+
+        cur.execute("SELECT id, produto_id, conteudo_esim FROM estoque_codigos LIMIT 5")
+        esims = [dict(row) for row in cur.fetchall()]
+
+        return {
+            "status": "sucesso",
+            "chat_id": chat_id,
+            "saldo": saldo,
+            "esims": esims
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        con.close()
+
+@app.post("/api/comprar-esim")
+async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
+    precos = {"vivo_30gb": 25.0, "tim_40gb": 30.0, "claro_40gb": 35.0}
+    preco_item = precos.get(payload.produto_id, 999.0)
+
+    con = conectar_banco()
+    cur = con.cursor()
+    try:
+        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (payload.chat_id,))
+        res_saldo = cur.fetchone()
+        saldo = float(res_saldo["saldo"]) if res_saldo else 0.0
+
+        if saldo < preco_item:
+            return {"status": "erro", "detalhe": "Saldo insuficiente na carteira!"}
+
+        cur.execute("SELECT id, conteudo_esim FROM estoque_codigos WHERE produto_id = ? LIMIT 1", (payload.produto_id,))
+        chip = cur.fetchone()
+        if not chip:
+            return {"status": "erro", "detalhe": "Estoque esgotado para este produto!"}
+
+        chip_id, caminho_esim = chip["id"], chip["conteudo_esim"]
+
+        cur.execute("UPDATE carteira SET saldo = saldo - ? WHERE chat_id = ?", (preco_item, payload.chat_id))
+        cur.execute("DELETE FROM estoque_codigos WHERE id = ?", (chip_id,))
+        cur.execute("UPDATE estoque SET quantidade = quantidade - 1 WHERE produto_id = ?", (payload.produto_id,))
+        con.commit()
+
+        return {
+            "status": "sucesso",
+            "mensagem": "Compra efetuada com sucesso!",
+            "conteudo_esim": caminho_esim,
+            "novo_saldo": saldo - preco_item
+        }
+    except Exception as e:
+        return {"status": "erro", "detalhe": str(e)}
+    finally:
+        con.close()
+
+@app.post("/api/admin/adicionar-estoque")
+async def admin_adicionar_estoque(payload: AdminAddEsimPayload):
+    if payload.senha_admin != SENHA_ADMIN_MINISITE:
+        raise HTTPException(status_code=401, detail="Senha administrativa incorreta!")
+
+    con = conectar_banco()
+    cur = con.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO estoque_codigos (produto_id, conteudo_esim) VALUES (?, ?)",
+            (payload.produto_id, payload.conteudo_esim)
+        )
+        cur.execute(
+            "UPDATE estoque SET quantidade = quantidade + 1 WHERE produto_id = ?",
+            (payload.produto_id,)
+        )
+        con.commit()
+        return {"status": "sucesso", "mensagem": f"e-SIM adicionado com sucesso ao estoque de {payload.produto_id}!"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        con.close()
 
 # 🤖 HANDLERS DO BOT DO TELEGRAM
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -169,11 +251,7 @@ async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         cur.execute("UPDATE estoque SET quantidade = quantidade - 1 WHERE produto_id = ?", (produto_id,))
         con.commit()
 
-        if os.path.exists(caminho_foto):
-            with open(caminho_foto, "rb") as f:
-                await context.bot.send_photo(chat_id=chat_id, photo=f, caption=f"🎉 **COMPRA REALIZADA!**\ne-SIM ({produto_id.upper()}) ativo!")
-        else:
-            await context.bot.send_message(chat_id=chat_id, text=f"🎉 **COMPRA REALIZADA!**\nSua chave/QR-Code e-SIM: {caminho_foto}")
+        await context.bot.send_message(chat_id=chat_id, text=f"🎉 **COMPRA REALIZADA!**\nSua chave/QR-Code e-SIM: {caminho_foto}")
             
     except Exception as e:
         logging.error(f"Erro no processamento da compra: {e}")
@@ -199,7 +277,6 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         await context.bot.send_message(chat_id=chat_id, text="❌ *Valor inválido! Exemplo: `/pix 15`*", parse_mode="Markdown")
         return
 
-    # Geração do Pix no Telegram via PushinPay
     valor_centavos = int(valor_digitado * 100)
     url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
     headers = {
@@ -236,11 +313,9 @@ def rodar_fastapi():
 def main() -> None:
     inicializar_banco()
     
-    # Inicia a API Web em uma thread paralela
     thread_api = threading.Thread(target=rodar_fastapi, daemon=True)
     thread_api.start()
 
-    # Inicia o Bot do Telegram na thread principal
     telegram_app = Application.builder().token(TOKEN).build()
     
     telegram_app.add_handler(CommandHandler("start", start))
@@ -249,7 +324,6 @@ def main() -> None:
     
     print("\n🤖 [STATUS] Servidor unificado FastAPI + Telegram rodando perfeitamente!")
     
-    # Derruba webhooks pendentes e roda em modo polling
     telegram_app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
 if __name__ == "__main__":
