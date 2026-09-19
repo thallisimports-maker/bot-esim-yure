@@ -128,6 +128,37 @@ async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = 
         con.commit(); return {"status": "sucesso"}
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
     finally: con.close()
+        class DadosPixSite(BaseModel):
+    valor: float
+
+@api_app.post("/api/admin/gerar-pix-site")
+async def api_gerar_pix_site(dados: DadosPixSite):
+    valor_centavos = int(dados.valor * 100)
+    # 🔒 URL DE PRODUÇÃO VERDADEIRA HOMOLOGADA NA PEDRA
+    url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
+    headers = {
+        "Authorization": f"bearer {PUSHINPAY_TOKEN}",
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+    }
+    payload = {
+        "value": valor_centavos,
+        "webhook_url": "https://bot-esim-yure.onrender.com",
+        "external_id": "venda_site_web",
+        "split_rules": [],
+        "customer": {
+            "name": "Cliente Web Store",
+            "email": "cliente_esim@gmail.com",
+            "document": "03620633037"
+        }
+    }
+    try:
+        resposta = requests.post(url_api, json=payload, headers=headers, timeout=15, verify=False)
+        if resposta.status_code in:
+            return {"status": "sucesso", "qr_code": resposta.json().get("qr_code")}
+        return {"status": "erro", "detalhe": resposta.text}
+    except Exception as e:
+        return {"status": "erro", "detalhe": str(e)}
 
 def main() -> None:
     try: inicializar_banco()
