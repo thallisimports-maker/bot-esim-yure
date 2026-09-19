@@ -163,14 +163,19 @@ async def api_gerar_pix_site(dados: DadosPixSite):
 def main() -> None:
     try: inicializar_banco()
     except Exception: pass
+    
+    # 🚀 CORREÇÃO DEFINITIVA: DELETA O WEBHOOK E ENCERRA O CONFLITO COM A VERCEL AUTOMATICAMENTE
     app = Application.builder().token(TOKEN).build()
+    
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(processar_compra, pattern="^buy_"))
     app.add_handler(CallbackQueryHandler(clique_botao_recarga, pattern="solicitar_recarga"))
     app.add_handler(CommandHandler("pix", generar_fluxo_pix))
     print("\n🤖 [STATUS] Servidor unificado pronto e estável!")
     import threading, uvicorn
-    threading.Thread(target=lambda: uvicorn.run(app, host="0.0.0.0", port=10000), daemon=True).start()
+    threading.Thread(target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=10000), daemon=True).start()
+    
+    # 🔒 FORÇA O TELEGRAM A DERRUBAR O WEBHOOK VELHO NO REINICIO DA RENDER
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
 if __name__ == "__main__": main()
