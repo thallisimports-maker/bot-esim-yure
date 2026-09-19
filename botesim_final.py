@@ -129,7 +129,7 @@ async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = 
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
     finally: con.close()
     class DadosPixSite(BaseModel):
-    valor: float
+        valor: float
 
 @api_app.post("/api/admin/gerar-pix-site")
 async def api_gerar_pix_site(dados: DadosPixSite):
