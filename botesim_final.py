@@ -10,7 +10,7 @@ logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 # 🔒 CREDENCIAIS DE PRODUÇÃO DO BANCO CENTRAL
 TOKEN = "8826676433:AAHy2DkXR1TH7u4T-JO8FaOCQebFdryOg-M"
-PUSHINPAY_TOKEN = "71074|34qxCyv1Pdh5r0aNai4wVrNBtoAHkbxAhOziybPqfddf9ac4"
+PUSHINPAY_TOKEN = "71078|M1MASBFV155gtnKBttSvkE6u8bD8kSBFjAMLwOXa70ca5a25"
 SENHA_ADMIN_MINISITE = "yure123"
 DATABASE_URL_NUVEM = "COLE_AQUI"
 PASTA_IMAGENS = "imagens_chips"
