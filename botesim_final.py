@@ -137,7 +137,7 @@ def main() -> None:
     app.add_handler(CallbackQueryHandler(processar_compra, pattern="^buy_"))
     app.add_handler(CallbackQueryHandler(clique_botao_recarga, pattern="solicitar_recarga"))
     app.add_handler(CommandHandler("pix", generar_fluxo_pix))
-    print("\n🤖 [STATUS] Servidor unificado pronto e estável!")
+        print("\n🤖 [STATUS] Servidor unificado pronto e estável!")
     import threading, uvicorn
     threading.Thread(target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=10000), daemon=True).start()
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
