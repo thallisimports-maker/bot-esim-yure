@@ -94,7 +94,7 @@ async def api_gerar_pix_site(request, response: Response):
     valor_centavos = int(valor_input * 100)
     
     # 🔒 SUA URL DE PRODUÇÃO REAL HOMOLOGADA E FIXA
-    url_api = "https://pushinpay.com.br"
+    url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
     headers = {
         "Authorization": f"bearer {PUSHINPAY_TOKEN}",
         "Content-Type": "application/json",
@@ -103,7 +103,7 @@ async def api_gerar_pix_site(request, response: Response):
     payload = {
         "value": valor_centavos,
         # 📡 SEU LINK DE WEBHOOK CORRETO DA RENDER
-        "webhook_url": "https://onrender.com",
+        "webhook_url": "https://thallisimports-maker.github.io/bot-esim-yure/",
         "external_id": "venda_site_web",
         "split_rules": [],
         "customer": {
@@ -114,72 +114,6 @@ async def api_gerar_pix_site(request, response: Response):
     }
     
     # 🔓 INJEÇÃO NATIVA DE CABEÇALHOS CORS PARA O NAVEGADOR DESTRAVAR
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    
-    try:
-        resposta = requests.post(url_api, json=payload, headers=headers, timeout=15, verify=False)
-        if resposta.status_code == 200 or resposta.status_code == 201:
-            return {"status": "sucesso", "qr_code": resposta.json().get("qr_code")}
-        return {"status": "erro", "detalhe": resposta.text}
-    except Exception as e:
-        return {"status": "erro", "detalhe": str(e)}
-
-async def clique_botao_recarga(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query; await query.answer(); chat_id = query.message.chat_id
-    msg_ajuda = "➕ **COMO ADICIONAR SALDO:**\n\nDigite o comando `/pix` seguido do valor desejado.\n\n👉 **Exemplo:**\n`/pix 10` (Adiciona R\$ 10,00)\n`/pix 25` (Adiciona R\$ 25,00)"
-    await context.bot.send_message(chat_id=chat_id, text=msg_ajuda, parse_mode="Markdown")
-
-api_app = FastAPI()
-api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-api_app.mount("/imagens", StaticFiles(directory=PASTA_IMAGENS), name="imagens")
-
-class LoginAdmin(BaseModel): senha: str
-
-@api_app.post("/api/admin/login")
-def api_admin_login(dados: LoginAdmin):
-    if dados.senha == SENHA_ADMIN_MINISITE: return {"status": "sucesso", "token": "sessao_admin_valida_yure"}
-    raise HTTPException(status_code=401, detail="Senha incorreta")
-
-@api_app.post("/api/admin/cadastrar-chip")
-async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = File(...)):
-    try:
-        caminho = os.path.join(PASTA_IMAGENS, f"{produto_id}_{urllib.parse.quote(arquivo.filename)}")
-        with open(caminho, "wb") as b: shutil.copyfileobj(arquivo.file, b)
-        con = conectar_banco(); cur = con.cursor()
-        cur.execute("INSERT INTO estoque_codigos (produto_id, conteudo_esim) VALUES (?, ?)", (produto_id, caminho))
-        cur.execute("UPDATE estoque SET quantidade = quantidade + 1 WHERE produto_id = ?", (produto_id,))
-        con.commit(); return {"status": "sucesso"}
-    except Exception as e: raise HTTPException(status_code=500, detail=str(e))
-    finally: con.close()
-    class DadosPixSite(BaseModel):
-        valor: float
-
-@api_app.post("/api/admin/gerar-pix-site")
-async def api_gerar_pix_site(dados: DadosPixSite, response: Response):
-    valor_centavos = int(dados.valor * 100)
-    # 🔒 URL DE PRODUÇÃO CORRETA E OFICIAL DO SEU GATEWAY DE PAGAMENTOS
-    url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
-    headers = {
-        "Authorization": f"bearer {PUSHINPAY_TOKEN}",
-        "Content-Type": "application/json",
-        "Accept": "application/json"
-    }
-    payload = {
-        "value": valor_centavos,
-        # 📡 WEBHOOK OFICIAL DIRETAMENTE VINCULADO AO SEU SERVIDOR DA RENDER
-        "webhook_url": "https://thallisimports-maker.github.io/bot-esim-yure",
-        "external_id": "venda_site_web",
-        "split_rules": [],
-        "customer": {
-            "name": "Cliente Web Store",
-            "email": "cliente_esim@gmail.com",
-            "document": "03620633037"
-        }
-    }
-    
-    # 🔓 PERMISSÃO DE ORIGEM GLOBAL PARA DESTRAVAR O BOTÃO DO SITE NO GOOGLE CHROME
     response.headers["Access-Control-Allow-Origin"] = "*"
     response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "*"
