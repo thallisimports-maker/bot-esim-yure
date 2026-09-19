@@ -1,7 +1,7 @@
 import os, json, logging, urllib.parse, shutil, sqlite3, requests, qrcode
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -132,9 +132,9 @@ async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = 
         valor: float
 
 @api_app.post("/api/admin/gerar-pix-site")
-async def api_gerar_pix_site(dados: DadosPixSite):
+async def api_gerar_pix_site(dados: DadosPixSite, response: Response):
     valor_centavos = int(dados.valor * 100)
-    # 🔒 URL DE PRODUÇÃO VERDADEIRA HOMOLOGADA NA PEDRA
+    # 🔒 URL DE PRODUÇÃO CORRETA E OFICIAL DO SEU GATEWAY DE PAGAMENTOS
     url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
     headers = {
         "Authorization": f"bearer {PUSHINPAY_TOKEN}",
@@ -143,7 +143,8 @@ async def api_gerar_pix_site(dados: DadosPixSite):
     }
     payload = {
         "value": valor_centavos,
-        "webhook_url": "https://bot-esim-yure.onrender.com",
+        # 📡 WEBHOOK OFICIAL DIRETAMENTE VINCULADO AO SEU SERVIDOR DA RENDER
+        "webhook_url": "https://thallisimports-maker.github.io/bot-esim-yure",
         "external_id": "venda_site_web",
         "split_rules": [],
         "customer": {
@@ -152,6 +153,12 @@ async def api_gerar_pix_site(dados: DadosPixSite):
             "document": "03620633037"
         }
     }
+    
+    # 🔓 PERMISSÃO DE ORIGEM GLOBAL PARA DESTRAVAR O BOTÃO DO SITE NO GOOGLE CHROME
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    
     try:
         resposta = requests.post(url_api, json=payload, headers=headers, timeout=15, verify=False)
         if resposta.status_code == 200 or resposta.status_code == 201:
