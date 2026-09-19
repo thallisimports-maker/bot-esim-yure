@@ -7,6 +7,7 @@
     <!-- 📱 COMPONENTE DE INTEGRAÇÃO OFICIAL DOS MINIAPPS DO TELEGRAM -->
     <script src="https://telegram.org"></script>
     <style>
+        /* 🎨 DESIGN TÉCNICO ESCURO COM NEON PREMIUM (MODERNO) */
         :root {
             --bg-principal: #0b0f19;
             --bg-card: #111827;
@@ -70,6 +71,7 @@
             padding-left: 10px;
         }
 
+        /* 📶 CARDS DOS PLANOS DE CHIPS */
         .card-plano {
             background: #1e293b;
             border: 1px solid #334155;
@@ -85,6 +87,7 @@
         .nome-operadora { font-size: 18px; font-weight: bold; }
         .preco-plano { color: var(--cor-sucesso); font-size: 16px; font-weight: 600; margin-top: 4px; }
 
+        /* 🔘 BOTÕES E INPUTS ESTILIZADOS */
         .btn {
             padding: 10px 18px;
             border-radius: 8px;
@@ -113,7 +116,7 @@
         <div class="card-plano">
             <div class="info-plano">
                 <div class="nome-operadora">Vivo 30GB</div>
-                <div class="preco-plano">R\$ 25,00</div>
+                <div class="preco-plano">R$ 25,00</div>
             </div>
             <button class="btn btn-comprar" onclick="escolherPlano('Vivo 30GB', 25)">Comprar</button>
         </div>
@@ -121,7 +124,7 @@
         <div class="card-plano">
             <div class="info-plano">
                 <div class="nome-operadora">Tim 40GB</div>
-                <div class="preco-plano">R\$ 30,00</div>
+                <div class="preco-plano">R$ 30,00</div>
             </div>
             <button class="btn btn-comprar" onclick="escolherPlano('Tim 40GB', 30)">Comprar</button>
         </div>
@@ -129,7 +132,7 @@
         <div class="card-plano">
             <div class="info-plano">
                 <div class="nome-operadora">Claro 40GB</div>
-                <div class="preco-plano">R\$ 35,00</div>
+                <div class="preco-plano">R$ 35,00</div>
             </div>
             <button class="btn btn-comprar" onclick="escolherPlano('Claro 40GB', 35)">Comprar</button>
         </div>
@@ -138,27 +141,24 @@
             <div class="secao-titulo" style="margin-top: 0; border-left-color: #a855f7;">Adicionar Saldo Instantâneo</div>
             <p style="font-size: 13px; color: var(--texto-escuro); margin: 0 0 15px 0; text-align: left;">Insira o valor abaixo para fabricar o seu QR Code Pix de produção.</p>
             
-            <input type="number" id="valorPix" class="input-recarga" min="10" value="10" placeholder="R\$ 10">
+            <input type="number" id="valorPix" class="input-recarga" min="10" value="10" placeholder="R$ 10">
             <button id="btnGerar" class="btn btn-recarga" onclick="solicitarPix()">Fabricar QR Code Pix</button>
         </div>
     </div>
 
     <script>
-        // 🔑 VARIÁVEL PADRONIZADA EM MINÚSCULO CONFORME DECLARAÇÃO ORIGINAL
-        const pushinpay_token = "71067|pld7jJIxFtcvN74KDLhxhK6m7xoK6dcj1vMhILXOc5d12204";
-
-        // Inicializa o WebApp do Telegram para garantir que os métodos de ponte estejam prontos
+        // Inicializa o WebApp do Telegram para garantir as pontes nativas de MiniApp
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
-            window.Telegram.WebApp.expand(); // Abre o MiniApp em tela cheia no celular
+            window.Telegram.WebApp.expand();
         }
 
         function escolherPlano(nome, preco) {
-            alert(`🎉 PLANO SELECIONADO!\n\nVocê escolheu o plano ${nome} por R$ ${preco},00.\n\n👉 Agora, clique no botão de recarga abaixo para efetuar o pagamento e receber o e-SIM.`);
+            alert("🎉 PLANO SELECIONADO!\n\nVocê escolheu o plano " + nome + " por R$ " + preco + ",00.\n\n👉 Agora, clique no botão de recarga abaixo para efetuar o pagamento e receber o e-SIM.");
             document.getElementById('valorPix').value = preco;
         }
 
-                  function solicitarPix() {
+        function solicitarPix() {
             var valorInput = document.getElementById('valorPix').value;
             
             if (!valorInput || parseFloat(valorInput) < 10) {
@@ -166,18 +166,17 @@
                 return;
             }
 
-            // 🚀 LINK TRANCADO VIA CONCATENAÇÃO PURA (IMPEDE ERRO DE SINTAXE E BUFFER DO COOKIE)
+            // 🚀 STRING CONCATENADA PURA SEM COMPONENTES INCOMPATÍVEIS COM O BUFFER
             var tokenFixo = "71067|pld7jJIxFtcvN74KDLhxhK6m7xoK6dcj1vMhILXOc5d12204";
             var linkCheckout = "https://pushinpay.com.br" + tokenFixo + "&value=" + valorInput + "&external_id=site_web_" + Date.now();
             
-            // Força a ponte nativa se estiver dentro do Telegram ou redireciona no navegador comum
+            // Dispara a ponte de MiniApp nativa ou redireciona em navegadores externos
             if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
                 window.Telegram.WebApp.openLink(linkCheckout);
             } else {
                 window.location.href = linkCheckout;
             }
         }
-
     </script>
 </body>
 </html>
