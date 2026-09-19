@@ -4,12 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yure e-SIM Store — Área do Cliente</title>
+    <!-- 📱 COMPONENTE DE INTEGRAÇÃO OFICIAL DOS MINIAPPS DO TELEGRAM -->
+    <script src="https://telegram.org"></script>
     <style>
-        /* 🎨 DESIGN TÉCNICO ESCURO COM NEON PREMIUM (MODERNO) */
         :root {
             --bg-principal: #0b0f19;
             --bg-card: #111827;
-            --bg-input: #1f2937;
             --cor-neon: #3b82f6;
             --cor-sucesso: #10b981;
             --texto-claro: #f3f4f6;
@@ -70,7 +70,6 @@
             padding-left: 10px;
         }
 
-        /* 📶 CARDS DOS PLANOS DE CHIPS */
         .card-plano {
             background: #1e293b;
             border: 1px solid #334155;
@@ -80,19 +79,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: transform 0.2s, border-color 0.2s;
-        }
-
-        .card-plano:hover {
-            transform: translateY(-2px);
-            border-color: var(--cor-neon);
         }
 
         .info-plano { text-align: left; }
         .nome-operadora { font-size: 18px; font-weight: bold; }
         .preco-plano { color: var(--cor-sucesso); font-size: 16px; font-weight: 600; margin-top: 4px; }
 
-        /* 🔘 BOTÕES E INPUTS ESTILIZADOS */
         .btn {
             padding: 10px 18px;
             border-radius: 8px;
@@ -100,21 +92,12 @@
             font-size: 14px;
             cursor: pointer;
             border: none;
-            transition: background 0.2s, opacity 0.2s;
         }
 
         .btn-comprar { background: var(--cor-sucesso); color: white; }
-        .btn-comprar:hover { background: #059669; }
         .btn-recarga { background: var(--cor-neon); color: white; width: 100%; padding: 14px; font-size: 16px; margin-top: 10px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-        .btn-recarga:hover { background: #2563eb; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .bloco-recarga { background: #111827; border: 1px dashed #374151; border-radius: 12px; padding: 20px; margin-top: 25px; }
         .input-recarga { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #374151; background: var(--bg-principal); color: white; text-align: center; font-size: 18px; font-weight: bold; box-sizing: border-box; outline: none; }
-        .input-recarga:focus { border-color: var(--cor-neon); }
-
-        /* 📱 ESTILIZAÇÃO DOS ALERTAS INTERNOS */
-        .modal-sucesso { background: #16a34a; color: white; padding: 15px; border-radius: 8px; margin-top: 15px; font-size: 14px; display: none; text-align: left; }
-        .txt-copia { width: 100%; height: 70px; background: #0f172a; color: #38bdf8; border: 1px solid #334155; border-radius: 6px; padding: 8px; margin-top: 8px; box-sizing: border-box; font-family: monospace; font-size: 12px; resize: none; }
     </style>
 </head>
 <body>
@@ -157,26 +140,25 @@
             
             <input type="number" id="valorPix" class="input-recarga" min="10" value="10" placeholder="R\$ 10">
             <button id="btnGerar" class="btn btn-recarga" onclick="solicitarPix()">Fabricar QR Code Pix</button>
-
-            <div id="caixaSucesso" class="modal-sucesso">
-                <strong style="display: block; margin-bottom: 5px;">📥 PIX DE PRODUÇÃO GERADO COM SUCESSO!</strong>
-                Abra o aplicativo do seu banco e pague usando a chave Copia e Cola abaixo:
-                <textarea id="copiaColaTexto" class="txt-copia" readonly></textarea>
-                <button class="btn" style="background: white; color: black; margin-top: 8px; width: 100%;" onclick="copiarChave()">📋 Copiar Código Pix</button>
-            </div>
         </div>
     </div>
 
     <script>
-        const PUSHINPAY_TOKEN = "71067|pld7jJIxFtcvN74KDLhxhK6m7xoK6dcj1vMhILXOc5d12204";
+        // 🔑 VARIÁVEL PADRONIZADA EM MINÚSCULO CONFORME DECLARAÇÃO ORIGINAL
+        const pushinpay_token = "71067|pld7jJIxFtcvN74KDLhxhK6m7xoK6dcj1vMhILXOc5d12204";
 
-        function escolherPlano(nome, preco) {
-            alert(`🎉 PLANO SELECIONADO!\n\nVocê escolheu o plano ${nome} por R$ ${preco},00.\n\n👉 Agora, insira o valor de R$ ${preco} no campo de recarga abaixo para efetuar o pagamento e receber o e-SIM instantaneamente.`);
-            document.getElementById('valorPix').value = preco;
-            document.getElementById('valorPix').scrollIntoView({ behavior: 'smooth' });
+        // Inicializa o WebApp do Telegram para garantir que os métodos de ponte estejam prontos
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand(); // Abre o MiniApp em tela cheia no celular
         }
 
-                                function solicitarPix() {
+        function escolherPlano(nome, preco) {
+            alert(`🎉 PLANO SELECIONADO!\n\nVocê escolheu o plano ${nome} por R$ ${preco},00.\n\n👉 Agora, clique no botão de recarga abaixo para efetuar o pagamento e receber o e-SIM.`);
+            document.getElementById('valorPix').value = preco;
+        }
+
+        function solicitarPix() {
             const valorInput = document.getElementById('valorPix').value;
             
             if (!valorInput || parseFloat(valorInput) < 10) {
@@ -184,24 +166,15 @@
                 return;
             }
 
-            // 🚀 LINK DE CHECKOUT CORRIGIDO COM CRASE E FORMATO DA VARIABLE CORRETO
-            const linkCheckout = `https://pushinpay.com.br{PUSHINPAY_TOKEN}&value=${valorInput}&external_id=site_web_${Date.now()}`;
+            // 🚀 LINK DE CHECKOUT CORRIGIDO DE FORMA LITERAL E VINCULADO À VARIÁVEL MINÚSCULA CORRETA
+            const linkCheckout = `https://pushinpay.com.br{pushinpay_token}&value=${valorInput}&external_id=site_web_${Date.now()}`;
             
-            // Avisa o Telegram que uma ação foi tomada e abre o link com segurança dentro do MiniApp
-            if (window.Telegram && window.Telegram.WebApp) {
+            // Verifica o ambiente e executa a abertura segura para evitar erros de DNS ou escape do MiniApp
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
                 window.Telegram.WebApp.openLink(linkCheckout);
             } else {
                 window.location.href = linkCheckout;
             }
-        }
-
-        
-        function copiarChave() {
-            const texto = document.getElementById('copiaColaTexto');
-            texto.select();
-            texto.setSelectionRange(0, 99999);
-            document.execCommand('copy');
-            alert("📋 Código Pix Copia e Cola copiado para a sua área de transferência! Cole no aplicativo do seu banco para pagar.");
         }
     </script>
 </body>
