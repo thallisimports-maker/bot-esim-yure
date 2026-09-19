@@ -681,20 +681,21 @@
 
     // 2. COMPRA DIRETA NO MINIAPP USANDO O SALDO DA CARTEIRA
     async function comprarNoBot(planoId, preco) {
-        if (!telegramChatId) {
-            alert("⚠️ Abra este MiniApp diretamente pelo Telegram para realizar compras.");
-            return;
-        }
+        console.log("Botão clicado para o produto:", planoId, "Preço:", preco);
 
-        if (!confirm(`Deseja confirmar a compra do ${planoId} por R$ ${preco},00?`)) return;
+        // Se estiver no navegador fora do Telegram, usa um ID de teste
+        const chatIdFinal = telegramChatId || "123456789";
+
+        const confirmacao = window.confirm(`Deseja confirmar a compra do e-SIM (${planoId.toUpperCase()}) por R$ ${preco},00?`);
+        if (!confirmacao) return;
 
         try {
             const resposta = await fetch(`${URL_API_RENDER}/api/comprar-esim`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    chat_id: telegramChatId,
-                    produto_id: planoId.toLowerCase().replace(' ', '_')
+                    chat_id: chatIdFinal,
+                    produto_id: planoId
                 })
             });
 
@@ -702,12 +703,15 @@
 
             if (resultado.status === "sucesso") {
                 alert(`🎉 COMPRA REALIZADA COM SUCESSO!\n\nSeu e-SIM:\n${resultado.conteudo_esim}`);
-                document.getElementById('userSaldo').innerText = resultado.novo_saldo.toFixed(2);
+                if (document.getElementById('userSaldo')) {
+                    document.getElementById('userSaldo').innerText = resultado.novo_saldo.toFixed(2);
+                }
             } else {
-                alert(`❌ Erro: ${resultado.detalhe}`);
+                alert(`⚠️ Atenção: ${resultado.detalhe}`);
             }
         } catch (erro) {
-            alert("❌ Falha na conexão ao realizar a compra.");
+            console.error("Erro no clique:", erro);
+            alert("❌ Falha na conexão com o servidor ao realizar a compra.");
         }
     }
 
