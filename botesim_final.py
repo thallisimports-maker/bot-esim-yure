@@ -154,7 +154,7 @@ async def api_gerar_pix_site(dados: DadosPixSite):
     }
     try:
         resposta = requests.post(url_api, json=payload, headers=headers, timeout=15, verify=False)
-        if resposta.status_code in:
+        if resposta.status_code == 200 or resposta.status_code == 201:
             return {"status": "sucesso", "qr_code": resposta.json().get("qr_code")}
         return {"status": "erro", "detalhe": resposta.text}
     except Exception as e:
