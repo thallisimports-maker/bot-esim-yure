@@ -128,7 +128,7 @@ async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = 
         con.commit(); return {"status": "sucesso"}
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
     finally: con.close()
-        class DadosPixSite(BaseModel):
+    class DadosPixSite(BaseModel):
     valor: float
 
 @api_app.post("/api/admin/gerar-pix-site")
