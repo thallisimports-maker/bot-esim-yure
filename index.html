@@ -254,12 +254,13 @@
             border: 1px solid var(--border-color);
             border-radius: var(--radius-main);
             padding: 16px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             position: relative;
-            z-index: 5;
+            z-index: 20; /* Garante que fica acima dos banners */
+            pointer-events: auto;
         }
 
         .product-info h3 {
@@ -279,13 +280,15 @@
             background: var(--green-success);
             color: #ffffff;
             border: none;
-            padding: 10px 18px;
+            padding: 12px 20px;
             border-radius: var(--radius-sm);
-            font-size: 13px;
+            font-size: 14px;
             font-weight: 700;
             cursor: pointer;
             position: relative;
-            z-index: 10;
+            z-index: 30; /* Prioridade máxima de clique */
+            pointer-events: auto !important;
+            touch-action: manipulation;
         }
 
         /* RECHARGE BLOCK (CARTEIRA) */
