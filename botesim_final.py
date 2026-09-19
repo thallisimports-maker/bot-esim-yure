@@ -65,7 +65,7 @@ async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     except Exception: await context.bot.send_message(chat_id=chat_id, text="🎉 **COMPRA REALIZADA!**\n\nErro ao carregar a foto do chip, solicite suporte.")
     finally: con.close()
 
-aasync def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     message = update.message; chat_id = update.effective_chat.id; user = update.effective_user
     if not context.args:
         msg_ajuda = "➕ **COMO ADICIONAR SALDO:**\n\nPara gerar um QR Code Pix, digite `/pix` seguido do valor desejado.\n\n👉 **Exemplo:** `/pix 25` (Adiciona R\$ 25,00)\n\n⚠️ *Mínimo: R\$ 10,00.*"
