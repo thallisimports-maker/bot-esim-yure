@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
-# 🔒 CREDENCIAIS OFICIAIS ATUALIZADAS E BLINDADAS DE FÁBRICA
+# 🔒 CREDENCIAIS DE PRODUÇÃO DO BANCO CENTRAL
 TOKEN = "8826676433:AAHy2DkXR1TH7u4T-JO8FaOCQebFdryOg-M"
 PUSHINPAY_TOKEN = "71074|34qxCyv1Pdh5r0aNai4wVrNBtoAHkbxAhOziybPqfddf9ac4"
 SENHA_ADMIN_MINISITE = "yure123"
@@ -78,7 +78,7 @@ async def generar_fluxo_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         valor_centavos = int(valor_digitado * 100)
     except Exception: await context.bot.send_message(chat_id=chat_id, text="❌ *Valor inválido! Exemplo: `/pix 15`*", parse_mode="Markdown"); return
     
-    # 🔒 A ROTA VERDADEIRA DE PRODUÇÃO QUE COMPROVADAMENTE GERA O PIX
+    # 🔒 URL VERDADEIRA DE PRODUÇÃO EXATA TRAVADA E CARIMBADA
     url_api = "https://api.pushinpay.com.br/api/pix/cashIn"
     headers = {"Authorization": f"bearer {PUSHINPAY_TOKEN}", "Content-Type": "application/json", "Accept": "application/json"}
     dados = {"value": valor_centavos, "webhook_url": "https://onrender.com", "external_id": str(chat_id), "split_rules": [], "customer": {"name": f"{user.first_name} {user.last_name or ''}".strip() or "Cliente Pix", "email": "cliente_esim@gmail.com", "document": "03620633037"}}
@@ -102,18 +102,18 @@ async def clique_botao_recarga(update: Update, context: ContextTypes.DEFAULT_TYP
     msg_ajuda = "➕ **COMO ADICIONAR SALDO:**\n\nDigite o comando `/pix` seguido do valor desejado.\n\n👉 **Exemplo:**\n`/pix 10` (Adiciona R\$ 10,00)\n`/pix 25` (Adiciona R\$ 25,00)"
     await context.bot.send_message(chat_id=chat_id, text=msg_ajuda, parse_mode="Markdown")
 
-app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-app.mount("/imagens", StaticFiles(directory=PASTA_IMAGENS), name="imagens")
+api_app = FastAPI()
+api_app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+api_app.mount("/imagens", StaticFiles(directory=PASTA_IMAGENS), name="imagens")
 
 class LoginAdmin(BaseModel): senha: str
 
-@app.post("/api/admin/login")
+@api_app.post("/api/admin/login")
 def api_admin_login(dados: LoginAdmin):
     if dados.senha == SENHA_ADMIN_MINISITE: return {"status": "sucesso", "token": "sessao_admin_valida_yure"}
     raise HTTPException(status_code=401, detail="Senha incorreta")
 
-@app.post("/api/admin/cadastrar-chip")
+@api_app.post("/api/admin/cadastrar-chip")
 async def api_cadastrar_chip(produto_id: str = Form(...), arquivo: UploadFile = File(...)):
     try:
         caminho = os.path.join(PASTA_IMAGENS, f"{produto_id}_{urllib.parse.quote(arquivo.filename)}")
@@ -135,7 +135,7 @@ def main() -> None:
     app.add_handler(CommandHandler("pix", generar_fluxo_pix))
     print("\n🤖 [STATUS] Servidor unificado pronto e estável!")
     import threading, uvicorn
-    threading.Thread(target=lambda: uvicorn.run("botesim_final:app", host="0.0.0.0", port=10000), daemon=True).start()
+    threading.Thread(target=lambda: uvicorn.run(api_app, host="0.0.0.0", port=10000), daemon=True).start()
     app.run_polling(allowed_updates=Update.ALL_TYPES, drop_pending_updates=True)
 
 if __name__ == "__main__": main()
