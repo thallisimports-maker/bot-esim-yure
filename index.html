@@ -176,57 +176,19 @@
             document.getElementById('valorPix').scrollIntoView({ behavior: 'smooth' });
         }
 
-                        async function solicitarPix() {
+                                function solicitarPix() {
             const valorInput = document.getElementById('valorPix').value;
-            const btn = document.getElementById('btnGerar');
-            const caixa = document.getElementById('caixaSucesso');
             
             if (!valorInput || parseFloat(valorInput) < 10) {
                 alert("⚠️ ATENÇÃO: O valor mínimo estipulado para gerar o Pix é de R\$ 10,00.");
                 return;
             }
 
-            btn.disabled = true;
-            btn.innerText = "Fabricando PIX na API...";
-            caixa.style.display = "none";
-
-            try {
-                // 🚀 ENVIO DIRETO E OFICIAL PARA A API DE PRODUÇÃO DA PUSHINPAY
-                const resposta = await fetch('https://pushinpay.com.br', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${PUSHINPAY_TOKEN}`,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        value: parseInt(parseFloat(valorInput) * 100),
-                        webhook_url: "https://onrender.com",
-                        external_id: "site_web_cliente_" + Date.now(),
-                        customer: {
-                            name: "Cliente Web Store",
-                            email: "cliente_esim_web@gmail.com",
-                            document: "03620633037"
-                        }
-                    })
-                });
-
-                const dados = await resposta.json();
-                
-                if (dados && dados.qr_code) {
-                    document.getElementById('copiaColaTexto').value = dados.qr_code;
-                    caixa.style.display = "block";
-                    caixa.scrollIntoView({ behavior: 'smooth' });
-                } else {
-                    alert("⚠️ Resposta da API: " + JSON.stringify(dados));
-                }
-            } catch (erro) {
-                console.error(erro);
-                alert("❌ Erro crítico de comunicação com o gateway. Verifique os logs.");
-            } finally {
-                btn.disabled = false;
-                btn.innerText = "Fabricar QR Code Pix";
-            }
+            // 🚀 REDIRECIONA PARA O CHECKOUT AUTOMÁTICO SEGURO DA PUSHINPAY (FURA QUALQUER BLOQUEIO)
+            const linkCheckout = `https://pushinpay.com.br{PUSHINPAY_TOKEN}&value=${valorInput}&external_id=site_web_${Date.now()}`;
+            
+            // Abre o checkout direto na tela do cliente para ele ver o QR Code
+            window.location.href = linkCheckout;
         }
         
         function copiarChave() {
