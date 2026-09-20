@@ -4,7 +4,7 @@ import logging
 import sqlite3
 import requests
 import threading
-import uvicorn
+import uvicorv
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
