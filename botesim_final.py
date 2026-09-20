@@ -1,5 +1,17 @@
 import json
 import os
+
+def carregar_dados():
+    if not os.path.exists("estoque.json"):
+        return {"produtos": [], "utilizadores": {}, "vendas": []}
+    with open("estoque.json", "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def salvar_dados(dados):
+    with open("estoque.json", "w", encoding="utf-8") as f:
+        json.dump(dados, f, indent=4, ensure_ascii=False)
+        
 import sqlite3
 import logging
 import requests
@@ -208,12 +220,59 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     query = update.callback_query
     await query.answer()
 
-    await query.message.reply_text(
-        "📱 *Solicitação de e-SIM Recebida!*\n\n"
-        "Estamos a processar o seu pedido. Caso tenha saldo na carteira, o seu QR Code será enviado aqui no chat!",
-        parse_mode="Markdown"
-    )
+    user_id = str(query.from_user.id)
+    nome_usuario = query.from_user.first_name
 
+    dados = carregar_dados()
+
+    # Atualiza a etapa do utilizador no funil
+    if user_id in dados.get("utilizadores", {}):
+        dados["utilizadores"][user_id]["ultimo_passo"] = "clicou_comprar_bot"
+        salvar_dados(dados)
+
+    if query.data == "comprar_bot":
+        # 1. Procura o primeiro QR Code disponivel no JSON
+        produto_disponivel = None
+        for p in dados.get("produtos", []):
+            if p.get("status") == "disponivel":
+                produto_disponivel = p
+                break
+
+        if not produto_disponivel:
+            await query.message.reply_text(
+                "❌ *Estoque esgotado no momento!*\n\nEntre em contato com o suporte ou aguarde a reposição.",
+                parse_mode="Markdown"
+            )
+            return
+
+        # 2. Marca como vendido e registra a venda
+        produto_disponivel["status"] = "vendido"
+        
+        registro_venda = {
+            "user_id": user_id,
+            "cliente": nome_usuario,
+            "produto_id": produto_disponivel.get("id"),
+            "operadora": produto_disponivel.get("operadora"),
+            "valor": produto_disponivel.get("preco"),
+            "data": "2026-09-20"
+        }
+        dados.setdefault("vendas", []).append(registro_venda)
+        salvar_dados(dados)
+
+        # 3. Envia o QR Code do produto
+        imagem = produto_disponivel.get("imagem_qr")
+        caption_texto = (
+            f"✅ *Compra realizada com sucesso!*\n\n"
+            f"📱 **Seu e-SIM {produto_disponivel.get('operadora', '')} está pronto.** "
+            f"Escaneie o QR Code acima para ativar o plano."
+        )
+
+        if imagem and imagem.startswith("http"):
+            await query.message.reply_photo(photo=imagem, caption=caption_texto, parse_mode="Markdown")
+        elif imagem and os.path.exists(imagem):
+            await query.message.reply_photo(photo=open(imagem, "rb"), caption=caption_texto, parse_mode="Markdown")
+        else:
+            await query.message.reply_text(caption_texto, parse_mode="Markdown")
 
 # ------------------------------------------------------------------
 # ⚙️ GESTOR DE LIFESPAN (REGISTRO DO MENU DE COMANDOS NATIVO)
