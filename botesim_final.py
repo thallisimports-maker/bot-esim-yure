@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, BotCommand
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 # ------------------------------------------------------------------------------
@@ -21,6 +21,9 @@ PUSHINPAY_TOKEN = "71078|M1MASBFV155gtnKBttSvkE6u8bD8kSBFjAMLwOXa70ca5a25"
 # 🛡️ CREDENCIAIS DE SEGURANÇA DO PAINEL ADMIN
 USUARIO_ADMIN_MINISITE = "yure_admin"
 SENHA_ADMIN_MINISITE = "yure123"
+
+# BANNER / LOGO DA SUA MARCA
+LOGO_URL = "https://thallisimports-maker.github.io/bot-esim-yure/logo.png"
 
 logging.basicConfig(level=logging.INFO)
 
@@ -47,7 +50,6 @@ def inicializar_banco():
         """)
         cur.execute("CREATE TABLE IF NOT EXISTS estoque (produto_id TEXT PRIMARY KEY, quantidade INTEGER DEFAULT 0)")
         
-        # TABELA DE ESTOQUE COM COLUNAS DE DDD E GB CUSTOMIZADOS
         cur.execute("""
             CREATE TABLE IF NOT EXISTS estoque_codigos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, 
@@ -58,7 +60,6 @@ def inicializar_banco():
             )
         """)
         
-        # MIGRAÇÃO AUTOMÁTICA DE COLUNAS CASO NÃO EXISTAM
         cur.execute("PRAGMA table_info(estoque_codigos)")
         colunas = [col["name"] for col in cur.fetchall()]
         if "ddd" not in colunas:
@@ -89,7 +90,7 @@ def inicializar_banco():
 inicializar_banco()
 
 # ------------------------------------------------------------------------------
-# 🤖 LÓGICA DO BOT DO TELEGRAM
+# 🤖 LÓGICA DO BOT DO TELEGRAM (COMANDOS & HANDLERS)
 # ------------------------------------------------------------------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = str(update.effective_chat.id)
@@ -121,41 +122,102 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         con.close()
 
     url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
-    banner_url = "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800"
 
-    texto = f"Olá, {first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
+    texto = (
+        f"👑 **YURE eSIMS — HUMILDADE, LEALDADE, DISCIPLINA E ATITUDE**\n\n"
+        f"Olá, **{first_name}**! Seja bem-vindo ao melhor do mercado.\n\n"
+        f"💰 **Saldo na Carteira:** `R$ {saldo:.2f}`\n\n"
+        f"📱 **eSIMS Com Alta Qualidade E Durabilidade!**\n"
+        f"Escolha uma opção abaixo para acessar a loja:"
+    )
     
     botoes = [
-        [InlineKeyboardButton("📱 ABRIR LOJA / CARTEIRA (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))]
+        [InlineKeyboardButton("👑 ABRIR LOJA YURE eSIMS (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))]
     ]
 
     qtd_vivo = est.get('vivo_30gb', 0)
     if qtd_vivo > 0:
-        botoes.append([InlineKeyboardButton(f"Vivo e-SIM - R$ 25 ({qtd_vivo} un)", callback_data="buy_vivo_30gb")])
+        botoes.append([InlineKeyboardButton(f"Vivo eSIM - R$ 25 ({qtd_vivo} un)", callback_data="buy_vivo_30gb")])
 
     qtd_tim = est.get('tim_40gb', 0)
     if qtd_tim > 0:
-        botoes.append([InlineKeyboardButton(f"Tim e-SIM - R$ 30 ({qtd_tim} un)", callback_data="buy_tim_40gb")])
+        botoes.append([InlineKeyboardButton(f"Tim eSIM - R$ 30 ({qtd_tim} un)", callback_data="buy_tim_40gb")])
 
     qtd_claro = est.get('claro_40gb', 0)
     if qtd_claro > 0:
-        botoes.append([InlineKeyboardButton(f"Claro e-SIM - R$ 35 ({qtd_claro} un)", callback_data="buy_claro_40gb")])
+        botoes.append([InlineKeyboardButton(f"Claro eSIM - R$ 35 ({qtd_claro} un)", callback_data="buy_claro_40gb")])
 
-    if len(botoes) == 1:
-        texto += "\n\n⚠️ *Atualmente todos os planos estão esgotados no estoque. Abra o MiniApp para novidades!*"
+    try:
+        await context.bot.send_photo(chat_id=chat_id, photo=LOGO_URL, caption=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+    except Exception:
+        await context.bot.send_message(chat_id=chat_id, text=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
-    await context.bot.send_photo(chat_id=chat_id, photo=banner_url, caption=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+async def comando_saldo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = str(update.effective_chat.id)
+    con = conectar_banco()
+    cur = con.cursor()
+    try:
+        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
+        res = cur.fetchone()
+        saldo = float(res["saldo"]) if res else 0.0
+    finally:
+        con.close()
+
+    url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
+    texto = f"💳 **SUA CARTEIRA YURE eSIMS**\n\n💰 **Saldo Disponível:** `R$ {saldo:.2f}`\n\nPara recarregar via PIX ou resgatar um cupom de saldo, clique abaixo:"
+    botoes = [[InlineKeyboardButton("⚡ Adicionar Saldo / Recarregar", web_app=WebAppInfo(url=url_miniapp))]]
+    await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+
+async def comando_suporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    texto = "📞 **ATENDIMENTO & SUPORTE YURE eSIMS**\n\nPrecisa de ajuda com a ativação ou trocas? Fale diretamente com o Yure no WhatsApp ou Telegram:\n\n📱 **WhatsApp:** (35) 99755-0084"
+    botoes = [[InlineKeyboardButton("💬 Chamar no WhatsApp", url="https://wa.me/5535997550084")]]
+    await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+
+async def comando_esims(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    con = conectar_banco()
+    cur = con.cursor()
+    try:
+        cur.execute("SELECT produto_id, quantidade FROM estoque")
+        est = {row["produto_id"]: row["quantidade"] for row in cur.fetchall()}
+    finally:
+        con.close()
+
+    texto = (
+        "📶 **ESTOQUE DE eSIMS DISPONÍVEIS**\n\n"
+        f"📱 **Vivo eSIM:** {est.get('vivo_30gb', 0)} unidades\n"
+        f"📱 **Tim eSIM:** {est.get('tim_40gb', 0)} unidades\n"
+        f"📱 **Claro eSIM:** {est.get('claro_40gb', 0)} unidades\n\n"
+        "✨ *Ativação instantânea diretamente no MiniApp!*"
+    )
+    url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
+    botoes = [[InlineKeyboardButton("🛒 Comprar e-SIM Agora", web_app=WebAppInfo(url=url_miniapp))]]
+    await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 # ------------------------------------------------------------------------------
-# ⚙️ GESTOR DE LIFESPAN DA APLICAÇÃO (FASTAPI + TELEGRAM BOT)
+# ⚙️ GESTOR DE LIFESPAN (REGISTRO DO MENU DE COMANDOS NATIVO)
 # ------------------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     telegram_app = Application.builder().token(TOKEN).build()
+    
+    # HANDLERS DOS COMANDOS
     telegram_app.add_handler(CommandHandler("start", start))
+    telegram_app.add_handler(CommandHandler("saldo", comando_saldo))
+    telegram_app.add_handler(CommandHandler("suporte", comando_suporte))
+    telegram_app.add_handler(CommandHandler("esims", comando_esims))
     
     await telegram_app.initialize()
     await telegram_app.start()
+    
+    # CONFIGURA O BOTÃO NATIVO DE COMANDOS ("/") NO TELEGRAM
+    comandos_menu = [
+        BotCommand("start", "👑 Menu Principal e Loja"),
+        BotCommand("saldo", "💳 Consultar Saldo / Carteira"),
+        BotCommand("esims", "📶 Ver eSIMs Disponíveis"),
+        BotCommand("suporte", "📞 Suporte e Atendimento")
+    ]
+    await telegram_app.bot.set_my_commands(comandos_menu)
+
     await telegram_app.updater.start_polling(drop_pending_updates=True)
     
     yield
@@ -417,7 +479,7 @@ async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
         con.close()
 
 # ------------------------------------------------------------------------------
-# 🟢 RUNNER DA APLICAÇÃO NA RENDER
+# 🟢 RUNNER DA APLICAÇÃO
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
