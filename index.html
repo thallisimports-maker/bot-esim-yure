@@ -112,7 +112,7 @@
             margin-top: 2px;
         }
 
-        /* CATEGORIES GRID (3 BOTÕES) */
+        /* CATEGORIES GRID */
         .category-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -276,6 +276,7 @@
             border-radius: var(--radius-main);
             padding: 18px;
             text-align: center;
+            margin-bottom: 16px;
         }
 
         .recharge-input {
@@ -283,7 +284,7 @@
             background: var(--bg-input);
             border: 1px solid var(--border-color);
             color: #ffffff;
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 800;
             text-align: center;
             padding: 12px;
@@ -338,7 +339,7 @@
             margin-bottom: 8px;
         }
 
-        /* LIST ITEM STYLES */
+        /* HISTÓRICO DE PEDIDOS */
         .history-item {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -362,14 +363,7 @@
             margin-top: 2px;
         }
 
-        .badge-status {
-            font-size: 11px;
-            font-weight: 700;
-            padding: 4px 8px;
-            border-radius: 6px;
-        }
-
-        /* BOTTOM NAVBAR (4 BOTÕES APENAS) */
+        /* BOTTOM NAVBAR */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -438,7 +432,7 @@
 
     <!-- TAB 1: LOJA (HOME) -->
     <div id="tab-loja" class="tab-content active">
-        <!-- CATEGORIES GRID (SOMENTE ESIMS, RECARGAS E SUPORTE) -->
+        <!-- CATEGORIES GRID -->
         <div class="category-grid">
             <div class="cat-card active" onclick="switchTab('loja', document.querySelector('.bottom-nav .nav-item:first-child'))">📱 eSIMs</div>
             <div class="cat-card" onclick="switchTab('carteira', document.querySelectorAll('.bottom-nav .nav-item')[2])">⚡ Recargas</div>
@@ -510,6 +504,7 @@
 
     <!-- TAB 3: CARTEIRA -->
     <div id="tab-carteira" class="tab-content">
+        <!-- BLOCO PIX -->
         <div class="recharge-box">
             <div class="section-title" style="justify-content: center; color: var(--text-purple);">💳 Adicionar Saldo Instantâneo</div>
             <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Insira o valor em Reais para gerar o Pix:</p>
@@ -522,6 +517,14 @@
                 <textarea id="copiaColaTexto" class="pix-textarea" readonly></textarea>
                 <button class="btn-buy" style="width: 100%; background: #ffffff; color: #000000;" onclick="copiarChave()">📋 Copiar Código Pix</button>
             </div>
+        </div>
+
+        <!-- BLOCO RESGATE DE GIFT CARD / CUPOM -->
+        <div class="recharge-box">
+            <div class="section-title" style="justify-content: center; color: var(--purple-main);">🎁 Resgatar Gift Card / Cupom</div>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Possui um código de presente ou reembolso? Digite abaixo:</p>
+            <input type="text" id="inputGiftCard" class="recharge-input" placeholder="Ex: BONUS25" style="text-transform: uppercase;">
+            <button class="btn-purple" onclick="resgatarGiftCard()">Resgatar Saldo</button>
         </div>
     </div>
 
@@ -536,7 +539,7 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAVBAR (LOJA, PEDIDOS, CARTEIRA, CONTA) -->
+    <!-- BOTTOM NAVBAR -->
     <div class="bottom-nav">
         <div class="nav-item active" onclick="switchTab('loja', this)">
             <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
@@ -556,6 +559,7 @@
         </div>
     </div>
 
+    <!-- SCRIPTS JAVASCRIPT -->
     <script>
         let telegramChatId = null;
         const URL_API_RENDER = "https://bot-esim-yure.onrender.com";
@@ -613,7 +617,7 @@
             }
         }
 
-        // 4. COMPRAR E-SIM (ENTREGA NA TELA + DISPARO NO CHAT)
+        // 4. COMPRAR E-SIM (ENTREGA DUPLA: MINIAPP + CHAT TELEGRAM)
         async function comprarNoBot(planoId, preco) {
             const chatIdFinal = telegramChatId || "123456789";
 
@@ -633,15 +637,12 @@
                 const resultado = await resposta.json();
 
                 if (resultado.status === "sucesso") {
-                    // Atualiza o saldo dinâmico na tela
                     if (document.getElementById('userSaldo')) {
                         document.getElementById('userSaldo').innerText = resultado.novo_saldo.toFixed(2);
                     }
 
-                    // Exibe alerta de sucesso e envia o e-SIM na tela
-                    alert(`🎉 COMPRA REALIZADA!\n\nEnviamos a foto do seu QR Code no seu chat do Telegram!\n\n${resultado.instrucoes}`);
+                    alert(`🎉 COMPRA REALIZADA COM SUCESSO!\n\nEnviamos a foto do seu QR Code no seu chat do Telegram!\n\n${resultado.instrucoes}`);
                     
-                    // Opcional: Redireciona o cliente para a aba de Pedidos
                     switchTab('pedidos', document.querySelectorAll('.bottom-nav .nav-item')[1]);
                 } else {
                     alert(`⚠️ Atenção: ${resultado.detalhe}`);
@@ -712,6 +713,43 @@
             navigator.clipboard.writeText(texto.value).then(() => {
                 alert("📋 Código Pix copiado!");
             });
+        }
+
+        // 7. RESGATAR GIFT CARD / CUPOM
+        async function resgatarGiftCard() {
+            const input = document.getElementById("inputGiftCard");
+            const codigo = input.value.trim();
+            const chatIdFinal = telegramChatId || "123456789";
+
+            if (!codigo) {
+                alert("⚠️ Por favor, informe o código do Gift Card!");
+                return;
+            }
+
+            try {
+                const resposta = await fetch(`${URL_API_RENDER}/api/resgatar-giftcard`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatIdFinal,
+                        codigo: codigo
+                    })
+                });
+
+                const resultado = await resposta.json();
+
+                if (resultado.status === "sucesso") {
+                    alert(resultado.mensagem);
+                    if (document.getElementById('userSaldo')) {
+                        document.getElementById('userSaldo').innerText = resultado.novo_saldo.toFixed(2);
+                    }
+                    input.value = "";
+                } else {
+                    alert("⚠️ " + (resultado.detalhe || "Código inválido ou já utilizado."));
+                }
+            } catch (erro) {
+                alert("❌ Falha de conexão ao validar o Gift Card.");
+            }
         }
     </script>
 </body>
