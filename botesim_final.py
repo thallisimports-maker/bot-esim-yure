@@ -232,54 +232,71 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     dados = carregar_dados()
 
-    # Atualiza a etapa do utilizador no funil
-    if user_id in dados.get("utilizadores", {}):
-        dados["utilizadores"][user_id]["ultimo_passo"] = "clicou_comprar_bot"
-        salvar_dados(dados)
+    # 1. Processa a compra enviada pelo botão buy_
+    if query.data.startswith("buy_"):
+        prod_id = query.data.replace("buy_", "")
+        produtos = dados.get("produtos", [])
 
-    if query.data == "comprar_bot":
-        # 1. Procura o primeiro QR Code disponivel no JSON
-        produto_disponivel = None
-        for p in dados.get("produtos", []):
-            if p.get("status") == "disponivel":
-                produto_disponivel = p
-                break
+        # Procura o produto específico cadastrado no Painel pelo ID
+        produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
 
-        if not produto_disponivel:
-            await query.message.reply_text(
-                "❌ *Estoque esgotado no momento!*\n\nEntre em contato com o suporte ou aguarde a reposição.",
-                parse_mode="Markdown"
-            )
+        if not produto or str(produto.get("status", "")).lower().strip() != "disponivel":
+            await query.message.reply_text("❌ Este e-SIM já não se encontra disponível!")
             return
 
-        # 2. Marca como vendido e registra a venda
-        produto_disponivel["status"] = "vendido"
+        preco = float(produto.get("preco", 0))
+
+        # Consulta o saldo na carteira SQLite
+        con = conectar_banco()
+        cur = con.cursor()
+        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (user_id,))
+        res_saldo = cur.fetchone()
+        saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
+
+        if saldo_atual < preco:
+            await query.message.reply_text(
+                f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você tem **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para comprar.",
+                parse_mode="Markdown"
+            )
+            con.close()
+            return
+
+        # Desconta do saldo e marca produto como vendido
+        novo_saldo = saldo_atual - preco
+        cur.execute("UPDATE carteira SET saldo = ? WHERE chat_id = ?", (novo_saldo, user_id))
+        con.commit()
+        con.close()
+
+        produto["status"] = "vendido"
         
+        # Registra a venda para o relatório do painel
         registro_venda = {
             "user_id": user_id,
             "cliente": nome_usuario,
-            "produto_id": produto_disponivel.get("id"),
-            "operadora": produto_disponivel.get("operadora"),
-            "valor": produto_disponivel.get("preco"),
+            "produto_id": produto.get("id"),
+            "operadora": produto.get("operadora"),
+            "valor": preco,
             "data": "2026-09-20"
         }
         dados.setdefault("vendas", []).append(registro_venda)
-        salvar_dados(dados)
 
-        # 3. Envia o QR Code do produto
-        imagem = produto_disponivel.get("imagem_qr")
-        caption_texto = (
-            f"✅ *Compra realizada com sucesso!*\n\n"
-            f"📱 **Seu e-SIM {produto_disponivel.get('operadora', '')} está pronto.** "
-            f"Escaneie o QR Code acima para ativar o plano."
+        salvar_dados(dados)
+        salvar_dados_no_github(dados)
+
+        imagem_qr = produto.get("imagem_qr", "")
+        legenda = (
+            f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
+            f"📱 **Operadora:** {produto.get('operadora')}\n"
+            f"📦 **Plano:** {produto.get('plano')}\n"
+            f"💰 **Valor:** R$ {preco:.2f}\n\n"
+            f"Seu QR Code de ativação encontra-se abaixo:"
         )
 
-        if imagem and imagem.startswith("http"):
-            await query.message.reply_photo(photo=imagem, caption=caption_texto, parse_mode="Markdown")
-        elif imagem and os.path.exists(imagem):
-            await query.message.reply_photo(photo=open(imagem, "rb"), caption=caption_texto, parse_mode="Markdown")
+        # Envia a foto do QR Code ao cliente
+        if imagem_qr and imagem_qr.startswith("http"):
+            await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
         else:
-            await query.message.reply_text(caption_texto, parse_mode="Markdown")
+            await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code em processamento)*", parse_mode="Markdown")
 
 # ------------------------------------------------------------------
 # ⚙️ GESTOR DE LIFESPAN (REGISTRO DO MENU DE COMANDOS NATIVO)
