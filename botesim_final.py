@@ -356,28 +356,35 @@ async def admin_adicionar_estoque(payload: AdminAuthAddEsimPayload):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = str(update.effective_chat.id)
     user = update.effective_user
-    saldo = 0.0
+    first_name = user.first_name or "Usuário"
+    username = user.username or "sem_username"
+
     con = conectar_banco()
     cur = con.cursor()
     try:
+        cur.execute("""
+            INSERT INTO carteira (chat_id, first_name, username, saldo) 
+            VALUES (?, ?, ?, 0.0)
+            ON CONFLICT(chat_id) DO UPDATE SET first_name=?, username=?
+        """, (chat_id, first_name, username, first_name, username))
+        con.commit()
+
         cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
-        res = cur.fetchone()
-        if res:
-            saldo = float(res["saldo"])
-        else:
-            cur.execute("INSERT INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,))
-            con.commit()
+        res_saldo = cur.fetchone()
+        saldo = float(res_saldo["saldo"]) if res_saldo else 0.0
+        
         cur.execute("SELECT produto_id, quantidade FROM estoque")
         est = {row["produto_id"]: row["quantidade"] for row in cur.fetchall()}
-    except Exception:
+    except Exception as e:
+        saldo = 0.0
         est = {}
     finally:
         con.close()
 
-    # URL DO SEU MINIAPP NO GITHUB PAGES
     url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
+    banner_url = "https://chatgpt.com/s/m_6aab5a7bf33c81919a3625a128148666"  # Substitui pelo teu link de banner
 
-    texto = f"Olá, {user.first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
+    texto = f"Olá, {first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
     
     botoes = [
         [InlineKeyboardButton("📱 ABRIR LOJA / CARTEIRA (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))],
@@ -386,8 +393,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         [InlineKeyboardButton(f"Claro 40GB - R$ 35 ({est.get('claro_40gb', 0)} un)", callback_data="buy_claro_40gb")]
     ]
     
-    banner_url = "https://chatgpt.com/s/m_6aab5a7bf33c81919a3625a128148666"
-    await context.bot.send_photo(chat_id=chat_id, photo=banner_url, caption=texto, reply_markup=InlineKeyboardMarkup(botoes))
+    await context.bot.send_photo(chat_id=chat_id, photo=banner_url, caption=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 async def processar_compra(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
