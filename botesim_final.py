@@ -353,14 +353,17 @@ async def adicionar_produto(
         )
 
     dados = carregar_dados()
-    produtos = dados.get("produtos", [])
+    if "produtos" not in dados or not isinstance(dados["produtos"], list):
+        dados["produtos"] = []
+
+    produtos = dados["produtos"]
 
     novo_item = {
         "id": f"esim_{len(produtos) + 1}",
         "operadora": produto.operadora,
         "plano": produto.plano,
         "descricao": produto.descricao,
-        "preco": produto.preco,
+        "preco": float(produto.preco),
         "imagem_qr": produto.imagem_qr,
         "status": "disponivel",
     }
@@ -370,6 +373,7 @@ async def adicionar_produto(
     salvar_dados(dados)
 
     return {"sucesso": True, "produto": novo_item}
+    
 class CompraMiniAppPayload(BaseModel):
     chat_id: str
     produto_id: str
