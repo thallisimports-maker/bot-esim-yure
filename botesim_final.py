@@ -121,7 +121,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     finally:
         con.close()
 
-    url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
+    url_miniapp = "https://e-simsyure.shop"
 
     texto = (
         f"👑 **YURE eSIMS — HUMILDADE, LEALDADE, DISCIPLINA E ATITUDE**\n\n"
