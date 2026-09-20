@@ -107,7 +107,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     
     # 🖼️ LINK DIRETO DO SEU BANNER
     # Substitua este link abaixo pela URL da imagem do seu banner oficial:
-    banner_url = "https://i.imgur.com/SEU_BANNER_AQUI.png" 
+    banner_url = "https://chatgpt.com/s/m_6aab5a7bf33c81919a3625a128148666" 
 
     texto = f"Olá, {first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
     
