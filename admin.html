@@ -143,9 +143,9 @@
     <h2>🔐 Acesso Restrito ao Servidor</h2>
     <p>Autenticação do Painel Administrativo:</p>
     <div class="form-group">
-      <input type="password" id="" placeholder="Digite a senha mestre..." required>
+      <input type="password" id="senhaAdmin" name="senhaAdmin" placeholder="Digite a senha mestre..." required>
     </div>
-    <button onclick="autenticarServidor()">Entrar no Painel</button>
+    <button type="button" onclick="autenticarServidor()">Entrar no Painel</button>
     <p id="erroLogin" style="color: var(--danger-color); margin-top: 10px; display: none;">❌ Acesso Negado pelo Servidor!</p>
   </div>
 
@@ -237,8 +237,15 @@
 
 <script>
   async function autenticarServidor() {
-    const senha = document.getElementById('senhaAdmin').value;
+    const campoSenha = document.getElementById('senhaAdmin');
     const erroLogin = document.getElementById('erroLogin');
+
+    if (!campoSenha) {
+      console.error("Campo 'senhaAdmin' não foi encontrado!");
+      return;
+    }
+
+    const senha = campoSenha.value;
 
     try {
       const res = await fetch('/admin/login', {
@@ -257,6 +264,7 @@
         erroLogin.style.display = 'block';
       }
     } catch (e) {
+      console.error("Erro na requisição:", e);
       erroLogin.style.display = 'block';
     }
   }
