@@ -148,18 +148,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         [InlineKeyboardButton("👑 ABRIR LOJA YURE eSIMS (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))]
     ]
 
-    qtd_vivo = est.get('vivo_30gb', 0)
-    if qtd_vivo > 0:
-        botoes.append([InlineKeyboardButton(f"Vivo eSIM - R$ 25 ({qtd_vivo} un)", callback_data="buy_vivo_30gb")])
+    # 1. Carrega os produtos atualizados do estoque.json
+    dados = carregar_dados()
+    produtos = dados.get("produtos", [])
 
-    qtd_tim = est.get('tim_40gb', 0)
-    if qtd_tim > 0:
-        botoes.append([InlineKeyboardButton(f"Tim eSIM - R$ 30 ({qtd_tim} un)", callback_data="buy_tim_40gb")])
+    # 2. Percorre os produtos e adiciona botões apenas para os e-SIMs 'disponivel'
+    for prod in produtos:
+        if str(prod.get("status", "")).lower().strip() == "disponivel":
+            op = prod.get("operadora", "eSIM")
+            plano = prod.get("plano", "")
+            preco = float(prod.get("preco", 0))
+            prod_id = prod.get("id")
 
-    qtd_claro = est.get('claro_40gb', 0)
-    if qtd_claro > 0:
-        botoes.append([InlineKeyboardButton(f"Claro eSIM - R$ 35 ({qtd_claro} un)", callback_data="buy_claro_40gb")])
+            # Cria o botão dinâmico com o nome, plano e preço cadastrados no Painel
+            texto_botao = f"📱 {op} {plano} - R$ {preco:.2f}"
+            callback = f"buy_{prod_id}"
 
+            botoes.append(
+                [InlineKeyboardButton(texto_botao, callback_data=callback)]
+            )
     try:
         await context.bot.send_photo(chat_id=chat_id, photo=LOGO_URL, caption=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
     except Exception as err:
