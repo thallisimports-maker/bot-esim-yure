@@ -19,5 +19,8 @@
     }
   ],
   "utilizadores": {},
-  "vendas": []
+  "vendas": [],
+  "cupons": {
+    "BONUS": 35.0
+  }
 }
