@@ -314,13 +314,16 @@ app = FastAPI(title="Yure e-SIM API", lifespan=lifespan)
 from fastapi import Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-SENHA_ADMIN_SEGURA = "aguia2026"
+SENHA_ADMIN_SEGURA = "SuaSenhaAqui123!"
 
-@app.post("/admin/login")
+@app.api_route("/api/admin/login", methods=["GET", "POST"])
 async def login_admin(request: Request):
     try:
-        data = await request.json()
-        senha_recebida = data.get("senha", "")
+        if request.method == "POST":
+            data = await request.json()
+            senha_recebida = data.get("senha", "")
+        else:
+            senha_recebida = request.query_params.get("senha", "")
         
         if str(senha_recebida).strip() == SENHA_ADMIN_SEGURA.strip():
             return JSONResponse(content={"sucesso": True, "token": PUSHINPAY_TOKEN})
@@ -330,7 +333,7 @@ async def login_admin(request: Request):
         return JSONResponse(status_code=400, content={"sucesso": False, "detail": str(e)})
 
 
-@app.get("/admin/dados")
+@app.get("/api/admin/dados")
 async def obter_dados_admin(authorization: str = Header(None)):
     if authorization != f"Bearer {PUSHINPAY_TOKEN}":
         raise HTTPException(status_code=401, detail="Acesso negado! Nao autorizado.")
