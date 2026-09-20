@@ -351,28 +351,30 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_photo(chat_id=chat_id, photo=banner_url, caption=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 # ------------------------------------------------------------------------------
-# 🟢 RUNNER DA APLICAÇÃO NA RENDER (COMPATÍVEL COM PYTHON 3.10+)
+# 🟢 RUNNER DA APLICAÇÃO NA RENDER (COM LIFESPAN CORRETAMENTE DECORADO)
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
+    from contextlib import asynccontextmanager
 
-    # 1. Configura a inicialização do bot do Telegram
+    # 1. Gestor de contexto para inicialização e encerramento limpo do Bot
+    @asynccontextmanager
     async def lifespan(app_fastapi: FastAPI):
         telegram_app = Application.builder().token(TOKEN).build()
         telegram_app.add_handler(CommandHandler("start", start))
         
-        # Inicializa o bot limpando conexões antigas do polling
+        # Inicializa o bot limpando conexões antigas
         await telegram_app.initialize()
         await telegram_app.start()
         await telegram_app.updater.start_polling(drop_pending_updates=True)
         
-        yield
+        yield  # A API FastAPI roda enquanto estiver neste ponto
         
-        # Encerramento limpo ao desligar o servidor
+        # Encerramento limpo quando a Render desliga o serviço
         await telegram_app.updater.stop()
         await telegram_app.stop()
 
-    # Associa a vida útil do bot à API FastAPI
+    # Define o lifespan na instância principal do FastAPI
     app.router.lifespan_context = lifespan
 
     # 2. Executa o servidor Web na porta fornecida pela Render
