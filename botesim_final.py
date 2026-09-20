@@ -2,6 +2,8 @@ import os
 import sqlite3
 import logging
 import requests
+import base64
+from io import BytesIO
 from typing import Optional
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status
@@ -108,7 +110,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         [InlineKeyboardButton("📱 ABRIR LOJA / CARTEIRA (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))]
     ]
 
-    # Só adiciona os botões se houver quantidade maior que zero em estoque
     qtd_vivo = est.get('vivo_30gb', 0)
     if qtd_vivo > 0:
         botoes.append([InlineKeyboardButton(f"Vivo 30GB - R$ 25 ({qtd_vivo} un)", callback_data="buy_vivo_30gb")])
@@ -184,7 +185,6 @@ class ResgatarGiftcardPayload(BaseModel):
 async def root():
     return {"status": "online", "mensagem": "API Yure e-SIM funcionando com sucesso!"}
 
-# ROTA PÚBLICA PARA CONSULTAR ESTOQUE EM TEMPO REAL NO MINIAPP
 @app.get("/api/estoque")
 async def consultar_estoque_publico():
     con = conectar_banco()
@@ -196,7 +196,6 @@ async def consultar_estoque_publico():
     finally:
         con.close()
 
-# 1. OBTER DADOS DO USUÁRIO
 @app.get("/api/usuario/{chat_id}")
 async def obter_dados_usuario(chat_id: str):
     con = conectar_banco()
@@ -213,7 +212,6 @@ async def obter_dados_usuario(chat_id: str):
     finally:
         con.close()
 
-# 2. ROTA DE COMPRA
 @app.post("/api/comprar-esim")
 async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
     precos = {"vivo_30gb": 25.0, "tim_40gb": 30.0, "claro_40gb": 35.0}
@@ -245,15 +243,27 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
         qr_code_url = partes[0]
         instrucoes = partes[1] if len(partes) > 1 else "Escaneie o QR Code abaixo para ativar o seu e-SIM."
 
+        # DISPARA A FOTO NO TELEGRAM (SUPORTA URL OU BASE64 ENVIADO DO PC)
         try:
             url_telegram_photo = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
-            payload_photo = {
-                "chat_id": payload.chat_id,
-                "photo": qr_code_url,
-                "caption": f"🎉 **COMPRA REALIZADA COM SUCESSO!**\n\n{instrucoes}\n\n📱 **Plano:** {payload.produto_id.upper()}",
-                "parse_mode": "Markdown"
-            }
-            requests.post(url_telegram_photo, data=payload_photo, timeout=10)
+            caption_text = f"🎉 **COMPRA REALIZADA COM SUCESSO!**\n\n{instrucoes}\n\n📱 **Plano:** {payload.produto_id.upper()}"
+
+            if qr_code_url.startswith("data:image"):
+                # Se for Base64 (upload do PC), converte e envia como arquivo binário
+                header, encoded = qr_code_url.split(",", 1)
+                image_data = base64.b64decode(encoded)
+                files = {'photo': ('esim_qrcode.png', BytesIO(image_data), 'image/png')}
+                data = {'chat_id': payload.chat_id, 'caption': caption_text, 'parse_mode': 'Markdown'}
+                requests.post(url_telegram_photo, data=data, files=files, timeout=15)
+            else:
+                # Se for link normal (URL)
+                payload_photo = {
+                    "chat_id": payload.chat_id,
+                    "photo": qr_code_url,
+                    "caption": caption_text,
+                    "parse_mode": "Markdown"
+                }
+                requests.post(url_telegram_photo, data=payload_photo, timeout=10)
         except Exception as err_tg:
             logging.error(f"Erro ao enviar foto no Telegram: {err_tg}")
 
@@ -269,7 +279,6 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
     finally:
         con.close()
 
-# 3. GERAR PIX
 @app.post("/api/admin/gerar-pix-site")
 async def gerar_pix_site(payload: GerarPixPayload):
     try:
@@ -291,7 +300,6 @@ async def gerar_pix_site(payload: GerarPixPayload):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 4. ADICIONAR ESTOQUE ADMIN
 @app.post("/api/admin/adicionar-estoque")
 async def admin_adicionar_estoque(payload: AdminAuthAddEsimPayload):
     if payload.usuario_admin != USUARIO_ADMIN_MINISITE or payload.senha_admin != SENHA_ADMIN_MINISITE:
@@ -309,7 +317,6 @@ async def admin_adicionar_estoque(payload: AdminAuthAddEsimPayload):
     finally:
         con.close()
 
-# 5. OBTER MÉTRICAS E CLIENTES (PAINEL ADMIN)
 @app.get("/api/admin/metricas")
 async def obter_metricas_admin(usuario_admin: str, senha_admin: str):
     if usuario_admin != USUARIO_ADMIN_MINISITE or senha_admin != SENHA_ADMIN_MINISITE:
@@ -336,7 +343,6 @@ async def obter_metricas_admin(usuario_admin: str, senha_admin: str):
     finally:
         con.close()
 
-# 6. CRIAR GIFT CARD (ADMIN)
 @app.post("/api/admin/criar-giftcard")
 async def admin_criar_giftcard(payload: CriarGiftcardPayload):
     if payload.usuario_admin != USUARIO_ADMIN_MINISITE or payload.senha_admin != SENHA_ADMIN_MINISITE:
@@ -353,7 +359,6 @@ async def admin_criar_giftcard(payload: CriarGiftcardPayload):
     finally:
         con.close()
 
-# 7. RESGATAR GIFT CARD (CLIENTE)
 @app.post("/api/resgatar-giftcard")
 async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
     codigo_clean = payload.codigo.upper().strip()
