@@ -102,7 +102,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         con.close()
 
     url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
-    banner_url = "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800"
+    banner_url = "https://chatgpt.com/s/m_6aab5a7bf33c81919a3625a128148666"
 
     texto = f"Olá, {first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
     
