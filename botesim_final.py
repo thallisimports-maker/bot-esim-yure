@@ -199,8 +199,8 @@ async def comando_esims(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     )
     url_miniapp = "https://e-simsyure.shop/"
     # 1. Cria um botão que envia um aviso para o Python (Callback Query)
-botoes = [[InlineKeyboardButton("🛒 Comprar e-SIM pelo Bot", callback_data="comprar_bot")]]
-await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+    botoes = [[InlineKeyboardButton("🛒 Comprar e-SIM pelo Bot", callback_data="comprar_bot")]]
+    await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
