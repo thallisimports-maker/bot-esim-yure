@@ -150,15 +150,12 @@ async def obter_metricas_admin(usuario_admin: str, senha_admin: str):
     con = conectar_banco()
     cur = con.cursor()
     try:
-        # Total de pessoas que deram /start
         cur.execute("SELECT COUNT(*) FROM carteira")
         total_usuarios = cur.fetchone()[0]
 
-        # Total de aberturas do MiniApp
         cur.execute("SELECT COUNT(*) FROM acessos_miniapp")
         total_acessos_app = cur.fetchone()[0]
 
-        # Lista dos últimos 10 usuários que deram /start
         cur.execute("SELECT chat_id, first_name, username, saldo FROM carteira ORDER BY data_criacao DESC LIMIT 10")
         lista_usuarios = [dict(row) for row in cur.fetchall()]
 
