@@ -3,20 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yure e-SIM Store — MiniApp</title>
+    <title>Yure eSIMS — MiniApp</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg-body: #060913;
-            --bg-card: #0d1322;
-            --bg-card-hover: #141d33;
-            --bg-input: #10172a;
-            --purple-main: #00d2ff;
-            --purple-gradient: linear-gradient(135deg, #00d2ff 0%, #0052d4 100%);
-            --purple-badge: #0052d4;
-            --text-main: #f3f4f6;
-            --text-muted: #8ba0c3;
-            --text-purple: #38bdf8;
+            --bg-body: #05070a;
+            --bg-card: #0b0f19;
+            --bg-card-hover: #121828;
+            --bg-input: #0e1422;
+            
+            /* PALETA: PRETO, DOURADO E AZUL CYBER */
+            --gold-main: #d4af37;
+            --gold-gradient: linear-gradient(135deg, #f39c12 0%, #d4af37 50%, #f1c40f 100%);
+            --blue-cyber: #00d2ff;
+            --blue-gradient: linear-gradient(135deg, #00d2ff 0%, #0052d4 100%);
+            
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
             --green-success: #10b981;
             --border-color: #1e293b;
             --radius-main: 16px;
@@ -49,66 +52,67 @@
 
         .saldo-badge {
             background: var(--bg-card);
-            border: 1px solid var(--border-color);
+            border: 1px solid #d4af37;
             padding: 8px 16px;
             border-radius: 20px;
             display: flex;
             align-items: center;
             gap: 8px;
             font-weight: 700;
-            font-size: 15px;
+            font-size: 14px;
             color: var(--text-main);
             width: 100%;
             justify-content: space-between;
+            box-shadow: 0 0 12px rgba(212, 175, 55, 0.2);
         }
 
         .saldo-badge span {
-            color: var(--purple-main);
+            color: var(--gold-main);
         }
 
-        /* USER HEADER CARD */
+        /* USER HEADER CARD COM MINI LOGO NO CANTO SUPERIOR ESQUERDO */
         .user-card {
-            background: linear-gradient(135deg, #00d2ff 0%, #0052d4 100%);
+            background: linear-gradient(135deg, #090e18 0%, #111a2e 100%);
             border-radius: var(--radius-main);
-            padding: 18px;
+            padding: 16px;
             display: flex;
             align-items: center;
             gap: 14px;
             margin-bottom: 16px;
-            box-shadow: 0 8px 25px rgba(0, 210, 255, 0.35);
+            box-shadow: 0 8px 25px rgba(0, 210, 255, 0.15);
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--gold-main);
         }
 
-        .user-avatar {
-            width: 48px;
-            height: 48px;
-            background: rgba(255, 255, 255, 0.2);
+        /* LOGO PEQUENA NO CANTO SUPERIOR ESQUERDO */
+        .mini-logo-avatar {
+            width: 58px;
+            height: 58px;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 22px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid var(--gold-main);
+            object-fit: cover;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+            flex-shrink: 0;
         }
 
         .user-info h2 {
-            font-size: 13px;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.85);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gold-main);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .user-info h1 {
-            font-size: 20px;
+            font-size: 19px;
             font-weight: 800;
             color: #ffffff;
         }
 
         .user-info p {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.9);
+            font-size: 11px;
+            color: var(--text-muted);
             margin-top: 2px;
         }
 
@@ -138,16 +142,16 @@
         }
 
         .cat-card.active {
-            background: var(--purple-gradient);
-            color: #ffffff;
+            background: var(--gold-gradient);
+            color: #000000;
             border-color: transparent;
-            box-shadow: 0 4px 12px rgba(0, 210, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
         }
 
         /* BANNER HERO */
         .hero-banner {
-            background: linear-gradient(180deg, rgba(0, 82, 212, 0.3) 0%, rgba(13, 19, 34, 1) 100%);
-            border: 1px solid #0052d4;
+            background: linear-gradient(180deg, rgba(0, 210, 255, 0.1) 0%, rgba(11, 15, 25, 1) 100%);
+            border: 1px solid var(--blue-cyber);
             border-radius: var(--radius-main);
             padding: 18px;
             margin-bottom: 20px;
@@ -156,8 +160,8 @@
         }
 
         .hero-badge {
-            background: var(--purple-badge);
-            color: #ffffff;
+            background: var(--gold-main);
+            color: #000000;
             font-size: 10px;
             font-weight: 800;
             padding: 4px 10px;
@@ -169,7 +173,7 @@
         }
 
         .hero-title {
-            font-size: 18px;
+            font-size: 17px;
             font-weight: 800;
             color: #ffffff;
             margin-bottom: 6px;
@@ -210,7 +214,7 @@
         .form-label {
             font-size: 11px;
             font-weight: 700;
-            color: var(--text-muted);
+            color: var(--gold-main);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-bottom: 8px;
@@ -251,28 +255,28 @@
 
         .product-info p {
             font-size: 13px;
-            color: var(--green-success);
+            color: var(--gold-main);
             font-weight: 700;
             margin-top: 4px;
         }
 
         .btn-buy {
-            background: var(--green-success);
-            color: #ffffff;
+            background: var(--gold-gradient);
+            color: #000000;
             border: none;
             padding: 10px 18px;
             border-radius: var(--radius-sm);
             font-size: 13px;
-            font-weight: 700;
+            font-weight: 800;
             cursor: pointer;
             position: relative;
             z-index: 10;
         }
 
-        /* RECHARGE BLOCK (CARTEIRA) */
+        /* RECHARGE BLOCK */
         .recharge-box {
             background: var(--bg-card);
-            border: 1px dashed var(--purple-main);
+            border: 1px dashed var(--gold-main);
             border-radius: var(--radius-main);
             padding: 18px;
             text-align: center;
@@ -295,15 +299,15 @@
 
         .btn-purple {
             width: 100%;
-            background: var(--purple-gradient);
-            color: #ffffff;
+            background: var(--gold-gradient);
+            color: #000000;
             border: none;
             padding: 14px;
             border-radius: var(--radius-sm);
             font-size: 15px;
             font-weight: 800;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
         }
 
         .modal-pix {
@@ -339,7 +343,6 @@
             margin-bottom: 8px;
         }
 
-        /* HISTÓRICO DE PEDIDOS */
         .history-item {
             background: var(--bg-card);
             border: 1px solid var(--border-color);
@@ -369,7 +372,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(13, 19, 34, 0.98);
+            background: rgba(11, 15, 25, 0.98);
             backdrop-filter: blur(10px);
             border-top: 1px solid var(--border-color);
             display: flex;
@@ -392,7 +395,7 @@
         }
 
         .nav-item.active {
-            color: var(--text-purple);
+            color: var(--gold-main);
         }
 
         .nav-item svg {
@@ -420,19 +423,18 @@
         </div>
     </div>
 
-    <!-- USER HEADER CARD -->
+    <!-- USER HEADER CARD COM MINI LOGO NO CANTO SUPERIOR ESQUERDO -->
     <div class="user-card">
-        <div class="user-avatar">👑</div>
+        <img src="logo.png" alt="Yure eSIMS" class="mini-logo-avatar">
         <div class="user-info">
-            <h2>Bem-vindo à loja premium,</h2>
+            <h2>Humildade, Lealdade & Atitude</h2>
             <h1 id="userName">Yure</h1>
-            <p>✨ Navegue pelo estoque e escolha seu produto.</p>
+            <p>✨ O melhor mercado de eSIMS do Brasil.</p>
         </div>
     </div>
 
-    <!-- TAB 1: LOJA (HOME) -->
+    <!-- TAB 1: LOJA -->
     <div id="tab-loja" class="tab-content active">
-        <!-- CATEGORIES GRID -->
         <div class="category-grid">
             <div class="cat-card active" onclick="switchTab('loja', document.querySelector('.bottom-nav .nav-item:first-child'))">📱 eSIMs</div>
             <div class="cat-card" onclick="switchTab('carteira', document.querySelectorAll('.bottom-nav .nav-item')[2])">⚡ Recargas</div>
@@ -441,18 +443,17 @@
 
         <!-- HERO BANNER -->
         <div class="hero-banner">
-            <div class="hero-badge">Ativação Imediata</div>
-            <div class="hero-title">Conectado em qualquer lugar</div>
-            <div class="hero-desc">Compre planos eSIM com alta franquia de dados e ative em poucos minutos.</div>
+            <div class="hero-badge">Qualidade Garantida</div>
+            <div class="hero-title">eSIMS Com Alta Qualidade E Durabilidade!</div>
+            <div class="hero-desc">Planos de alta velocidade com entrega instantânea e segurança no seu dispositivo.</div>
         </div>
 
-        <!-- SECTION SELECTOR -->
         <div class="section-header">
             <div class="section-title">📶 Selecionar Pacote</div>
         </div>
 
         <div class="form-group">
-            <label class="form-label">📲 1. ESCOLHA A OPERADORA</label>
+            <label class="form-label">📲 ESCOLHA A OPERADORA</label>
             <select class="custom-select" id="operadoraSelect" onchange="filtrarPlanos()">
                 <option value="todas">-- Todas as Operadoras --</option>
                 <option value="vivo">Vivo</option>
@@ -461,25 +462,24 @@
             </select>
         </div>
 
-        <!-- PRODUCTS LIST -->
         <div id="listaProdutos">
             <div class="product-card" data-op="vivo">
                 <div class="product-info">
-                    <h3>Vivo 30GB</h3>
+                    <h3>Vivo eSIM</h3>
                     <p>R$ 25,00</p>
                 </div>
                 <button class="btn-buy" onclick="comprarNoBot('vivo_30gb', 25)">Comprar</button>
             </div>
             <div class="product-card" data-op="tim">
                 <div class="product-info">
-                    <h3>Tim 40GB</h3>
+                    <h3>Tim eSIM</h3>
                     <p>R$ 30,00</p>
                 </div>
                 <button class="btn-buy" onclick="comprarNoBot('tim_40gb', 30)">Comprar</button>
             </div>
             <div class="product-card" data-op="claro">
                 <div class="product-info">
-                    <h3>Claro 40GB</h3>
+                    <h3>Claro eSIM</h3>
                     <p>R$ 35,00</p>
                 </div>
                 <button class="btn-buy" onclick="comprarNoBot('claro_40gb', 35)">Comprar</button>
@@ -504,9 +504,8 @@
 
     <!-- TAB 3: CARTEIRA -->
     <div id="tab-carteira" class="tab-content">
-        <!-- BLOCO PIX -->
         <div class="recharge-box">
-            <div class="section-title" style="justify-content: center; color: var(--text-purple);">💳 Adicionar Saldo Instantâneo</div>
+            <div class="section-title" style="justify-content: center; color: var(--gold-main);">💳 Adicionar Saldo Instantâneo</div>
             <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Insira o valor em Reais para gerar o Pix:</p>
             <input type="number" id="valorPix" class="recharge-input" min="10" value="10">
             <button id="btnGerar" class="btn-purple" onclick="solicitarPix()">Gerar QR Code Pix</button>
@@ -519,9 +518,8 @@
             </div>
         </div>
 
-        <!-- BLOCO RESGATE DE GIFT CARD / CUPOM -->
         <div class="recharge-box">
-            <div class="section-title" style="justify-content: center; color: var(--purple-main);">🎁 Resgatar Gift Card / Cupom</div>
+            <div class="section-title" style="justify-content: center; color: var(--gold-main);">🎁 Resgatar Gift Card / Cupom</div>
             <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Possui um código de presente ou reembolso? Digite abaixo:</p>
             <input type="text" id="inputGiftCard" class="recharge-input" placeholder="Ex: BONUS25" style="text-transform: uppercase;">
             <button class="btn-purple" onclick="resgatarGiftCard()">Resgatar Saldo</button>
@@ -559,12 +557,11 @@
         </div>
     </div>
 
-    <!-- SCRIPTS JAVASCRIPT -->
+    <!-- SCRIPTS -->
     <script>
         let telegramChatId = null;
         const URL_API_RENDER = "https://bot-esim-yure.onrender.com";
 
-        // 1. INICIALIZAÇÃO DO TELEGRAM E SALDO
         if (window.Telegram && window.Telegram.WebApp) {
             const tg = window.Telegram.WebApp;
             tg.ready();
@@ -591,37 +588,24 @@
             }
         }
 
-        // 2. NAVEGAÇÃO ENTRE ABAS
         function switchTab(tabName, el) {
             document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
             
             const targetTab = document.getElementById('tab-' + tabName);
-            if (targetTab) {
-                targetTab.classList.add('active');
-            }
-            if (el) {
-                el.classList.add('active');
-            }
+            if (targetTab) targetTab.classList.add('active');
+            if (el) el.classList.add('active');
         }
 
-        // 3. ABRIR SUPORTE
         function abrirSuporte() {
-            const suporteUsername = "yure_suporte"; 
-            const linkTelegram = `https://t.me/${suporteUsername}`;
-
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
-                window.Telegram.WebApp.openTelegramLink(linkTelegram);
-            } else {
-                window.open(linkTelegram, "_blank");
-            }
+            const linkWa = "https://wa.me/5535997550084";
+            window.open(linkWa, "_blank");
         }
 
-        // 4. COMPRAR E-SIM (ENTREGA DUPLA: MINIAPP + CHAT TELEGRAM)
         async function comprarNoBot(planoId, preco) {
             const chatIdFinal = telegramChatId || "123456789";
 
-            const confirmacao = window.confirm(`Deseja confirmar a compra do e-SIM (${planoId.toUpperCase()}) por R$ ${preco},00?`);
+            const confirmacao = window.confirm(`Deseja confirmar a compra do eSIM (${planoId.toUpperCase()}) por R$ ${preco},00?`);
             if (!confirmacao) return;
 
             try {
@@ -642,7 +626,6 @@
                     }
 
                     alert(`🎉 COMPRA REALIZADA COM SUCESSO!\n\nEnviamos a foto do seu QR Code no seu chat do Telegram!\n\n${resultado.instrucoes}`);
-                    
                     switchTab('pedidos', document.querySelectorAll('.bottom-nav .nav-item')[1]);
                 } else {
                     alert(`⚠️ Atenção: ${resultado.detalhe}`);
@@ -652,7 +635,6 @@
             }
         }
 
-        // 5. FILTRAR PLANOS
         function filtrarPlanos() {
             const op = document.getElementById('operadoraSelect').value;
             const cards = document.querySelectorAll('.product-card');
@@ -665,7 +647,6 @@
             });
         }
 
-        // 6. GERAR PIX
         async function solicitarPix() {
             const valorInput = document.getElementById("valorPix").value;
             const btn = document.getElementById("btnGerar");
@@ -715,7 +696,6 @@
             });
         }
 
-        // 7. RESGATAR GIFT CARD / CUPOM
         async function resgatarGiftCard() {
             const input = document.getElementById("inputGiftCard");
             const codigo = input.value.trim();
@@ -751,7 +731,7 @@
                 alert("❌ Falha de conexão ao validar o Gift Card.");
             }
         }
-        // 🚀 NOVA FUNÇÃO: ATUALIZAÇÃO AUTOMÁTICA DE ESTOQUE NO MINIAPP
+
         async function carregarEstoqueMiniApp() {
             try {
                 const res = await fetch(`${URL_API_RENDER}/api/estoque`);
@@ -779,7 +759,7 @@
                                 if (card) card.style.opacity = "0.6";
                             } else {
                                 btn.innerText = "Comprar";
-                                btn.style.background = "var(--green-success)";
+                                btn.style.background = "var(--gold-gradient)";
                                 btn.disabled = false;
                                 if (card) card.style.opacity = "1";
                             }
@@ -791,7 +771,6 @@
             }
         }
 
-        // Executa a verificação assim que o MiniApp abre
         document.addEventListener("DOMContentLoaded", () => {
             carregarEstoqueMiniApp();
         });
