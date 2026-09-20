@@ -659,11 +659,14 @@ async def admin_criar_giftcard(payload: CriarGiftcardPayload):
 @app.post("/api/resgatar-giftcard")
 async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
     codigo_clean = payload.codigo.upper().strip()
-    
+
     con = conectar_banco()
     cur = con.cursor()
     try:
-        cur.execute("SELECT valor, usado FROM giftcards WHERE codigo = ?", (codigo_clean,))
+        cur.execute(
+            "SELECT valor, usado FROM giftcards WHERE UPPER(codigo) = ?",
+            (codigo_clean,),
+        )
         gc = cur.fetchone()
 
         if not gc:
@@ -673,18 +676,33 @@ async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
 
         valor_gc = float(gc["valor"])
 
-        cur.execute("UPDATE carteira SET saldo = saldo + ? WHERE chat_id = ?", (valor_gc, payload.chat_id))
-        cur.execute("UPDATE giftcards SET usado = 1, usado_por = ? WHERE codigo = ?", (payload.chat_id, codigo_clean))
+        # Atualiza a carteira do usuário
+        cur.execute(
+            "UPDATE carteira SET saldo = saldo + ? WHERE chat_id = ?",
+            (valor_gc, payload.chat_id),
+        )
+        cur.execute(
+            "UPDATE giftcards SET usado = 1, usado_por = ? WHERE UPPER(codigo) = ?",
+            (payload.chat_id, codigo_clean),
+        )
         con.commit()
 
-        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (payload.chat_id,))
-        novo_saldo = float(cur.fetchone()["saldo"])
+        cur.execute(
+            "SELECT saldo FROM carteira WHERE chat_id = ?", (payload.chat_id,)
+        )
+        res_saldo = cur.fetchone()
+        novo_saldo = float(res_saldo["saldo"]) if res_saldo else valor_gc
 
         return {
             "status": "sucesso",
             "mensagem": f"🎉 R$ {valor_gc:.2f} adicionados à sua carteira!",
-            "novo_saldo": novo_saldo
+            "novo_saldo": novo_saldo,
         }
+    except Exception as e:
+        con.rollback()
+        return {"status": "erro", "detalhe": f"Erro interno: {str(e)}"}
+    finally:
+        con.close()
     except Exception as e:
         return {"status": "erro", "detalhe": str(e)}
     finally:
