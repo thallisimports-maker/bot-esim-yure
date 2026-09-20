@@ -67,7 +67,8 @@ class CompraMiniAppPayload(BaseModel):
 class AdminAddEsimPayload(BaseModel):
     senha_admin: str
     produto_id: str
-    conteudo_esim: str
+    conteudo_esim: str  # Link da Imagem do QR Code ou Código do e-SIM
+    texto_instrucoes: Optional[str] = "Abra as configurações do seu celular > Celular > Adicionar e-SIM e escaneie o QR Code abaixo para ativar."
 
 # 🌐 ROTAS DA API WEB (MINIAPP & ADMIN)
 
@@ -176,19 +177,25 @@ async def admin_adicionar_estoque(payload: AdminAddEsimPayload):
     if payload.senha_admin != SENHA_ADMIN_MINISITE:
         raise HTTPException(status_code=401, detail="Senha administrativa incorreta!")
 
+    # Monta a mensagem final gravada no banco
+    conteudo_final = f"{payload.conteudo_esim}||{payload.texto_instrucoes}"
+
     con = conectar_banco()
     cur = con.cursor()
     try:
         cur.execute(
             "INSERT INTO estoque_codigos (produto_id, conteudo_esim) VALUES (?, ?)",
-            (payload.produto_id, payload.conteudo_esim)
+            (payload.produto_id, conteudo_final)
         )
         cur.execute(
             "UPDATE estoque SET quantidade = quantidade + 1 WHERE produto_id = ?",
             (payload.produto_id,)
         )
         con.commit()
-        return {"status": "sucesso", "mensagem": f"e-SIM adicionado com sucesso ao estoque de {payload.produto_id}!"}
+        return {
+            "status": "sucesso", 
+            "mensagem": f"e-SIM registrado com sucesso no estoque de {payload.produto_id.upper()}!"
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     finally:
