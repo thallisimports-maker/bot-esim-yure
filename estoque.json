@@ -6,7 +6,7 @@
       "plano": "40GB",
       "preco": 35.0,
       "imagem_qr": "https://i.imgur.com/exemplo_qrcode.png",
-      "status": "disponivel"
+      "status": "vendido"
     },
     {
       "id": "esim_2",
@@ -19,7 +19,16 @@
     }
   ],
   "utilizadores": {},
-  "vendas": [],
+  "vendas": [
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "claro_40gb_001",
+      "operadora": "Claro",
+      "valor": 35.0,
+      "data": "2026-09-20"
+    }
+  ],
   "cupons": {
     "BONUS": 35.0
   }
