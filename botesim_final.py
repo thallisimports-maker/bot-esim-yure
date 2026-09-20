@@ -147,6 +147,7 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
     con = conectar_banco()
     cur = con.cursor()
     try:
+        # 1. Verifica Saldo do Cliente
         cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (payload.chat_id,))
         res_saldo = cur.fetchone()
         saldo = float(res_saldo["saldo"]) if res_saldo else 0.0
@@ -154,22 +155,44 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
         if saldo < preco_item:
             return {"status": "erro", "detalhe": "Saldo insuficiente na carteira!"}
 
+        # 2. Busca o e-SIM no Estoque
         cur.execute("SELECT id, conteudo_esim FROM estoque_codigos WHERE produto_id = ? LIMIT 1", (payload.produto_id,))
         chip = cur.fetchone()
         if not chip:
             return {"status": "erro", "detalhe": "Estoque esgotado para este produto!"}
 
-        chip_id, caminho_esim = chip["id"], chip["conteudo_esim"]
+        chip_id, conteudo_bruto = chip["id"], chip["conteudo_esim"]
 
+        # 3. Desconta o Saldo e Remove do Estoque
         cur.execute("UPDATE carteira SET saldo = saldo - ? WHERE chat_id = ?", (preco_item, payload.chat_id))
         cur.execute("DELETE FROM estoque_codigos WHERE id = ?", (chip_id,))
         cur.execute("UPDATE estoque SET quantidade = quantidade - 1 WHERE produto_id = ?", (payload.produto_id,))
         con.commit()
 
+        # Separa o link da Imagem do QR Code e o Texto de Instruções
+        partes = conteudo_bruto.split('||')
+        qr_code_url = partes[0]
+        instrucoes = partes[1] if len(partes) > 1 else "Escaneie o QR Code abaixo para ativar o seu e-SIM."
+
+        # 4. DISPARA O QR CODE DIRETO NO CHAT DO TELEGRAM DO CLIENTE
+        try:
+            url_telegram_photo = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+            payload_photo = {
+                "chat_id": payload.chat_id,
+                "photo": qr_code_url,
+                "caption": f"🎉 **COMPRA REALIZADA COM SUCESSO!**\n\n{instrucoes}\n\n📱 **Plano:** {payload.produto_id.upper()}",
+                "parse_mode": "Markdown"
+            }
+            requests.post(url_telegram_photo, data=payload_photo, timeout=10)
+        except Exception as err_tg:
+            logging.error(f"Erro ao enviar foto no chat do Telegram: {err_tg}")
+
+        # 5. RETORNA PARA EXIBIR TAMBÉM NA TELA DO MINIAPP
         return {
             "status": "sucesso",
             "mensagem": "Compra efetuada com sucesso!",
-            "conteudo_esim": caminho_esim,
+            "qr_code_url": qr_code_url,
+            "instrucoes": instrucoes,
             "novo_saldo": saldo - preco_item
         }
     except Exception as e:
