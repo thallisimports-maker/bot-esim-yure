@@ -192,55 +192,53 @@ async def comando_esims(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 
     texto = (
         "📶 **ESTOQUE DE eSIMS DISPONÍVEIS**\n\n"
-        f"📱 **Vivo eSIM:** {est.get('vivo_30gb', 0)} unidades\n"
+        f"📱 **Vivo eSIM:** {est.get('vivo_5gb', 0)} unidades\n"
         f"📱 **Tim eSIM:** {est.get('tim_40gb', 0)} unidades\n"
         f"📱 **Claro eSIM:** {est.get('claro_40gb', 0)} unidades\n\n"
-        "✨ *Ativação instantânea diretamente no MiniApp!*"
+        f"⚡ *Ativação instantânea diretamente no MiniApp!*"
     )
     url_miniapp = "https://e-simsyure.shop/"
-    # 1. Cria um botão que envia um aviso para o Python (Callback Query)
     botoes = [[InlineKeyboardButton("🛒 Comprar e-SIM pelo Bot", callback_data="comprar_bot")]]
     await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+
 
 async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
 
     if query.data == "comprar_bot":
-        await query.message.reply_text("✅ *Solicitação recebida!* \n\nGerando seu e-SIM e QR Code...", parse_mode="Markdown")
-    
-    # Se os botões tiverem ações personalizadas, trate o query.data aqui
-    # ex: if query.data == "comprar": ...
+        await query.message.reply_text("✅ *Solicitação recebida!*\n\nGerando seu e-SIM e QR Code...", parse_mode="Markdown")
 
-# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------
 # ⚙️ GESTOR DE LIFESPAN (REGISTRO DO MENU DE COMANDOS NATIVO)
-# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------
+
 @asynccontextmanager
-telegram_app = Application.builder().token(TOKEN).build()
+async def lifespan(app: FastAPI):
+    telegram_app = Application.builder().token(TOKEN).build()
 
     telegram_app.add_handler(CommandHandler("start", start))
     telegram_app.add_handler(CommandHandler("saldo", comando_saldo))
     telegram_app.add_handler(CommandHandler("suporte", comando_suporte))
     telegram_app.add_handler(CommandHandler("esims", comando_esims))
-    
-    # ⚠️ ADICIONE ESTA LINHA OBRIGATÓRIA AQUI:
     telegram_app.add_handler(CallbackQueryHandler(responder_botoes))
-    
+
     await telegram_app.initialize()
     await telegram_app.start()
-    
+
     comandos_menu = [
         BotCommand("start", "👑 Menu Principal e Loja"),
         BotCommand("saldo", "💳 Consultar Saldo / Carteira"),
-        BotCommand("esims", "📶 Ver eSIMs Disponíveis"),
+        BotCommand("esims", "📱 Ver eSIMs Disponíveis"),
         BotCommand("suporte", "📞 Suporte e Atendimento")
     ]
     await telegram_app.bot.set_my_commands(comandos_menu)
 
     await telegram_app.updater.start_polling(drop_pending_updates=True)
-    
+
     yield
-    
+
     await telegram_app.updater.stop()
     await telegram_app.stop()
 
