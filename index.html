@@ -751,6 +751,50 @@
                 alert("❌ Falha de conexão ao validar o Gift Card.");
             }
         }
+        // 🚀 NOVA FUNÇÃO: ATUALIZAÇÃO AUTOMÁTICA DE ESTOQUE NO MINIAPP
+        async function carregarEstoqueMiniApp() {
+            try {
+                const res = await fetch(`${URL_API_RENDER}/api/estoque`);
+                const dados = await res.json();
+
+                if (dados.status === "sucesso") {
+                    const est = dados.estoque;
+
+                    const produtosMap = {
+                        'vivo_30gb': document.querySelector('[onclick*="vivo_30gb"]'),
+                        'tim_40gb': document.querySelector('[onclick*="tim_40gb"]'),
+                        'claro_40gb': document.querySelector('[onclick*="claro_40gb"]')
+                    };
+
+                    for (const [prodId, btn] of Object.entries(produtosMap)) {
+                        if (btn) {
+                            const qtd = est[prodId] || 0;
+                            const card = btn.closest('.product-card');
+
+                            if (qtd <= 0) {
+                                btn.innerText = "Esgotado";
+                                btn.style.background = "#4b5563";
+                                btn.disabled = true;
+                                btn.onclick = null;
+                                if (card) card.style.opacity = "0.6";
+                            } else {
+                                btn.innerText = "Comprar";
+                                btn.style.background = "var(--green-success)";
+                                btn.disabled = false;
+                                if (card) card.style.opacity = "1";
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Erro ao carregar estoque:", e);
+            }
+        }
+
+        // Executa a verificação assim que o MiniApp abre
+        document.addEventListener("DOMContentLoaded", () => {
+            carregarEstoqueMiniApp();
+        });
     </script>
 </body>
 </html>
