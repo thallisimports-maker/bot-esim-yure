@@ -243,8 +243,11 @@
     if (!campoSenha) return;
     const senha = campoSenha.value;
 
+    // ⚠️ SUBSTITUA PELA SUA URL REAL DA RENDER ABAIXO:
+    const URL_BACKEND = "https://bot-esim-yure.onrender.com";
+
     try {
-      const res = await fetch('/api/admin/login?senha=' + encodeURIComponent(senha));
+      const res = await fetch(URL_BACKEND + '/api/admin/login?senha=' + encodeURIComponent(senha));
 
       if (res.ok) {
         const data = await res.json();
@@ -265,8 +268,57 @@
     const token = sessionStorage.getItem('token_admin');
     if (!token) return;
 
+    const URL_BACKEND = "https://bot-esim-yure.onrender.com";
+
+    try {
+      const res = await fetch(URL_BACKEND + '/api/admin/dados', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+
+      if (!res.ok) {
+        sessionStorage.removeItem('token_admin');
+        location.reload();
+        return;
+      }
+
+      const dados = await res.json();
+      // ... (restante do código de preenchimento das tabelas permanece igual)
+
+  async function carregarPainel() {
+    const token = sessionStorage.getItem('token_admin');
+    if (!token) return;
+
     try {
       const res = await fetch('/api/admin/dados', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+
+      if (!res.ok) {
+        sessionStorage.removeItem('token_admin');
+        location.reload();
+        return;
+      }
+
+      const dados = await res.json();
+
+      // Métricas
+      const produtos = dados.produtos || [];
+      const disponiveis = produtos.filter(p => p.status === 'disponivel').length;
+      const vendidos = produtos.filter(p => p.status === 'vendido').length;
+      
+      document.getElementById('totalDisponivel').innerText = disponiveis;
+      document.getElementById('totalVendido').innerText = vendidos;
+      document.getElementById('totalClientes').innerText = Object.keys(dados.utilizadores || {}).length;
+
+      // Tabela de Estoque
+      async function carregarPainel() {
+    const token = sessionStorage.getItem('token_admin');
+    if (!token) return;
+
+    const URL_BACKEND = "https://bot-esim-yure.onrender.com";
+
+    try {
+      const res = await fetch(URL_BACKEND + '/api/admin/dados', {
         headers: { 'Authorization': 'Bearer ' + token }
       });
 
