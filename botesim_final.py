@@ -192,15 +192,16 @@ async def comando_esims(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         con.close()
 
     texto = (
-        "📶 **ESTOQUE DE eSIMS DISPONÍVEIS**\n\n"
+        f"📊 **ESTOQUE DE eSIMS DISPONÍVEIS**\n\n"
         f"📱 **Vivo eSIM:** {est.get('vivo_5gb', 0)} unidades\n"
         f"📱 **Tim eSIM:** {est.get('tim_40gb', 0)} unidades\n"
         f"📱 **Claro eSIM:** {est.get('claro_40gb', 0)} unidades\n\n"
         f"⚡ *Ativação instantânea diretamente no MiniApp!*"
     )
+
     url_miniapp = "https://e-simsyure.shop/"
-botoes = [[InlineKeyboardButton("🛒 Comprar e-SIM pelo Bot", callback_data="comprar_bot")]]
-await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+    botoes = [[InlineKeyboardButton("🛒 Comprar e-SIM pelo Bot", callback_data="comprar_bot")]]
+    await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 
 async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
