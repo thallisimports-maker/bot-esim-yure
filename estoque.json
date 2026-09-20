@@ -25,6 +25,15 @@
       "preco": 35.0,
       "imagem_qr": "https://imgur.com/a/9pKounw",
       "status": "disponivel"
+    },
+    {
+      "id": "esim_4",
+      "operadora": "Claro",
+      "plano": "35gb",
+      "descricao": "ok",
+      "preco": 25.0,
+      "imagem_qr": "https://i.imgur.com/4qJnllA.jpeg",
+      "status": "disponivel"
     }
   ],
   "utilizadores": {},
