@@ -19,8 +19,8 @@ TOKEN = "8826676433:AAEjicVbEpow_dbalsja15hFYCghRwAq0D0"
 PUSHINPAY_TOKEN = "71078|M1MASBFV155gtnKBttSvkE6u8bD8kSBFjAMLwOXa70ca5a25"
 
 # 🛡️ CREDENCIAIS DE SEGURANÇA DO PAINEL ADMIN
-USUARIO_ADMIN_MINISITE = "yure_admin"
-SENHA_ADMIN_MINISITE = "yure123"
+USUARIO_ADMIN_MINISITE = "aguia2026"
+SENHA_ADMIN_MINISITE = "yuresantos26"
 
 # LINK DIRETO DA SUA LOGO NO GITHUB
 LOGO_URL = "https://raw.githubusercontent.com/thallisimports-maker/bot-esim-yure/main/logo.png"
