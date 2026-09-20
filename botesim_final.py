@@ -76,12 +76,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = str(update.effective_chat.id)
     user = update.effective_user
     first_name = user.first_name or "Usuário"
-    username = user.username or "SemUsername"
+    username = user.username or "sem_username"
 
     con = conectar_banco()
     cur = con.cursor()
     try:
-        # Salva ou atualiza o usuário no banco ao dar /start
+        # Cadastra/atualiza o usuário no banco de dados para registrar no Admin
         cur.execute("""
             INSERT INTO carteira (chat_id, first_name, username, saldo) 
             VALUES (?, ?, ?, 0.0)
@@ -90,15 +90,43 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         con.commit()
 
         cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
-        saldo = float(cur.fetchone()["saldo"])
+        res_saldo = cur.fetchone()
+        saldo = float(res_saldo["saldo"]) if res_saldo else 0.0
         
         cur.execute("SELECT produto_id, quantidade FROM estoque")
         est = {row["produto_id"]: row["quantidade"] for row in cur.fetchall()}
     except Exception as e:
+        logging.error(f"Erro no banco /start: {e}")
         saldo = 0.0
         est = {}
     finally:
         con.close()
+
+    # 🔗 URL DO SEU MINIAPP NO GITHUB PAGES
+    url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
+    
+    # 🖼️ LINK DIRETO DO SEU BANNER
+    # Substitua este link abaixo pela URL da imagem do seu banner oficial:
+    banner_url = "https://i.imgur.com/SEU_BANNER_AQUI.png" 
+
+    texto = f"Olá, {first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
+    
+    # 📱 BOTÕES FIXADOS LOGO ABAIXO DA FOTO DO BANNER
+    botoes = [
+        [InlineKeyboardButton("📱 ABRIR LOJA / CARTEIRA (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))],
+        [InlineKeyboardButton(f"Vivo 30GB - R$ 25 ({est.get('vivo_30gb', 0)} un)", callback_data="buy_vivo_30gb")],
+        [InlineKeyboardButton(f"Tim 40GB - R$ 30 ({est.get('tim_40gb', 0)} un)", callback_data="buy_tim_40gb")],
+        [InlineKeyboardButton(f"Claro 40GB - R$ 35 ({est.get('claro_40gb', 0)} un)", callback_data="buy_claro_40gb")]
+    ]
+    
+    # Envia a foto com a legenda e os botões acoplados
+    await context.bot.send_photo(
+        chat_id=chat_id, 
+        photo=banner_url, 
+        caption=texto, 
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(botoes)
+    )
 
     url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
     texto = f"Olá, {first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
