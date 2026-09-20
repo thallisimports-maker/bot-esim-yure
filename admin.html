@@ -117,8 +117,8 @@
             <div>
                 <div class="brand">📶 YURE DASHBOARD</div>
                 <div class="nav-menu">
-                    <a class="nav-link active">📦 Gerenciar e-SIMs</a>
-                    <a class="nav-link" onclick="carregarMetricasAdmin()">📊 Métricas / Clientes</a>
+                    <a class="nav-link active" onclick="mostrarSecao('estoque')">📦 Gerenciar e-SIMs</a>
+                    <a class="nav-link" onclick="mostrarSecao('metricas')">📊 Métricas / Clientes</a>
                 </div>
             </div>
             <a class="nav-link" style="color: var(--danger);" onclick="fazerLogout()">🚪 Encerrar Sessão</a>
@@ -206,6 +206,16 @@
         const URL_API_RENDER = "https://bot-esim-yure.onrender.com";
         let sessionUser = "";
         let sessionPass = "";
+        
+        // 🚀 NOVA FUNÇÃO DE NAVEGAÇÃO / ROLAGEM
+        function mostrarSecao(secao) {
+            if (secao === 'metricas') {
+                carregarMetricasAdmin();
+                document.querySelector('.admin-table').scrollIntoView({ behavior: 'smooth' });
+            } else {
+                document.querySelector('.dash-card').scrollIntoView({ behavior: 'smooth' });
+            }
+        }
 
         // AUTENTICAÇÃO REAL COM O SERVIDOR
         function autenticarServidor(event) {
