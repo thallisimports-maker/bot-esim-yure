@@ -203,11 +203,10 @@ async def comando_esims(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        query = update.callback_query
-        await query.answer()
+    query = update.callback_query
+    await query.answer()
 
     if query.data == "comprar_bot":
-        # Exemplo enviando uma mensagem de resposta no chat:
         await query.message.reply_text("✅ *Solicitação recebida!* \n\nGerando seu e-SIM e QR Code...", parse_mode="Markdown")
     
     # Se os botões tiverem ações personalizadas, trate o query.data aqui
