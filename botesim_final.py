@@ -3,6 +3,7 @@ import sqlite3
 import logging
 import requests
 from typing import Optional
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -46,7 +47,6 @@ def inicializar_banco():
         cur.execute("CREATE TABLE IF NOT EXISTS estoque_codigos (id INTEGER PRIMARY KEY AUTOINCREMENT, produto_id TEXT, conteudo_esim TEXT)")
         cur.execute("CREATE TABLE IF NOT EXISTS acessos_miniapp (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT, data_acesso DATETIME DEFAULT CURRENT_TIMESTAMP)")
         
-        # 🎁 TABELA DE GIFTCARDS (CUPONS)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS giftcards (
                 codigo TEXT PRIMARY KEY, 
@@ -68,9 +68,72 @@ def inicializar_banco():
 inicializar_banco()
 
 # ------------------------------------------------------------------------------
-# 🚀 APLICAÇÃO FASTAPI (BACKEND MINISITE + WEBHOOKS)
+# 🤖 LÓGICA DO BOT DO TELEGRAM
 # ------------------------------------------------------------------------------
-app = FastAPI(title="Yure e-SIM API")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = str(update.effective_chat.id)
+    user = update.effective_user
+    first_name = user.first_name or "Usuário"
+    username = user.username or "sem_username"
+
+    con = conectar_banco()
+    cur = con.cursor()
+    try:
+        cur.execute("""
+            INSERT INTO carteira (chat_id, first_name, username, saldo) 
+            VALUES (?, ?, ?, 0.0)
+            ON CONFLICT(chat_id) DO UPDATE SET first_name=?, username=?
+        """, (chat_id, first_name, username, first_name, username))
+        con.commit()
+
+        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
+        res_saldo = cur.fetchone()
+        saldo = float(res_saldo["saldo"]) if res_saldo else 0.0
+        
+        cur.execute("SELECT produto_id, quantidade FROM estoque")
+        est = {row["produto_id"]: row["quantidade"] for row in cur.fetchall()}
+    except Exception as e:
+        logging.error(f"Erro no /start: {e}")
+        saldo = 0.0
+        est = {}
+    finally:
+        con.close()
+
+    url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
+    banner_url = "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800"
+
+    texto = f"Olá, {first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
+    
+    botoes = [
+        [InlineKeyboardButton("📱 ABRIR LOJA / CARTEIRA (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))],
+        [InlineKeyboardButton(f"Vivo 30GB - R$ 25 ({est.get('vivo_30gb', 0)} un)", callback_data="buy_vivo_30gb")],
+        [InlineKeyboardButton(f"Tim 40GB - R$ 30 ({est.get('tim_40gb', 0)} un)", callback_data="buy_tim_40gb")],
+        [InlineKeyboardButton(f"Claro 40GB - R$ 35 ({est.get('claro_40gb', 0)} un)", callback_data="buy_claro_40gb")]
+    ]
+    
+    await context.bot.send_photo(chat_id=chat_id, photo=banner_url, caption=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+
+# ------------------------------------------------------------------------------
+# ⚙️ GESTOR DE LIFESPAN DA APLICAÇÃO (FASTAPI + TELEGRAM BOT)
+# ------------------------------------------------------------------------------
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    telegram_app = Application.builder().token(TOKEN).build()
+    telegram_app.add_handler(CommandHandler("start", start))
+    
+    await telegram_app.initialize()
+    await telegram_app.start()
+    await telegram_app.updater.start_polling(drop_pending_updates=True)
+    
+    yield
+    
+    await telegram_app.updater.stop()
+    await telegram_app.stop()
+
+# ------------------------------------------------------------------------------
+# 🚀 APLICAÇÃO FASTAPI (ROTAS DO ADMIN E MINIAPP)
+# ------------------------------------------------------------------------------
+app = FastAPI(title="Yure e-SIM API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -80,7 +143,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# SCHEMAS DE REQUISIÇÃO (PYDANTIC)
 class CompraMiniAppPayload(BaseModel):
     chat_id: str
     produto_id: str
@@ -126,7 +188,7 @@ async def obter_dados_usuario(chat_id: str):
     finally:
         con.close()
 
-# 2. ROTA DE COMPRA COM ENTREGA DUPLA (MINIAPP + MENSAGEM NO TELEGRAM)
+# 2. ROTA DE COMPRA
 @app.post("/api/comprar-esim")
 async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
     precos = {"vivo_30gb": 25.0, "tim_40gb": 30.0, "claro_40gb": 35.0}
@@ -149,7 +211,6 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
 
         chip_id, conteudo_bruto = chip["id"], chip["conteudo_esim"]
 
-        # Desconta o saldo e remove o produto do estoque
         cur.execute("UPDATE carteira SET saldo = saldo - ? WHERE chat_id = ?", (preco_item, payload.chat_id))
         cur.execute("DELETE FROM estoque_codigos WHERE id = ?", (chip_id,))
         cur.execute("UPDATE estoque SET quantidade = quantidade - 1 WHERE produto_id = ?", (payload.produto_id,))
@@ -159,7 +220,6 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
         qr_code_url = partes[0]
         instrucoes = partes[1] if len(partes) > 1 else "Escaneie o QR Code abaixo para ativar o seu e-SIM."
 
-        # DISPARA A FOTO DO QR CODE DIRETO NO TELEGRAM DO CLIENTE
         try:
             url_telegram_photo = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
             payload_photo = {
@@ -184,7 +244,7 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
     finally:
         con.close()
 
-# 3. GERAR PIX PUSHINPAY
+# 3. GERAR PIX
 @app.post("/api/admin/gerar-pix-site")
 async def gerar_pix_site(payload: GerarPixPayload):
     try:
@@ -206,7 +266,7 @@ async def gerar_pix_site(payload: GerarPixPayload):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# 4. ADICIONAR ESTOQUE NO ADMIN
+# 4. ADICIONAR ESTOQUE ADMIN
 @app.post("/api/admin/adicionar-estoque")
 async def admin_adicionar_estoque(payload: AdminAuthAddEsimPayload):
     if payload.usuario_admin != USUARIO_ADMIN_MINISITE or payload.senha_admin != SENHA_ADMIN_MINISITE:
@@ -224,7 +284,7 @@ async def admin_adicionar_estoque(payload: AdminAuthAddEsimPayload):
     finally:
         con.close()
 
-# 5. OBTER MÉTRICAS E CLIENTES PARA O PAINEL ADMIN
+# 5. OBTER MÉTRICAS E CLIENTES (PAINEL ADMIN)
 @app.get("/api/admin/metricas")
 async def obter_metricas_admin(usuario_admin: str, senha_admin: str):
     if usuario_admin != USUARIO_ADMIN_MINISITE or senha_admin != SENHA_ADMIN_MINISITE:
@@ -268,7 +328,7 @@ async def admin_criar_giftcard(payload: CriarGiftcardPayload):
     finally:
         con.close()
 
-# 7. RESGATAR GIFT CARD (CLIENTE NO MINIAPP)
+# 7. RESGATAR GIFT CARD (CLIENTE)
 @app.post("/api/resgatar-giftcard")
 async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
     codigo_clean = payload.codigo.upper().strip()
@@ -304,79 +364,9 @@ async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
         con.close()
 
 # ------------------------------------------------------------------------------
-# 🤖 BOT DO TELEGRAM (HANDLERS)
-# ------------------------------------------------------------------------------
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    chat_id = str(update.effective_chat.id)
-    user = update.effective_user
-    first_name = user.first_name or "Usuário"
-    username = user.username or "sem_username"
-
-    con = conectar_banco()
-    cur = con.cursor()
-    try:
-        # Regista o utilizador para ser visível no Painel Admin
-        cur.execute("""
-            INSERT INTO carteira (chat_id, first_name, username, saldo) 
-            VALUES (?, ?, ?, 0.0)
-            ON CONFLICT(chat_id) DO UPDATE SET first_name=?, username=?
-        """, (chat_id, first_name, username, first_name, username))
-        con.commit()
-
-        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
-        res_saldo = cur.fetchone()
-        saldo = float(res_saldo["saldo"]) if res_saldo else 0.0
-        
-        cur.execute("SELECT produto_id, quantidade FROM estoque")
-        est = {row["produto_id"]: row["quantidade"] for row in cur.fetchall()}
-    except Exception as e:
-        logging.error(f"Erro no /start: {e}")
-        saldo = 0.0
-        est = {}
-    finally:
-        con.close()
-
-    url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
-    banner_url = "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800"
-
-    texto = f"Olá, {first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
-    
-    botoes = [
-        [InlineKeyboardButton("📱 ABRIR LOJA / CARTEIRA (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))],
-        [InlineKeyboardButton(f"Vivo 30GB - R$ 25 ({est.get('vivo_30gb', 0)} un)", callback_data="buy_vivo_30gb")],
-        [InlineKeyboardButton(f"Tim 40GB - R$ 30 ({est.get('tim_40gb', 0)} un)", callback_data="buy_tim_40gb")],
-        [InlineKeyboardButton(f"Claro 40GB - R$ 35 ({est.get('claro_40gb', 0)} un)", callback_data="buy_claro_40gb")]
-    ]
-    
-    await context.bot.send_photo(chat_id=chat_id, photo=banner_url, caption=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
-
-# ------------------------------------------------------------------------------
-# 🟢 RUNNER DA APLICAÇÃO NA RENDER (COM LIFESPAN CORRETAMENTE DECORADO)
+# 🟢 RUNNER DA APLICAÇÃO NA RENDER
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-    from contextlib import asynccontextmanager
-
-    # 1. Gestor de contexto para inicialização e encerramento limpo do Bot
-    @asynccontextmanager
-    async def lifespan(app_fastapi: FastAPI):
-        telegram_app = Application.builder().token(TOKEN).build()
-        telegram_app.add_handler(CommandHandler("start", start))
-        
-        # Inicializa o bot limpando conexões antigas
-        await telegram_app.initialize()
-        await telegram_app.start()
-        await telegram_app.updater.start_polling(drop_pending_updates=True)
-        
-        yield  # A API FastAPI roda enquanto estiver neste ponto
-        
-        # Encerramento limpo quando a Render desliga o serviço
-        await telegram_app.updater.stop()
-        await telegram_app.stop()
-
-    # Define o lifespan na instância principal do FastAPI
-    app.router.lifespan_context = lifespan
-
-    # 2. Executa o servidor Web na porta fornecida pela Render
     port = int(os.environ.get("PORT", 10000))
     uvicorn.run(app, host="0.0.0.0", port=port)
