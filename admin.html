@@ -29,6 +29,22 @@
       margin: 0 auto;
     }
 
+    #loginBox {
+      max-width: 400px;
+      margin: 100px auto;
+      text-align: center;
+    }
+
+    #loginBox input {
+      margin-bottom: 15px;
+      text-align: center;
+      font-size: 18px;
+    }
+
+    #painelConteudo {
+      display: none;
+    }
+
     h1, h2 {
       color: var(--accent-color);
       margin-bottom: 10px;
@@ -52,7 +68,7 @@
       font-weight: bold;
     }
 
-    input[type="text"], input[type="number"], select {
+    input[type="text"], input[type="number"], input[type="password"], select {
       width: 100%;
       padding: 10px;
       border-radius: 5px;
@@ -121,94 +137,145 @@
 <body>
 
 <div class="container">
-  <h1>👑 Painel de Controle - e-SIMS Yure</h1>
 
-  <div class="grid-2">
-    <!-- CADASTRAR NOVO ESIM -->
-    <div class="card">
-      <h2>📦 Cadastrar Novo e-SIM (Estoque)</h2>
-      <form id="formCadastro">
-        <div class="form-group">
-          <label>Operadora:</label>
-          <select id="operadora" required>
-            <option value="Claro">Claro</option>
-            <option value="Vivo">Vivo</option>
-            <option value="TIM">TIM</option>
-          </select>
-        </div>
+  <!-- 🔒 TELA DE LOGIN DE ADMINISTRADOR -->
+  <div id="loginBox" class="card">
+    <h2>🔐 Acesso Restrito ao Servidor</h2>
+    <p>Autenticação do Painel Administrativo:</p>
+    <div class="form-group">
+      <input type="password" id="senhaAdmin" placeholder="Digite a senha mestre..." required>
+    </div>
+    <button onclick="autenticarServidor()">Entrar no Painel</button>
+    <p id="erroLogin" style="color: var(--danger-color); margin-top: 10px; display: none;">❌ Acesso Negado pelo Servidor!</p>
+  </div>
 
-        <div class="form-group">
-          <label>Plano / Descrição:</label>
-          <input type="text" id="plano" placeholder="Ex: 40GB Mensal" required>
-        </div>
+  <!-- 👑 CONTEÚDO DO PAINEL (PROTEGIDO PELO BACKEND) -->
+  <div id="painelConteudo">
+    <h1>👑 Painel de Controle - e-SIMS Yure</h1>
 
-        <div class="form-group">
-          <label>Preço (R$):</label>
-          <input type="number" id="preco" value="35.00" step="0.01" required>
-        </div>
+    <div class="grid-2">
+      <!-- CADASTRAR NOVO ESIM -->
+      <div class="card">
+        <h2>📦 Cadastrar Novo e-SIM (Estoque)</h2>
+        <form id="formCadastro">
+          <div class="form-group">
+            <label>Operadora:</label>
+            <select id="operadora" required>
+              <option value="Claro">Claro</option>
+              <option value="Vivo">Vivo</option>
+              <option value="TIM">TIM</option>
+            </select>
+          </div>
 
-        <div class="form-group">
-          <label>Link / URL da Foto do QR Code (ou Base64):</label>
-          <input type="text" id="imagem_qr" placeholder="https://i.imgur.com/seuqrcode.png" required>
-        </div>
+          <div class="form-group">
+            <label>Plano / Descrição:</label>
+            <input type="text" id="plano" placeholder="Ex: 40GB Mensal" required>
+          </div>
 
-        <button type="submit">➕ Adicionar ao Estoque</button>
-      </form>
+          <div class="form-group">
+            <label>Preço (R$):</label>
+            <input type="number" id="preco" value="35.00" step="0.01" required>
+          </div>
+
+          <div class="form-group">
+            <label>Link / URL da Foto do QR Code:</label>
+            <input type="text" id="imagem_qr" placeholder="https://i.imgur.com/seuqrcode.png" required>
+          </div>
+
+          <button type="submit">➕ Adicionar ao Estoque</button>
+        </form>
+      </div>
+
+      <!-- RESUMO DE METRICAS -->
+      <div class="card">
+        <h2>📊 Métricas Rápidas</h2>
+        <p><strong>eSIMs em Estoque (Disponíveis):</strong> <span id="totalDisponivel" style="color: var(--success-color);">0</span></p>
+        <p><strong>eSIMs Vendidos:</strong> <span id="totalVendido" style="color: var(--accent-blue);">0</span></p>
+        <p><strong>Total de Clientes no Bot:</strong> <span id="totalClientes">0</span></p>
+      </div>
     </div>
 
-    <!-- RESUMO DE METRICAS -->
+    <!-- ESTOQUE DE ESIMS -->
     <div class="card">
-      <h2>📊 Métricas Rápidas</h2>
-      <p><strong>eSIMs em Estoque (Disponíveis):</strong> <span id="totalDisponivel" style="color: var(--success-color);">0</span></p>
-      <p><strong>eSIMs Vendidos:</strong> <span id="totalVendido" style="color: var(--accent-blue);">0</span></p>
-      <p><strong>Total de Clientes no Bot:</strong> <span id="totalClientes">0</span></p>
+      <h2>📱 Estoque de e-SIMs</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Operadora</th>
+            <th>Plano</th>
+            <th>Preço</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaEstoque">
+          <tr><td colspan="5">Carregando dados...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- FUNIL DE CLIENTES -->
+    <div class="card">
+      <h2>🎯 Funil e Atividade dos Clientes</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Nome</th>
+            <th>Username</th>
+            <th>Último Passo</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaUtilizadores">
+          <tr><td colspan="4">Carregando utilizadores...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- ESTOQUE DE ESIMS -->
-  <div class="card">
-    <h2>📱 Estoque de e-SIMs</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Operadora</th>
-          <th>Plano</th>
-          <th>Preço</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody id="tabelaEstoque">
-        <tr><td colspan="5">Carregando dados...</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- FUNIL DE CLIENTES -->
-  <div class="card">
-    <h2>🎯 Funil e Atividade dos Clientes</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>User ID</th>
-          <th>Nome</th>
-          <th>Username</th>
-          <th>Último Passo</th>
-        </tr>
-      </thead>
-      <tbody id="tabelaUtilizadores">
-        <tr><td colspan="4">Carregando utilizadores...</td></tr>
-      </tbody>
-    </table>
-  </div>
 </div>
 
 <script>
-  // Função para carregar os dados do arquivo estoque.json
-  async function carregarPainel() {
+  async function autenticarServidor() {
+    const senha = document.getElementById('senhaAdmin').value;
+    const erroLogin = document.getElementById('erroLogin');
+
     try {
-      const res = await fetch('/estoque.json?t=' + new Date().getTime());
-      if (!res.ok) return;
+      const res = await fetch('/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ senha: senha })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        sessionStorage.setItem('token_admin', data.token);
+        document.getElementById('loginBox').style.display = 'none';
+        document.getElementById('painelConteudo').style.display = 'block';
+        carregarPainel();
+      } else {
+        erroLogin.style.display = 'block';
+      }
+    } catch (e) {
+      erroLogin.style.display = 'block';
+    }
+  }
+
+  async function carregarPainel() {
+    const token = sessionStorage.getItem('token_admin');
+    if (!token) return;
+
+    try {
+      const res = await fetch('/admin/dados', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+
+      if (!res.ok) {
+        sessionStorage.removeItem('token_admin');
+        location.reload();
+        return;
+      }
+
       const dados = await res.json();
 
       // Métricas
@@ -236,7 +303,7 @@
         `).join('');
       }
 
-      // Tabela de Utilizadores / Funil
+      // Tabela de Funil
       const tabelaUtilizadores = document.getElementById('tabelaUtilizadores');
       const utilizadores = Object.entries(dados.utilizadores || {});
       if (utilizadores.length === 0) {
@@ -252,13 +319,22 @@
         `).join('');
       }
     } catch (e) {
-      console.error('Erro ao carregar painel:', e);
+      console.error('Erro ao carregar dados:', e);
     }
   }
 
-  // Atualiza ao abrir e a cada 10 segundos
-  carregarPainel();
-  setInterval(carregarPainel, 10000);
+  // Auto-login se já tiver token válido na sessão
+  if (sessionStorage.getItem('token_admin')) {
+    document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('painelConteudo').style.display = 'block';
+    carregarPainel();
+  }
+
+  setInterval(() => {
+    if (sessionStorage.getItem('token_admin')) {
+      carregarPainel();
+    }
+  }, 10000);
 </script>
 
 </body>
