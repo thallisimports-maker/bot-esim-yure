@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin — Yure e-SIM</title>
+    <title>Painel Admin — Yure eSIMS</title>
     <style>
         :root {
             --bg-body: #060913;
             --bg-card: #0d1322;
             --bg-card-hover: #141d33;
             --bg-input: #10172a;
+            --gold-main: #d4af37;
+            --gold-gradient: linear-gradient(135deg, #f39c12 0%, #d4af37 50%, #f1c40f 100%);
             --blue-neon: #00d2ff;
-            --blue-gradient: linear-gradient(135deg, #00d2ff 0%, #0052d4 100%);
             --text-main: #f3f4f6;
             --text-muted: #8ba0c3;
             --green-success: #10b981;
@@ -47,7 +48,7 @@
         .brand-title {
             font-size: 20px;
             font-weight: 800;
-            color: var(--blue-neon);
+            color: var(--gold-main);
             display: flex;
             align-items: center;
             gap: 8px;
@@ -71,8 +72,8 @@
         }
 
         .nav-link.active, .nav-link:hover {
-            background: var(--blue-gradient);
-            color: #ffffff;
+            background: var(--gold-gradient);
+            color: #000000;
         }
 
         .main-content {
@@ -121,7 +122,7 @@
         .metric-card p {
             font-size: 28px;
             font-weight: 800;
-            color: var(--blue-neon);
+            color: var(--gold-main);
         }
 
         .dash-card {
@@ -146,7 +147,7 @@
             display: block;
             font-size: 12px;
             font-weight: 700;
-            color: var(--text-muted);
+            color: var(--gold-main);
             margin-bottom: 6px;
         }
 
@@ -160,15 +161,15 @@
             outline: none;
         }
 
-        .grid-2-col {
+        .grid-3-col {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 15px;
         }
 
         .btn-blue {
-            background: var(--blue-gradient);
-            color: white;
+            background: var(--gold-gradient);
+            color: #000000;
             border: none;
             padding: 12px 24px;
             border-radius: var(--radius-sm);
@@ -229,7 +230,7 @@
     <!-- OVERLAY DE LOGIN -->
     <div id="loginOverlay">
         <div class="login-box">
-            <h1 class="brand-title" style="justify-content: center; margin-bottom: 10px;">⚡ Admin Yure e-SIM</h1>
+            <h1 class="brand-title" style="justify-content: center; margin-bottom: 10px;">👑 Admin Yure eSIMS</h1>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Credenciais administrativas do servidor</p>
             <form onsubmit="autenticarServidor(event)">
                 <div class="input-group">
@@ -245,7 +246,7 @@
 
     <!-- SIDEBAR -->
     <div class="sidebar">
-        <div class="brand-title">⚡ Admin Dashboard</div>
+        <div class="brand-title">👑 Admin Yure</div>
         <div class="nav-menu">
             <a class="nav-link active" onclick="mostrarSecao('estoque')">📦 Gerenciar e-SIMs</a>
             <a class="nav-link" onclick="mostrarSecao('metricas')">📊 Métricas / Clientes</a>
@@ -270,12 +271,12 @@
             </div>
         </div>
 
-        <!-- FORMULÁRIO DE ESTOQUE COM DDD E GB CUSTOMIZADOS -->
+        <!-- FORMULÁRIO DE ESTOQUE COM PREÇO, DDD E GB CUSTOMIZADOS -->
         <div class="dash-card">
             <h2>📦 Adicionar Novo e-SIM ao Estoque</h2>
             <form onsubmit="adicionarEstoqueAdmin(event)">
                 <div class="input-group">
-                    <label>Operadora / Categoria</label>
+                    <label>Operadora</label>
                     <select id="esimProduto" required>
                         <option value="vivo_30gb">Vivo e-SIM</option>
                         <option value="tim_40gb">Tim e-SIM</option>
@@ -283,14 +284,18 @@
                     </select>
                 </div>
 
-                <div class="grid-2-col">
+                <div class="grid-3-col">
                     <div class="input-group">
                         <label>📞 DDD do Chip</label>
-                        <input type="text" id="esimDDD" placeholder="Ex: DDD 11, DDD 21, DDD 51 ou BR" value="DDD 11" required>
+                        <input type="text" id="esimDDD" placeholder="Ex: DDD 11 ou BR" value="DDD 11" required>
                     </div>
                     <div class="input-group">
                         <label>📊 Franquia de Dados (GB)</label>
-                        <input type="text" id="esimGB" placeholder="Ex: 10GB, 30GB, 50GB" value="30GB" required>
+                        <input type="text" id="esimGB" placeholder="Ex: 30GB" value="30GB" required>
+                    </div>
+                    <div class="input-group">
+                        <label>💰 Preço de Venda (R$)</label>
+                        <input type="number" id="esimPreco" placeholder="Ex: 25.00" step="0.01" value="25.00" required>
                     </div>
                 </div>
 
@@ -317,7 +322,7 @@
         <div class="dash-card">
             <h2>🎁 Criar Gift Card / Cupom de Saldo</h2>
             <form onsubmit="gerarGiftCardAdmin(event)">
-                <div class="grid-2-col">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div class="input-group">
                         <label>Código do Cupom</label>
                         <input type="text" id="gcCodigoInput" placeholder="Ex: BONUS25" style="text-transform: uppercase;" required>
@@ -448,6 +453,7 @@
             const prod = document.getElementById('esimProduto').value;
             const ddd = document.getElementById('esimDDD').value.trim();
             const gb = document.getElementById('esimGB').value.trim();
+            const preco = parseFloat(document.getElementById('esimPreco').value);
             const fileInput = document.getElementById('esimArquivo');
             const linkInput = document.getElementById('esimConteudo').value.trim();
             const texto = document.getElementById('esimTexto').value.trim();
@@ -487,6 +493,7 @@
                         produto_id: prod,
                         ddd: ddd || "BR",
                         gb: gb || "Padrão",
+                        preco: preco || 25.0,
                         conteudo_esim: conteudoFinalImage,
                         texto_instrucoes: texto || "Escaneie o QR Code para ativar seu e-SIM."
                     })
