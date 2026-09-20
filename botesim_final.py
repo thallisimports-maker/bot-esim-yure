@@ -15,7 +15,7 @@ from pydantic import BaseModel, Field
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
 # 🔒 CREDENCIAIS E CONSTANTES DE PRODUÇÃO
-TOKEN = "8826676433:AAHy2DkXR1TH7u4T-JO8FaOCQebFdryOg-M"
+TOKEN = "8826676433:AAEjicVbEpow_dbalsja15hFYCghRwAq0D0"
 PUSHINPAY_TOKEN = "71078|M1MASBFV155gtnKBttSvkE6u8bD8kSBFjAMLwOXa70ca5a25"
 
 # 🛡️ CREDENCIAIS DE SEGURANÇA DO PAINEL ADMIN
