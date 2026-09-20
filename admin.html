@@ -1,3 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Admin - e-SIMS Yure</title>
+  <style>
+    :root {
+      --bg-color: #0b0e14;
+      --card-bg: #161b22;
+      --text-color: #f0f6fc;
+      --accent-color: #f1c40f;
+      --accent-blue: #3498db;
+      --border-color: #30363d;
+      --success-color: #2ecc71;
+      --danger-color: #e74c3c;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    #loginBox {
+      max-width: 400px;
+      margin: 100px auto;
+      text-align: center;
+    }
+
+    #loginBox input {
+      margin-bottom: 15px;
+      text-align: center;
+      font-size: 18px;
+    }
+
+    #painelConteudo {
+      display: none;
+    }
+
+    h1, h2 {
+      color: var(--accent-color);
+      margin-bottom: 10px;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    input[type="text"], input[type="number"], input[type="password"], select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid var(--border-color);
+      background-color: #0d1117;
+      color: var(--text-color);
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: var(--accent-color);
+      color: #000;
+      font-weight: bold;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 16px;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 10px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #0d1117;
+      color: var(--accent-color);
+    }
+
+    .status-disponivel {
+      color: var(--success-color);
+      font-weight: bold;
+    }
+
+    .status-vendido {
+      color: var(--danger-color);
+      font-weight: bold;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- 🔒 TELA DE LOGIN -->
+  <div id="loginBox" class="card">
+    <h2>🔐 Acesso Restrito ao Servidor</h2>
+    <p>Autenticação do Painel Administrativo:</p>
+    <div class="form-group">
+      <input type="password" id="senhaAdmin" placeholder="Digite a senha mestre..." required>
+    </div>
+    <button type="button" onclick="autenticarServidor()">Entrar no Painel</button>
+    <p id="erroLogin" style="color: var(--danger-color); margin-top: 10px; display: none;">❌ Acesso Negado pelo Servidor!</p>
+  </div>
+
+  <!-- 👑 CONTEÚDO DO PAINEL -->
+  <div id="painelConteudo">
+    <h1>👑 Painel de Controle - e-SIMS Yure</h1>
+
+    <div class="grid-2">
+      <!-- CADASTRAR NOVO ESIM -->
+      <div class="card">
+        <h2>📦 Cadastrar Novo e-SIM (Estoque)</h2>
+        <form id="formCadastro">
+          <div class="form-group">
+            <label>Operadora:</label>
+            <select id="operadora" required>
+              <option value="Claro">Claro</option>
+              <option value="Vivo">Vivo</option>
+              <option value="TIM">TIM</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Plano / Nome:</label>
+            <input type="text" id="plano" placeholder="Ex: Vivo 40GB" required>
+          </div>
+
+          <div class="form-group">
+            <label>Descrição / Instruções:</label>
+            <input type="text" id="descricao" placeholder="Ex: Validade de 30 dias">
+          </div>
+
+          <div class="form-group">
+            <label>Preço (R$):</label>
+            <input type="number" id="preco" value="35.00" step="0.01" required>
+          </div>
+
+          <div class="form-group">
+            <label>Foto do QR Code:</label>
+            <input type="file" id="arquivo_qr" accept="image/*" style="margin-bottom: 10px;">
+            <input type="text" id="imagem_qr" placeholder="Ou digite o caminho/URL da imagem">
+          </div>
+
+          <button type="submit">➕ Adicionar ao Estoque</button>
+        </form>
+      </div>
+
+      <!-- RESUMO DE METRICAS -->
+      <div class="card">
+        <h2>📊 Métricas Rápidas</h2>
+        <p><strong>eSIMs em Estoque (Disponíveis):</strong> <span id="totalDisponivel" style="color: var(--success-color);">0</span></p>
+        <p><strong>eSIMs Vendidos:</strong> <span id="totalVendido" style="color: var(--accent-blue);">0</span></p>
+        <p><strong>Total de Clientes no Bot:</strong> <span id="totalClientes">0</span></p>
+      </div>
+    </div>
+
+    <!-- ESTOQUE DE ESIMS -->
+    <div class="card">
+      <h2>📱 Estoque de e-SIMs</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Operadora</th>
+            <th>Plano</th>
+            <th>Preço</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaEstoque">
+          <tr><td colspan="5">Carregando dados...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- FUNIL DE CLIENTES -->
+    <div class="card">
+      <h2>🎯 Funil e Atividade dos Clientes</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Nome</th>
+            <th>Username</th>
+            <th>Último Passo</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaUtilizadores">
+          <tr><td colspan="4">Carregando utilizadores...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
 <script>
   const URL_BACKEND = "https://bot-esim-yure.onrender.com";
 
@@ -43,7 +286,6 @@
 
       const dados = await res.json();
 
-      // Métricas
       const produtos = dados.produtos || [];
       const disponiveis = produtos.filter(p => p.status === 'disponivel').length;
       const vendidos = produtos.filter(p => p.status === 'vendido').length;
@@ -52,7 +294,6 @@
       document.getElementById('totalVendido').innerText = vendidos;
       document.getElementById('totalClientes').innerText = Object.keys(dados.utilizadores || {}).length;
 
-      // Tabela de Estoque
       const tabelaEstoque = document.getElementById('tabelaEstoque');
       if (produtos.length === 0) {
         tabelaEstoque.innerHTML = '<tr><td colspan="5">Nenhum e-SIM cadastrado.</td></tr>';
@@ -68,7 +309,6 @@
         `).join('');
       }
 
-      // Tabela de Funil
       const tabelaUtilizadores = document.getElementById('tabelaUtilizadores');
       const utilizadores = Object.entries(dados.utilizadores || {});
       if (utilizadores.length === 0) {
@@ -159,3 +399,6 @@
     }
   }, 10000);
 </script>
+
+</body>
+</html>
