@@ -14,10 +14,14 @@ from pydantic import BaseModel, Field
 
 logging.basicConfig(format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO)
 
-# 🔒 CREDENCIAIS E CONSTANTES
+# 🔒 CREDENCIAIS E CONSTANTES DE PRODUÇÃO
 TOKEN = "8826676433:AAHy2DkXR1TH7u4T-JO8FaOCQebFdryOg-M"
 PUSHINPAY_TOKEN = "71078|M1MASBFV155gtnKBttSvkE6u8bD8kSBFjAMLwOXa70ca5a25"
+
+# 🛡️ CREDENCIAIS DE SEGURANÇA DO PAINEL ADMIN
+USUARIO_ADMIN_MINISITE = "yure_admin"  # <-- COLOQUE ESTA LINHA AQUI
 SENHA_ADMIN_MINISITE = "yure123"
+
 PASTA_IMAGENS = "imagens_chips"
 
 if not os.path.exists(PASTA_IMAGENS):
@@ -64,11 +68,12 @@ class CompraMiniAppPayload(BaseModel):
     chat_id: str
     produto_id: str
 
-class AdminAddEsimPayload(BaseModel):
+class AdminAuthAddEsimPayload(BaseModel):
+    usuario_admin: str
     senha_admin: str
     produto_id: str
-    conteudo_esim: str  # Link da Imagem do QR Code ou Código do e-SIM
-    texto_instrucoes: Optional[str] = "Abra as configurações do seu celular > Celular > Adicionar e-SIM e escaneie o QR Code abaixo para ativar."
+    conteudo_esim: str
+    texto_instrucoes: Optional[str] = "Escaneie o QR Code para ativar o seu e-SIM."
 
 # 🌐 ROTAS DA API WEB (MINIAPP & ADMIN)
 
@@ -173,11 +178,14 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
         con.close()
 
 @app.post("/api/admin/adicionar-estoque")
-async def admin_adicionar_estoque(payload: AdminAddEsimPayload):
-    if payload.senha_admin != SENHA_ADMIN_MINISITE:
-        raise HTTPException(status_code=401, detail="Senha administrativa incorreta!")
+async def admin_adicionar_estoque(payload: AdminAuthAddEsimPayload):
+    # BLINDAGEM DE SEGURANÇA: Valida Usuário E Senha no Servidor
+    if payload.usuario_admin != USUARIO_ADMIN_MINISITE or payload.senha_admin != SENHA_ADMIN_MINISITE:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, 
+            detail="Acesso Negado: Credenciais Administrativas Inválidas!"
+        )
 
-    # Monta a mensagem final gravada no banco
     conteudo_final = f"{payload.conteudo_esim}||{payload.texto_instrucoes}"
 
     con = conectar_banco()
@@ -194,7 +202,7 @@ async def admin_adicionar_estoque(payload: AdminAddEsimPayload):
         con.commit()
         return {
             "status": "sucesso", 
-            "mensagem": f"e-SIM registrado com sucesso no estoque de {payload.produto_id.upper()}!"
+            "mensagem": f"e-SIM adicionado com sucesso ao estoque de {payload.produto_id.upper()}!"
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
