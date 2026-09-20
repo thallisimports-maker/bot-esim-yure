@@ -44,19 +44,114 @@ def conectar_banco():
     con.row_factory = sqlite3.Row
     return con
 
+# 1. ATUALIZAÇÃO DO BANCO PARA REGISTRAR ACESSOS E NORMES
 def inicializar_banco():
     con = conectar_banco()
     cur = con.cursor()
     try:
-        cur.execute("CREATE TABLE IF NOT EXISTS carteira (chat_id TEXT PRIMARY KEY, saldo REAL DEFAULT 0.0)")
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS carteira (
+                chat_id TEXT PRIMARY KEY, 
+                first_name TEXT, 
+                username TEXT, 
+                saldo REAL DEFAULT 0.0,
+                data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         cur.execute("CREATE TABLE IF NOT EXISTS estoque (produto_id TEXT PRIMARY KEY, quantidade INTEGER DEFAULT 0)")
         cur.execute("CREATE TABLE IF NOT EXISTS estoque_codigos (id INTEGER PRIMARY KEY AUTOINCREMENT, produto_id TEXT, conteudo_esim TEXT)")
+        cur.execute("CREATE TABLE IF NOT EXISTS acessos_miniapp (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT, data_acesso DATETIME DEFAULT CURRENT_TIMESTAMP)")
+        
         cur.execute("SELECT COUNT(*) FROM estoque")
         if cur.fetchone()[0] == 0:
             cur.execute("INSERT INTO estoque (produto_id, quantidade) VALUES ('vivo_30gb', 0), ('tim_40gb', 0), ('claro_40gb', 0)")
         con.commit()
     except Exception as e:
         logging.error(f"Erro ao inicializar banco: {e}")
+    finally:
+        con.close()
+
+# 2. CAPTURA DE QUEM DEU /START (COM NOME E USERNAME)
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    chat_id = str(update.effective_chat.id)
+    user = update.effective_user
+    first_name = user.first_name or "Usuário"
+    username = user.username or "SemUsername"
+
+    con = conectar_banco()
+    cur = con.cursor()
+    try:
+        # Salva ou atualiza o usuário no banco ao dar /start
+        cur.execute("""
+            INSERT INTO carteira (chat_id, first_name, username, saldo) 
+            VALUES (?, ?, ?, 0.0)
+            ON CONFLICT(chat_id) DO UPDATE SET first_name=?, username=?
+        """, (chat_id, first_name, username, first_name, username))
+        con.commit()
+
+        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
+        saldo = float(cur.fetchone()["saldo"])
+        
+        cur.execute("SELECT produto_id, quantidade FROM estoque")
+        est = {row["produto_id"]: row["quantidade"] for row in cur.fetchall()}
+    except Exception as e:
+        saldo = 0.0
+        est = {}
+    finally:
+        con.close()
+
+    url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
+    texto = f"Olá, {first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
+    
+    botoes = [
+        [InlineKeyboardButton("📱 ABRIR LOJA / CARTEIRA (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))],
+        [InlineKeyboardButton(f"Vivo 30GB - R$ 25 ({est.get('vivo_30gb', 0)} un)", callback_data="buy_vivo_30gb")],
+        [InlineKeyboardButton(f"Tim 40GB - R$ 30 ({est.get('tim_40gb', 0)} un)", callback_data="buy_tim_40gb")],
+        [InlineKeyboardButton(f"Claro 40GB - R$ 35 ({est.get('claro_40gb', 0)} un)", callback_data="buy_claro_40gb")]
+    ]
+    
+    banner_url = "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800"
+    await context.bot.send_photo(chat_id=chat_id, photo=banner_url, caption=texto, reply_markup=InlineKeyboardMarkup(botoes))
+
+# 3. ROTA DE MÉTRICAS PARA O PAINEL ADMIN
+@app.get("/api/admin/metricas")
+async def obter_metricas_admin(usuario_admin: str, senha_admin: str):
+    if usuario_admin != USUARIO_ADMIN_MINISITE or senha_admin != SENHA_ADMIN_MINISITE:
+        raise HTTPException(status_code=401, detail="Não autorizado")
+
+    con = conectar_banco()
+    cur = con.cursor()
+    try:
+        # Total de pessoas que deram /start
+        cur.execute("SELECT COUNT(*) FROM carteira")
+        total_usuarios = cur.fetchone()[0]
+
+        # Total de aberturas do MiniApp
+        cur.execute("SELECT COUNT(*) FROM acessos_miniapp")
+        total_acessos_app = cur.fetchone()[0]
+
+        # Lista dos últimos 10 usuários que deram /start
+        cur.execute("SELECT chat_id, first_name, username, saldo FROM carteira ORDER BY data_criacao DESC LIMIT 10")
+        lista_usuarios = [dict(row) for row in cur.fetchall()]
+
+        return {
+            "status": "sucesso",
+            "total_usuarios_bot": total_usuarios,
+            "total_acessos_miniapp": total_acessos_app,
+            "usuarios": lista_usuarios
+        }
+    finally:
+        con.close()
+
+# 4. REGISTRAR ACESSO AO MINIAPP
+@app.post("/api/miniapp/registrar-acesso")
+async def registrar_acesso(payload: CompraMiniAppPayload):
+    con = conectar_banco()
+    cur = con.cursor()
+    try:
+        cur.execute("INSERT INTO acessos_miniapp (chat_id) VALUES (?)", (payload.chat_id,))
+        con.commit()
+        return {"status": "ok"}
     finally:
         con.close()
 
