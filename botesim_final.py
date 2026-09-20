@@ -332,8 +332,32 @@ async def login_admin(senha: str = ""):
 @app.get("/api/admin/dados")
 async def obter_dados_admin(authorization: str = Header(None)):
     if authorization != f"Bearer {PUSHINPAY_TOKEN}":
-        raise HTTPException(status_code=401, detail="Acesso negado! Nao autorizado.")
-    return carregar_dados()
+        raise HTTPException(status_code=401, detail="Nao autorizado")
+    
+    dados = carregar_dados()
+    
+    # Busca os Gift Cards cadastrados no SQLite
+    con = conectar_banco()
+    cur = con.cursor()
+    cupons_lista = []
+    try:
+        cur.execute("CREATE TABLE IF NOT EXISTS giftcards (codigo TEXT PRIMARY KEY, valor REAL, usado INTEGER DEFAULT 0, usado_por TEXT)")
+        cur.execute("SELECT codigo, valor, usado, usado_por FROM giftcards")
+        linhas = cur.fetchall()
+        for row in linhas:
+            cupons_lista.append({
+                "codigo": row["codigo"],
+                "valor": float(row["valor"]),
+                "usado": bool(row["usado"]),
+                "usado_por": row["usado_por"] or ""
+            })
+    except Exception as e:
+        print("Erro ao ler giftcards:", e)
+    finally:
+        con.close()
+        
+    dados["cupons_detalhados"] = cupons_lista
+    return dados
 
 app.add_middleware(
     CORSMiddleware,
