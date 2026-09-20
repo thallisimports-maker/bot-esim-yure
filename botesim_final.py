@@ -666,6 +666,32 @@ async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
     finally:
         con.close()
 
+class NovoCupom(BaseModel):
+    codigo: str
+    valor: float
+
+
+@app.post("/api/admin/cupons")
+async def adicionar_cupom(
+    cupom: NovoCupom, authorization: str = Header(None)
+):
+    if authorization != f"Bearer {PUSHINPAY_TOKEN}":
+        raise HTTPException(
+            status_code=401, detail="Acesso negado! Nao autorizado."
+        )
+
+    dados = carregar_dados()
+    if "cupons" not in dados or not isinstance(dados["cupons"], dict):
+        dados["cupons"] = {}
+
+    codigo_limpo = cupom.codigo.strip().upper()
+    dados["cupons"][codigo_limpo] = float(cupom.valor)
+
+    salvar_dados(dados)
+    salvar_dados_no_github(dados)
+
+    return {"sucesso": True, "codigo": codigo_limpo, "valor": cupom.valor}
+
 # ------------------------------------------------------------------------------
 # 🟢 RUNNER DA APLICAÇÃO
 # ------------------------------------------------------------------------------
