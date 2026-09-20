@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, BotCommand
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # ------------------------------------------------------------------------------
 # 🔒 CREDENCIAIS E CONSTANTES DE PRODUÇÃO
@@ -197,9 +197,17 @@ async def comando_esims(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         f"📱 **Claro eSIM:** {est.get('claro_40gb', 0)} unidades\n\n"
         "✨ *Ativação instantânea diretamente no MiniApp!*"
     )
-    url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
-    botoes = [[InlineKeyboardButton("🛒 Comprar e-SIM Agora", web_app=WebAppInfo(url=url_miniapp))]]
-    await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+    url_miniapp = "https://e-simsyure.shop/"
+    # 1. Cria um botão que envia um aviso para o Python (Callback Query)
+botoes = [[InlineKeyboardButton("🛒 Comprar e-SIM pelo Bot", callback_data="comprar_bot")]]
+await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+
+async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    query = update.callback_query
+    await query.answer()  # <--- Isto remove o ícone de carregamento no Telegram!
+    
+    # Se os botões tiverem ações personalizadas, trate o query.data aqui
+    # ex: if query.data == "comprar": ...
 
 # ------------------------------------------------------------------------------
 # ⚙️ GESTOR DE LIFESPAN (REGISTRO DO MENU DE COMANDOS NATIVO)
@@ -212,6 +220,7 @@ async def lifespan(app: FastAPI):
     telegram_app.add_handler(CommandHandler("saldo", comando_saldo))
     telegram_app.add_handler(CommandHandler("suporte", comando_suporte))
     telegram_app.add_handler(CommandHandler("esims", comando_esims))
+    telegram_app.add_handler(CallbackQueryHandler(responder_botoes))
     
     await telegram_app.initialize()
     await telegram_app.start()
