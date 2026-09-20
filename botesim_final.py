@@ -311,6 +311,32 @@ async def lifespan(app: FastAPI):
 # ------------------------------------------------------------------------------
 app = FastAPI(title="Yure e-SIM API", lifespan=lifespan)
 
+from fastapi import Header, HTTPException
+
+# 🔐 Defina a sua senha mestre de acesso ao painel admin
+SENHA_ADMIN_SEGURA = "aguia2026"
+
+
+class LoginAdmin(BaseModel):
+    senha: str
+
+
+@app.post("/admin/login")
+async def login_admin(data: LoginAdmin):
+    if data.senha == SENHA_ADMIN_SEGURA:
+        return {"sucesso": True, "token": PUSHINPAY_TOKEN}
+    raise HTTPException(status_code=401, detail="Senha incorreta!")
+
+
+@app.get("/admin/dados")
+async def obter_dados_admin(authorization: str = Header(None)):
+    if authorization != f"Bearer {PUSHINPAY_TOKEN}":
+        raise HTTPException(
+            status_code=401, detail="Acesso negado! Não autorizado."
+        )
+
+    return carregar_dados()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
