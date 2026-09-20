@@ -613,7 +613,7 @@
             }
         }
 
-        // 4. COMPRAR E-SIM (COM SUPORTE A TEXTO EXCLUSIVO E QR CODE DO ADMIN)
+        // 4. COMPRAR E-SIM (ENTREGA NA TELA + DISPARO NO CHAT)
         async function comprarNoBot(planoId, preco) {
             const chatIdFinal = telegramChatId || "123456789";
 
@@ -633,15 +633,16 @@
                 const resultado = await resposta.json();
 
                 if (resultado.status === "sucesso") {
-                    const partes = resultado.conteudo_esim.split('||');
-                    const qrCodeUrl = partes[0];
-                    const textoInstrucoes = partes[1] || "Escaneie o QR Code para ativar o seu e-SIM.";
-
-                    alert(`🎉 COMPRA REALIZADA COM SUCESSO!\n\n${textoInstrucoes}\n\n🖼️ QR Code: ${qrCodeUrl}`);
-                    
+                    // Atualiza o saldo dinâmico na tela
                     if (document.getElementById('userSaldo')) {
                         document.getElementById('userSaldo').innerText = resultado.novo_saldo.toFixed(2);
                     }
+
+                    // Exibe alerta de sucesso e envia o e-SIM na tela
+                    alert(`🎉 COMPRA REALIZADA!\n\nEnviamos a foto do seu QR Code no seu chat do Telegram!\n\n${resultado.instrucoes}`);
+                    
+                    // Opcional: Redireciona o cliente para a aba de Pedidos
+                    switchTab('pedidos', document.querySelectorAll('.bottom-nav .nav-item')[1]);
                 } else {
                     alert(`⚠️ Atenção: ${resultado.detalhe}`);
                 }
