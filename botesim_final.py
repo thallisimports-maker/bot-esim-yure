@@ -255,6 +255,7 @@ class AdminAuthAddEsimPayload(BaseModel):
     conteudo_esim: str
     ddd: Optional[str] = "BR"
     gb: Optional[str] = "Padrão"
+    preco: Optional[float] = 25.0  # Campo de Preço do e-SIM
     texto_instrucoes: Optional[str] = "Escaneie o QR Code para ativar o seu e-SIM."
 
 class GerarPixPayload(BaseModel):
