@@ -105,12 +105,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     texto = f"Olá, {first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
     
     botoes = [
-        [InlineKeyboardButton("📱 ABRIR LOJA / CARTEIRA (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))],
-        [InlineKeyboardButton(f"Vivo 30GB - R$ 25 ({est.get('vivo_30gb', 0)} un)", callback_data="buy_vivo_30gb")],
-        [InlineKeyboardButton(f"Tim 40GB - R$ 30 ({est.get('tim_40gb', 0)} un)", callback_data="buy_tim_40gb")],
-        [InlineKeyboardButton(f"Claro 40GB - R$ 35 ({est.get('claro_40gb', 0)} un)", callback_data="buy_claro_40gb")]
+        [InlineKeyboardButton("📱 ABRIR LOJA / CARTEIRA (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))]
     ]
-    
+
+    # Só adiciona os botões se houver quantidade maior que zero em estoque
+    qtd_vivo = est.get('vivo_30gb', 0)
+    if qtd_vivo > 0:
+        botoes.append([InlineKeyboardButton(f"Vivo 30GB - R$ 25 ({qtd_vivo} un)", callback_data="buy_vivo_30gb")])
+
+    qtd_tim = est.get('tim_40gb', 0)
+    if qtd_tim > 0:
+        botoes.append([InlineKeyboardButton(f"Tim 40GB - R$ 30 ({qtd_tim} un)", callback_data="buy_tim_40gb")])
+
+    qtd_claro = est.get('claro_40gb', 0)
+    if qtd_claro > 0:
+        botoes.append([InlineKeyboardButton(f"Claro 40GB - R$ 35 ({qtd_claro} un)", callback_data="buy_claro_40gb")])
+
+    if len(botoes) == 1:
+        texto += "\n\n⚠️ *Atualmente todos os planos estão esgotados no estoque. Abra o MiniApp para novidades!*"
+
     await context.bot.send_photo(chat_id=chat_id, photo=banner_url, caption=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 # ------------------------------------------------------------------------------
@@ -170,6 +183,18 @@ class ResgatarGiftcardPayload(BaseModel):
 @app.get("/")
 async def root():
     return {"status": "online", "mensagem": "API Yure e-SIM funcionando com sucesso!"}
+
+# ROTA PÚBLICA PARA CONSULTAR ESTOQUE EM TEMPO REAL NO MINIAPP
+@app.get("/api/estoque")
+async def consultar_estoque_publico():
+    con = conectar_banco()
+    cur = con.cursor()
+    try:
+        cur.execute("SELECT produto_id, quantidade FROM estoque")
+        est = {row["produto_id"]: row["quantidade"] for row in cur.fetchall()}
+        return {"status": "sucesso", "estoque": est}
+    finally:
+        con.close()
 
 # 1. OBTER DADOS DO USUÁRIO
 @app.get("/api/usuario/{chat_id}")
