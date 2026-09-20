@@ -1,0 +1,14 @@
+{
+  "produtos": [
+    {
+      "id": "claro_40gb_001",
+      "operadora": "Claro",
+      "plano": "40GB",
+      "preco": 35.0,
+      "imagem_qr": "https://i.imgur.com/exemplo_qrcode.png",
+      "status": "disponivel"
+    }
+  ],
+  "utilizadores": {},
+  "vendas": []
+}
