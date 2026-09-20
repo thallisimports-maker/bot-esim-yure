@@ -198,19 +198,19 @@ async def comando_esims(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         f"⚡ *Ativação instantânea diretamente no MiniApp!*"
     )
     url_miniapp = "https://e-simsyure.shop/"
-    botoes = [[InlineKeyboardButton("🛒 Comprar e-SIM pelo Bot", callback_data="comprar_bot")]]
-    await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+botoes = [[InlineKeyboardButton("🛒 Comprar e-SIM pelo Bot", callback_data="comprar_bot")]]
+await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 
 async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
     await query.answer()
 
-    mensagem_texto = (
+    await query.message.reply_text(
         "📱 *Solicitação de e-SIM Recebida!*\n\n"
-        "Estamos a processar o seu pedido. Caso tenha saldo na carteira, o seu QR Code será enviado aqui no chat!"
+        "Estamos a processar o seu pedido. Caso tenha saldo na carteira, o seu QR Code será enviado aqui no chat!",
+        parse_mode="Markdown"
     )
-    await query.message.reply_text(mensagem_texto, parse_mode="Markdown")
 
 
 # ------------------------------------------------------------------
