@@ -211,12 +211,12 @@
         function mostrarSecao(secao) {
             if (secao === 'metricas') {
                 carregarMetricasAdmin();
-                document.querySelector('.admin-table').scrollIntoView({ behavior: 'smooth' });
+                const el = document.getElementById('secaoMetricas');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
             } else {
-                document.querySelector('.dash-card').scrollIntoView({ behavior: 'smooth' });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
-
         // AUTENTICAÇÃO REAL COM O SERVIDOR
         function autenticarServidor(event) {
             event.preventDefault();
