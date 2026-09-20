@@ -160,6 +160,12 @@
             outline: none;
         }
 
+        .grid-2-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
         .btn-blue {
             background: var(--blue-gradient);
             color: white;
@@ -264,21 +270,32 @@
             </div>
         </div>
 
-        <!-- FORMULÁRIO DE ESTOQUE COM UPLOAD DE IMAGEM -->
+        <!-- FORMULÁRIO DE ESTOQUE COM DDD E GB CUSTOMIZADOS -->
         <div class="dash-card">
             <h2>📦 Adicionar Novo e-SIM ao Estoque</h2>
             <form onsubmit="adicionarEstoqueAdmin(event)">
                 <div class="input-group">
-                    <label>Operadora / Plano</label>
+                    <label>Operadora / Categoria</label>
                     <select id="esimProduto" required>
-                        <option value="vivo_30gb">Vivo 30GB (R$ 25,00)</option>
-                        <option value="tim_40gb">Tim 40GB (R$ 30,00)</option>
-                        <option value="claro_40gb">Claro 40GB (R$ 35,00)</option>
+                        <option value="vivo_30gb">Vivo e-SIM (R$ 25,00)</option>
+                        <option value="tim_40gb">Tim e-SIM (R$ 30,00)</option>
+                        <option value="claro_40gb">Claro e-SIM (R$ 35,00)</option>
                     </select>
                 </div>
 
+                <div class="grid-2-col">
+                    <div class="input-group">
+                        <label>📞 DDD do Chip</label>
+                        <input type="text" id="esimDDD" placeholder="Ex: DDD 11, DDD 21, DDD 51 ou BR" value="DDD 11" required>
+                    </div>
+                    <div class="input-group">
+                        <label>📊 Franquia de Dados (GB)</label>
+                        <input type="text" id="esimGB" placeholder="Ex: 10GB, 30GB, 50GB" value="30GB" required>
+                    </div>
+                </div>
+
                 <div class="input-group">
-                    <label>🖼️ Selecionar Imagem do QR Code do Computador/Celular</label>
+                    <label>🖼️ Selecionar Imagem do QR Code (Do PC / Celular)</label>
                     <input type="file" id="esimArquivo" accept="image/*" style="padding: 8px;">
                 </div>
 
@@ -300,7 +317,7 @@
         <div class="dash-card">
             <h2>🎁 Criar Gift Card / Cupom de Saldo</h2>
             <form onsubmit="gerarGiftCardAdmin(event)">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div class="grid-2-col">
                     <div class="input-group">
                         <label>Código do Cupom</label>
                         <input type="text" id="gcCodigoInput" placeholder="Ex: BONUS25" style="text-transform: uppercase;" required>
@@ -417,7 +434,6 @@
             }
         }
 
-        // LEITURA DO ARQUIVO OU LINK
         function lerArquivoComoBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -430,6 +446,8 @@
         async function adicionarEstoqueAdmin(event) {
             event.preventDefault();
             const prod = document.getElementById('esimProduto').value;
+            const ddd = document.getElementById('esimDDD').value.trim();
+            const gb = document.getElementById('esimGB').value.trim();
             const fileInput = document.getElementById('esimArquivo');
             const linkInput = document.getElementById('esimConteudo').value.trim();
             const texto = document.getElementById('esimTexto').value.trim();
@@ -467,6 +485,8 @@
                         usuario_admin: sessionUser,
                         senha_admin: sessionPass,
                         produto_id: prod,
+                        ddd: ddd || "BR",
+                        gb: gb || "Padrão",
                         conteudo_esim: conteudoFinalImage,
                         texto_instrucoes: texto || "Escaneie o QR Code para ativar seu e-SIM."
                     })
