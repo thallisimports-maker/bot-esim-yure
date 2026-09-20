@@ -240,15 +240,11 @@
     const campoSenha = document.getElementById('senhaAdmin');
     const erroLogin = document.getElementById('erroLogin');
 
-    if (!campoSenha) {
-      console.error("Campo 'senhaAdmin' não foi encontrado!");
-      return;
-    }
-
+    if (!campoSenha) return;
     const senha = campoSenha.value;
 
     try {
-      const res = await fetch('/admin/login', {
+      const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ senha: senha })
@@ -274,7 +270,7 @@
     if (!token) return;
 
     try {
-      const res = await fetch('/admin/dados', {
+      const res = await fetch('/api/admin/dados', {
         headers: { 'Authorization': 'Bearer ' + token }
       });
 
@@ -331,7 +327,6 @@
     }
   }
 
-  // Auto-login se já tiver token válido na sessão
   if (sessionStorage.getItem('token_admin')) {
     document.getElementById('loginBox').style.display = 'none';
     document.getElementById('painelConteudo').style.display = 'block';
