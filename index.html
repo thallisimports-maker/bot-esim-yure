@@ -603,8 +603,15 @@
         }
 
         function abrirSuporte() {
-            const linkWa = "https://wa.me/5535997550084";
-            window.open(linkWa, "_blank");
+            const opcao = window.confirm("Deseja ser atendido via WhatsApp?\n\n[ OK ] = WhatsApp\n[ Cancelar ] = Telegram");
+            
+            if (opcao) {
+                // Redireciona para o WhatsApp
+                window.open("https://wa.me/5535997550084", "_blank");
+            } else {
+                // Redireciona para o Telegram (coloque o seu @ do Telegram aqui)
+                window.open("https://t.me/@Yureconsul7", "_blank");
+            }
         }
 
         async function comprarNoBot(planoId, preco) {
