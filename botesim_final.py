@@ -22,8 +22,8 @@ PUSHINPAY_TOKEN = "71078|M1MASBFV155gtnKBttSvkE6u8bD8kSBFjAMLwOXa70ca5a25"
 USUARIO_ADMIN_MINISITE = "yure_admin"
 SENHA_ADMIN_MINISITE = "yure123"
 
-# BANNER / LOGO DA SUA MARCA
-LOGO_URL = "https://thallisimports-maker.github.io/bot-esim-yure/logo.png"
+# LINK DIRETO DA SUA LOGO NO GITHUB
+LOGO_URL = "https://raw.githubusercontent.com/thallisimports-maker/bot-esim-yure/main/logo.png"
 
 logging.basicConfig(level=logging.INFO)
 
@@ -149,7 +149,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     try:
         await context.bot.send_photo(chat_id=chat_id, photo=LOGO_URL, caption=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
-    except Exception:
+    except Exception as err:
+        logging.error(f"Erro ao enviar photo, enviando texto: {err}")
         await context.bot.send_message(chat_id=chat_id, text=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 async def comando_saldo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -200,7 +201,6 @@ async def comando_esims(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 async def lifespan(app: FastAPI):
     telegram_app = Application.builder().token(TOKEN).build()
     
-    # HANDLERS DOS COMANDOS
     telegram_app.add_handler(CommandHandler("start", start))
     telegram_app.add_handler(CommandHandler("saldo", comando_saldo))
     telegram_app.add_handler(CommandHandler("suporte", comando_suporte))
@@ -209,7 +209,6 @@ async def lifespan(app: FastAPI):
     await telegram_app.initialize()
     await telegram_app.start()
     
-    # CONFIGURA O BOTÃO NATIVO DE COMANDOS ("/") NO TELEGRAM
     comandos_menu = [
         BotCommand("start", "👑 Menu Principal e Loja"),
         BotCommand("saldo", "💳 Consultar Saldo / Carteira"),
