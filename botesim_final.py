@@ -335,7 +335,41 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+class NovoProduto(BaseModel):
+    operadora: str
+    plano: str
+    descricao: str = ""
+    preco: float
+    imagem_qr: str
 
+
+@app.post("/api/admin/produtos")
+async def adicionar_produto(
+    produto: NovoProduto, authorization: str = Header(None)
+):
+    if authorization != f"Bearer {PUSHINPAY_TOKEN}":
+        raise HTTPException(
+            status_code=401, detail="Acesso negado! Nao autorizado."
+        )
+
+    dados = carregar_dados()
+    produtos = dados.get("produtos", [])
+
+    novo_item = {
+        "id": f"esim_{len(produtos) + 1}",
+        "operadora": produto.operadora,
+        "plano": produto.plano,
+        "descricao": produto.descricao,
+        "preco": produto.preco,
+        "imagem_qr": produto.imagem_qr,
+        "status": "disponivel",
+    }
+
+    produtos.append(novo_item)
+    dados["produtos"] = produtos
+    salvar_dados(dados)
+
+    return {"sucesso": True, "produto": novo_item}
 class CompraMiniAppPayload(BaseModel):
     chat_id: str
     produto_id: str
