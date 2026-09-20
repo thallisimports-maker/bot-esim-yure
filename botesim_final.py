@@ -177,7 +177,7 @@ async def comando_suporte(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     )
     botoes = [
         [InlineKeyboardButton("💬 Atendimento via WhatsApp", url="https://wa.me/5535997550084")],
-        [InlineKeyboardButton("✈️ Atendimento via Telegram", url="https://t.me/Yureconsul7")] # Substitua pelo seu @username do Telegram
+        [InlineKeyboardButton("✈️ Atendimento via Telegram", url="https://t.me/@Yureconsul7")] # Substitua pelo seu @username do Telegram
     ]
     await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
