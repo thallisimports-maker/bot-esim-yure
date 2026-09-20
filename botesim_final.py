@@ -46,7 +46,26 @@ def inicializar_banco():
             )
         """)
         cur.execute("CREATE TABLE IF NOT EXISTS estoque (produto_id TEXT PRIMARY KEY, quantidade INTEGER DEFAULT 0)")
-        cur.execute("CREATE TABLE IF NOT EXISTS estoque_codigos (id INTEGER PRIMARY KEY AUTOINCREMENT, produto_id TEXT, conteudo_esim TEXT)")
+        
+        # TABELA DE ESTOQUE COM COLUNAS DE DDD E GB CUSTOMIZADOS
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS estoque_codigos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                produto_id TEXT, 
+                conteudo_esim TEXT,
+                ddd TEXT DEFAULT 'BR',
+                gb TEXT DEFAULT 'Padrão'
+            )
+        """)
+        
+        # MIGRAÇÃO AUTOMÁTICA DE COLUNAS CASO NÃO EXISTAM
+        cur.execute("PRAGMA table_info(estoque_codigos)")
+        colunas = [col["name"] for col in cur.fetchall()]
+        if "ddd" not in colunas:
+            cur.execute("ALTER TABLE estoque_codigos ADD COLUMN ddd TEXT DEFAULT 'BR'")
+        if "gb" not in colunas:
+            cur.execute("ALTER TABLE estoque_codigos ADD COLUMN gb TEXT DEFAULT 'Padrão'")
+
         cur.execute("CREATE TABLE IF NOT EXISTS acessos_miniapp (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT, data_acesso DATETIME DEFAULT CURRENT_TIMESTAMP)")
         
         cur.execute("""
@@ -102,7 +121,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         con.close()
 
     url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
-    banner_url = "https://chatgpt.com/s/m_6aab5a7bf33c81919a3625a128148666"
+    banner_url = "https://images.unsplash.com/photo-1563986768609-322da13575f3?w=800"
 
     texto = f"Olá, {first_name}!\n\n📥 **Carteira Saldo Virtual:** R$ {saldo:.2f}\n\nEscolha o seu plano de e-SIM abaixo para comprar instantaneamente:"
     
@@ -112,15 +131,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     qtd_vivo = est.get('vivo_30gb', 0)
     if qtd_vivo > 0:
-        botoes.append([InlineKeyboardButton(f"Vivo 30GB - R$ 25 ({qtd_vivo} un)", callback_data="buy_vivo_30gb")])
+        botoes.append([InlineKeyboardButton(f"Vivo e-SIM - R$ 25 ({qtd_vivo} un)", callback_data="buy_vivo_30gb")])
 
     qtd_tim = est.get('tim_40gb', 0)
     if qtd_tim > 0:
-        botoes.append([InlineKeyboardButton(f"Tim 40GB - R$ 30 ({qtd_tim} un)", callback_data="buy_tim_40gb")])
+        botoes.append([InlineKeyboardButton(f"Tim e-SIM - R$ 30 ({qtd_tim} un)", callback_data="buy_tim_40gb")])
 
     qtd_claro = est.get('claro_40gb', 0)
     if qtd_claro > 0:
-        botoes.append([InlineKeyboardButton(f"Claro 40GB - R$ 35 ({qtd_claro} un)", callback_data="buy_claro_40gb")])
+        botoes.append([InlineKeyboardButton(f"Claro e-SIM - R$ 35 ({qtd_claro} un)", callback_data="buy_claro_40gb")])
 
     if len(botoes) == 1:
         texto += "\n\n⚠️ *Atualmente todos os planos estão esgotados no estoque. Abra o MiniApp para novidades!*"
@@ -145,7 +164,7 @@ async def lifespan(app: FastAPI):
     await telegram_app.stop()
 
 # ------------------------------------------------------------------------------
-# 🚀 APLICAÇÃO FASTAPI (ROTAS DO ADMIN E MINIAPP)
+# 🚀 APLICAÇÃO FASTAPI
 # ------------------------------------------------------------------------------
 app = FastAPI(title="Yure e-SIM API", lifespan=lifespan)
 
@@ -166,6 +185,8 @@ class AdminAuthAddEsimPayload(BaseModel):
     senha_admin: str
     produto_id: str
     conteudo_esim: str
+    ddd: Optional[str] = "BR"
+    gb: Optional[str] = "Padrão"
     texto_instrucoes: Optional[str] = "Escaneie o QR Code para ativar o seu e-SIM."
 
 class GerarPixPayload(BaseModel):
@@ -227,12 +248,12 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
         if saldo < preco_item:
             return {"status": "erro", "detalhe": "Saldo insuficiente na carteira!"}
 
-        cur.execute("SELECT id, conteudo_esim FROM estoque_codigos WHERE produto_id = ? LIMIT 1", (payload.produto_id,))
+        cur.execute("SELECT id, conteudo_esim, ddd, gb FROM estoque_codigos WHERE produto_id = ? LIMIT 1", (payload.produto_id,))
         chip = cur.fetchone()
         if not chip:
             return {"status": "erro", "detalhe": "Estoque esgotado para este produto!"}
 
-        chip_id, conteudo_bruto = chip["id"], chip["conteudo_esim"]
+        chip_id, conteudo_bruto, esim_ddd, esim_gb = chip["id"], chip["conteudo_esim"], chip["ddd"], chip["gb"]
 
         cur.execute("UPDATE carteira SET saldo = saldo - ? WHERE chat_id = ?", (preco_item, payload.chat_id))
         cur.execute("DELETE FROM estoque_codigos WHERE id = ?", (chip_id,))
@@ -243,20 +264,17 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
         qr_code_url = partes[0]
         instrucoes = partes[1] if len(partes) > 1 else "Escaneie o QR Code abaixo para ativar o seu e-SIM."
 
-        # DISPARA A FOTO NO TELEGRAM (SUPORTA URL OU BASE64 ENVIADO DO PC)
         try:
             url_telegram_photo = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
-            caption_text = f"🎉 **COMPRA REALIZADA COM SUCESSO!**\n\n{instrucoes}\n\n📱 **Plano:** {payload.produto_id.upper()}"
+            caption_text = f"🎉 **COMPRA REALIZADA COM SUCESSO!**\n\n📱 **Operadora:** {payload.produto_id.split('_')[0].upper()}\n📊 **Franquia:** {esim_gb}\n📞 **DDD:** {esim_ddd}\n\n{instrucoes}"
 
             if qr_code_url.startswith("data:image"):
-                # Se for Base64 (upload do PC), converte e envia como arquivo binário
                 header, encoded = qr_code_url.split(",", 1)
                 image_data = base64.b64decode(encoded)
                 files = {'photo': ('esim_qrcode.png', BytesIO(image_data), 'image/png')}
                 data = {'chat_id': payload.chat_id, 'caption': caption_text, 'parse_mode': 'Markdown'}
                 requests.post(url_telegram_photo, data=data, files=files, timeout=15)
             else:
-                # Se for link normal (URL)
                 payload_photo = {
                     "chat_id": payload.chat_id,
                     "photo": qr_code_url,
@@ -272,6 +290,8 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
             "mensagem": "Compra efetuada com sucesso!",
             "qr_code_url": qr_code_url,
             "instrucoes": instrucoes,
+            "ddd": esim_ddd,
+            "gb": esim_gb,
             "novo_saldo": saldo - preco_item
         }
     except Exception as e:
@@ -310,10 +330,13 @@ async def admin_adicionar_estoque(payload: AdminAuthAddEsimPayload):
     con = conectar_banco()
     cur = con.cursor()
     try:
-        cur.execute("INSERT INTO estoque_codigos (produto_id, conteudo_esim) VALUES (?, ?)", (payload.produto_id, conteudo_final))
+        cur.execute(
+            "INSERT INTO estoque_codigos (produto_id, conteudo_esim, ddd, gb) VALUES (?, ?, ?, ?)", 
+            (payload.produto_id, conteudo_final, payload.ddd, payload.gb)
+        )
         cur.execute("UPDATE estoque SET quantidade = quantidade + 1 WHERE produto_id = ?", (payload.produto_id,))
         con.commit()
-        return {"status": "sucesso", "mensagem": f"e-SIM adicionado ao estoque de {payload.produto_id.upper()}!"}
+        return {"status": "sucesso", "mensagem": f"e-SIM {payload.gb} (DDD {payload.ddd}) adicionado ao estoque!"}
     finally:
         con.close()
 
