@@ -244,11 +244,7 @@
     const senha = campoSenha.value;
 
     try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senha: senha })
-      });
+      const res = await fetch('/api/admin/login?senha=' + encodeURIComponent(senha));
 
       if (res.ok) {
         const data = await res.json();
