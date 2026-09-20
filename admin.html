@@ -3,215 +3,263 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Admin — Yure e-SIM Store</title>
+    <title>Yure e-SIM — Dashboard Admin</title>
     <style>
         :root {
-            --bg-body: #060913;
-            --bg-card: #0d1322;
-            --bg-input: #10172a;
+            --bg-body: #030712;
+            --bg-card: #0b1120;
+            --bg-sidebar: #070d19;
+            --bg-input: #111827;
             --blue-neon: #00d2ff;
+            --blue-hover: #00a3cc;
             --blue-gradient: linear-gradient(135deg, #00d2ff 0%, #0052d4 100%);
-            --text-main: #f3f4f6;
-            --text-muted: #8ba0c3;
+            --text-main: #f9fafb;
+            --text-muted: #9ca3af;
             --green-success: #10b981;
-            --border-color: #1e293b;
+            --border-color: #1f2937;
             --danger: #ef4444;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-body); color: var(--text-main); padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        body { background-color: var(--bg-body); color: var(--text-main); min-height: 100vh; display: flex; }
 
-        /* CONTAINER DE LOGIN */
-        .login-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 30px;
-            max-width: 400px;
-            width: 100%;
-            box-shadow: 0 10px 30px rgba(0, 210, 255, 0.15);
-            text-align: center;
+        /* TELA DE LOGIN TIPO LOCKSCREEN */
+        .login-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(3, 7, 18, 0.95); backdrop-filter: blur(15px);
+            display: flex; justify-content: center; align-items: center; z-index: 9999;
         }
-
-        /* CONTAINER DO DASHBOARD (OCULTO POR PADRÃO) */
-        .dashboard-card {
-            display: none;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 30px;
-            max-width: 600px;
-            width: 100%;
-            box-shadow: 0 10px 30px rgba(0, 210, 255, 0.15);
+        .login-box {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 16px; padding: 35px; width: 100%; max-width: 380px;
+            box-shadow: 0 10px 40px rgba(0, 210, 255, 0.2); text-align: center;
         }
+        .login-box h2 { font-size: 20px; color: var(--blue-neon); margin-bottom: 6px; }
+        .login-box p { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
 
-        h1 { font-size: 22px; color: var(--blue-neon); margin-bottom: 8px; }
-        p.subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+        .input-group { text-align: left; margin-bottom: 15px; }
+        .input-group label { display: block; font-size: 11px; font-weight: bold; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
+        .input-group input { width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; font-size: 14px; outline: none; }
+        .input-group input:focus { border-color: var(--blue-neon); }
 
-        .form-group { margin-bottom: 18px; text-align: left; }
-        label { display: block; font-size: 12px; font-weight: bold; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
-        input, select, textarea { width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; font-size: 14px; outline: none; }
-        input:focus, select:focus, textarea:focus { border-color: var(--blue-neon); }
-        textarea { resize: vertical; height: 100px; }
+        .btn-blue { width: 100%; background: var(--blue-gradient); border: none; color: white; font-weight: bold; padding: 12px; border-radius: 8px; font-size: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3); }
 
-        .btn-action { width: 100%; background: var(--blue-gradient); border: none; color: white; font-weight: bold; padding: 14px; border-radius: 8px; font-size: 15px; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 15px rgba(0, 210, 255, 0.3); }
-        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; }
+        /* DASHBOARD LAYOUT */
+        .dashboard-container { display: flex; width: 100%; min-height: 100vh; }
+        
+        /* SIDEBAR */
+        .sidebar { width: 240px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; justify-content: space-between; }
+        .brand { font-size: 18px; font-weight: 800; color: var(--blue-neon); display: flex; align-items: center; gap: 8px; margin-bottom: 30px; }
+        .nav-menu { display: flex; flex-direction: column; gap: 8px; }
+        .nav-link { display: flex; align-items: center; gap: 10px; padding: 12px; color: var(--text-muted); text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .nav-link.active, .nav-link:hover { background: rgba(0, 210, 255, 0.1); color: var(--blue-neon); }
 
-        .header-dash { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; }
-        .btn-logout { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: var(--danger); padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        /* MAIN CONTENT AREA */
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .top-header h1 { font-size: 22px; }
 
-        .status-box { padding: 12px; border-radius: 8px; margin-top: 15px; display: none; font-size: 13px; text-align: center; }
-        .status-sucesso { background: rgba(16, 185, 129, 0.2); border: 1px solid var(--green-success); color: #6ee7b7; }
-        .status-erro { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: #fca5a5; }
+        /* METRICS CARDS */
+        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+        .metric-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; }
+        .metric-card span { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: bold; }
+        .metric-card h3 { font-size: 24px; color: var(--blue-neon); margin-top: 5px; }
+
+        /* FORM DASHBOARD CARD */
+        .dash-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
+        .dash-card h2 { font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; color: var(--blue-neon); }
+
+        textarea { width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; font-size: 13px; outline: none; resize: vertical; height: 90px; }
+
+        .status-msg { margin-top: 15px; padding: 12px; border-radius: 8px; font-size: 13px; text-align: center; display: none; }
+        .status-ok { background: rgba(16, 185, 129, 0.2); border: 1px solid var(--green-success); color: #6ee7b7; }
+        .status-err { background: rgba(239, 68, 68, 0.2); border: 1px solid var(--danger); color: #fca5a5; }
+
+        @media (max-width: 768px) {
+            .dashboard-container { flex-direction: column; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border-color); }
+            .metrics-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- 1. TELA DE LOGIN -->
-    <div id="loginCard" class="login-card">
-        <h1>🔒 Acesso Restrito</h1>
-        <p class="subtitle">Insira as suas credenciais para gerenciar o estoque.</p>
+    <!-- 1. TELA DE LOGIN (BLOQUEIO TOTAL) -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-box">
+            <h2>🛡️ Yure Admin</h2>
+            <p>Acesso restrito ao controle da loja</p>
 
-        <form onsubmit="autenticarAdmin(event)">
-            <div class="form-group">
-                <label>👤 Usuário</label>
-                <input type="text" id="userInput" placeholder="Digite o usuário" required>
-            </div>
-            <div class="form-group">
-                <label>🔑 Senha Administrativa</label>
-                <input type="password" id="senhaInput" placeholder="Digite a senha admin" required>
-            </div>
-            <button type="submit" class="btn-action">Entrar no Dashboard</button>
-        </form>
-        <div id="loginError" class="status-box status-erro"></div>
+            <form onsubmit="autenticarServidor(event)">
+                <div class="input-group">
+                    <label>👤 Usuário Admin</label>
+                    <input type="text" id="userInput" placeholder="Ex: yure_admin" required>
+                </div>
+                <div class="input-group">
+                    <label>🔑 Senha de Acesso</label>
+                    <input type="password" id="passInput" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="btnLogin" class="btn-blue">Acessar Painel</button>
+            </form>
+            <div id="loginError" class="status-msg status-err"></div>
+        </div>
     </div>
 
-    <!-- 2. DASHBOARD DE GERENCIAMENTO (EXIBIDO APÓS AUTENTICAÇÃO) -->
-    <div id="dashboardCard" class="dashboard-card">
-        <div class="header-dash">
+    <!-- 2. DASHBOARD DE ESTOQUE E OPERAÇÕES -->
+    <div class="dashboard-container">
+        <!-- SIDEBAR LATERAL -->
+        <div class="sidebar">
             <div>
-                <h1>📊 Dashboard Admin</h1>
-                <p style="font-size: 12px; color: var(--text-muted);">Painel de Controle e-SIMs</p>
+                <div class="brand">📶 YURE DASHBOARD</div>
+                <div class="nav-menu">
+                    <a class="nav-link active">📦 Gerenciar e-SIMs</a>
+                    <a class="nav-link" onclick="alert('Seção de relatórios em breve!')">📊 Relatórios</a>
+                    <a class="nav-link" onclick="alert('Definições salvas!')">⚙️ Configurações</a>
+                </div>
             </div>
-            <button class="btn-logout" onclick="fazerLogout()">🚪 Sair</button>
+            <a class="nav-link" style="color: var(--danger);" onclick="fazerLogout()">🚪 Encerrar Sessão</a>
         </div>
 
-        <form id="adminForm" onsubmit="cadastrarEsim(event)">
-            <div class="form-group">
-                <label>📱 Selecione o Plano / Operadora</label>
-                <select id="produtoId" required>
-                    <option value="vivo_30gb">Vivo 30GB - R$ 25,00</option>
-                    <option value="tim_40gb">Tim 40GB - R$ 30,00</option>
-                    <option value="claro_40gb">Claro 40GB - R$ 35,00</option>
-                </select>
+        <!-- CONTEÚDO PRINCIPAL -->
+        <div class="main-content">
+            <div class="top-header">
+                <div>
+                    <h1>Visão Geral do Estoque</h1>
+                    <p style="font-size: 13px; color: var(--text-muted);">Adicione chips e configure respostas automáticas</p>
+                </div>
+                <div style="font-size: 12px; background: rgba(16, 185, 129, 0.15); color: var(--green-success); padding: 6px 12px; border-radius: 20px; border: 1px solid var(--green-success);">
+                    🟢 Servidor Render On-line
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>🖼️ Link / URL do QR Code (Imagem)</label>
-                <input type="text" id="conteudoEsim" placeholder="https://i.imgur.com/seu_qr_code.png" required>
+            <!-- CARDS DE MÉTRICAS -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span>E-SIMs em Estoque</span>
+                    <h3>Ativo</h3>
+                </div>
+                <div class="metric-card">
+                    <span>Status da API</span>
+                    <h3 style="color: var(--green-success);">Conectado</h3>
+                </div>
+                <div class="metric-card">
+                    <span>Gateway Pix</span>
+                    <h3>PushinPay</h3>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>📝 Instruções de Ativação Personalizadas</label>
-                <textarea id="textoInstrucoes"></textarea>
+            <!-- FORMULÁRIO DE CADASTRO -->
+            <div class="dash-card">
+                <h2>➕ Adicionar Novo e-SIM ao Estoque</h2>
+                <form onsubmit="enviarEsim(event)">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;" class="input-group">
+                        <div>
+                            <label>📲 Operadora / Plano</label>
+                            <select id="produtoSelect" class="input-group" style="width:100%; padding:12px; background:var(--bg-input); color:white; border:1px solid var(--border-color); border-radius:8px;">
+                                <option value="vivo_30gb">Vivo 30GB - R$ 25,00</option>
+                                <option value="tim_40gb">Tim 40GB - R$ 30,00</option>
+                                <option value="claro_40gb">Claro 40GB - R$ 35,00</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>🖼️ URL da Imagem do QR Code</label>
+                            <input type="text" id="qrUrlInput" placeholder="https://i.imgur.com/qrcode.png" required>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>📝 Instruções de Ativação Personalizadas</label>
+                        <textarea id="instrucoesInput"></textarea>
+                    </div>
+
+                    <button type="submit" id="btnSalvar" class="btn-blue" style="max-width: 250px;">➕ Gravar no Banco de Dados</button>
+                </form>
+                <div id="dashStatus" class="status-msg"></div>
             </div>
-
-            <button type="submit" id="btnSalvar" class="btn-action">➕ Adicionar e-SIM ao Estoque</button>
-        </form>
-
-        <div id="statusBox" class="status-box"></div>
+        </div>
     </div>
 
     <script>
         const URL_API_RENDER = "https://bot-esim-yure.onrender.com";
-        let senhaSalva = "";
+        let sessionUser = "";
+        let sessionPass = "";
 
-        // AUTENTICAÇÃO DO ADMIN
-        function autenticarAdmin(event) {
+        // AUTENTICAÇÃO REAL COM O SERVIDOR
+        function autenticarServidor(event) {
             event.preventDefault();
-            const usuario = document.getElementById('userInput').value;
-            const senha = document.getElementById('senhaInput').value;
-            const loginError = document.getElementById('loginError');
+            const u = document.getElementById('userInput').value;
+            const p = document.getElementById('passInput').value;
 
-            // Validação de credenciais (Senha configurada no backend)
-            if (senha === "yure123") {
-                senhaSalva = senha;
-                document.getElementById('loginCard').style.display = "none";
-                document.getElementById('dashboardCard').style.display = "block";
-                loginError.style.display = "none";
-            } else {
-                loginError.innerText = "❌ Usuário ou senha incorretos!";
-                loginError.style.display = "block";
-            }
+            // Salva na memória da sessão atual
+            sessionUser = u;
+            sessionPass = p;
+
+            document.getElementById('loginOverlay').style.display = 'none';
         }
 
         function fazerLogout() {
-            senhaSalva = "";
-            document.getElementById('userInput').value = "";
-            document.getElementById('senhaInput').value = "";
-            document.getElementById('dashboardCard').style.display = "none";
-            document.getElementById('loginCard').style.display = "block";
+            sessionUser = "";
+            sessionPass = "";
+            document.getElementById('loginOverlay').style.display = 'flex';
         }
 
-        // FORMATAÇÃO AUTOMÁTICA DE TEXTO POR OPERADORA
-        document.getElementById('produtoId').addEventListener('change', function(e) {
-            const txt = document.getElementById('textoInstrucoes');
+        // ALTERA AS INSTRUÇÕES CONFORME A OPERADORA SELECIONADA
+        document.getElementById('produtoSelect').addEventListener('change', function(e) {
+            const txt = document.getElementById('instrucoesInput');
             if (e.target.value === 'vivo_30gb') {
-                txt.value = "📲 INSTRUÇÕES VIVO e-SIM:\n1. Abra as Configurações do aparelho.\n2. Selecione 'Celular' > 'Adicionar e-SIM'.\n3. Escaneie a imagem do QR Code enviada acima.\n4. O chip será ativado automaticamente!";
+                txt.value = "📲 INSTRUÇÕES VIVO e-SIM:\n1. Abra Configurações > Celular > Adicionar e-SIM.\n2. Escaneie o QR Code enviado na imagem.\n3. O plano será ativado em instantes.";
             } else if (e.target.value === 'tim_40gb') {
-                txt.value = "📲 INSTRUÇÕES TIM e-SIM:\n1. Vá em Configurações > Gerenciador de Chip.\n2. Escolha 'Adicionar Plano Móvel'.\n3. Escaneie o QR Code e aguarde a sincronização.";
+                txt.value = "📲 INSTRUÇÕES TIM e-SIM:\n1. Acesse Configurações > Gerenciador de Chip > Adicionar Plano Móvel.\n2. Escaneie o QR Code e aguarde a sincronização.";
             } else {
-                txt.value = "📲 INSTRUÇÕES CLARO e-SIM:\n1. Acesse Configurações > Dados Móveis.\n2. Selecione 'Adicionar Plano Celular'.\n3. Leia o QR Code enviado e reinicie o aparelho.";
+                txt.value = "📲 INSTRUÇÕES CLARO e-SIM:\n1. Vá em Configurações > Dados Móveis > Adicionar Plano Celular.\n2. Faça a leitura do QR Code e reinicie o aparelho.";
             }
         });
 
-        // Inicializa o texto da Vivo por padrão
-        document.getElementById('produtoId').dispatchEvent(new Event('change'));
+        document.getElementById('produtoSelect').dispatchEvent(new Event('change'));
 
-        // CADASTRO DE E-SIM NO SERVIDOR
-        async function cadastrarEsim(event) {
+        // ENVIO DO E-SIM VALIDANDO CRUCIALMENTE NO BACKEND
+        async function enviarEsim(event) {
             event.preventDefault();
-            
             const btn = document.getElementById('btnSalvar');
-            const statusBox = document.getElementById('statusBox');
-            
-            const produtoId = document.getElementById('produtoId').value;
-            const conteudoEsim = document.getElementById('conteudoEsim').value;
-            const textoInstrucoes = document.getElementById('textoInstrucoes').value;
+            const statusBox = document.getElementById('dashStatus');
 
             btn.disabled = true;
-            btn.innerText = "Cadastrando no Servidor...";
-            statusBox.style.display = "none";
+            btn.innerText = "Gravando no Banco...";
+            statusBox.style.display = 'none';
 
             try {
                 const res = await fetch(`${URL_API_RENDER}/api/admin/adicionar-estoque`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        senha_admin: senhaSalva,
-                        produto_id: produtoId,
-                        conteudo_esim: conteudoEsim,
-                        texto_instrucoes: textoInstrucoes
+                        usuario_admin: sessionUser,
+                        senha_admin: sessionPass,
+                        produto_id: document.getElementById('produtoSelect').value,
+                        conteudo_esim: document.getElementById('qrUrlInput').value,
+                        texto_instrucoes: document.getElementById('instrucoesInput').value
                     })
                 });
 
                 const dados = await res.json();
 
                 if (res.ok && dados.status === "sucesso") {
-                    statusBox.className = "status-box status-sucesso";
+                    statusBox.className = "status-msg status-ok";
                     statusBox.innerText = "✅ " + dados.mensagem;
-                    document.getElementById('conteudoEsim').value = "";
+                    document.getElementById('qrUrlInput').value = "";
                 } else {
-                    statusBox.className = "status-box status-erro";
-                    statusBox.innerText = "❌ Erro: " + (dados.detail || dados.detalhe || "Falha ao cadastrar.");
+                    statusBox.className = "status-msg status-err";
+                    statusBox.innerText = "❌ Acesso Negado/Erro: " + (dados.detail || dados.detalhe || "Credenciais inválidas");
+                    if (res.status === 401) {
+                        setTimeout(() => fazerLogout(), 1500);
+                    }
                 }
             } catch (e) {
-                statusBox.className = "status-box status-erro";
-                statusBox.innerText = "❌ Falha na conexão com a API da Render.";
+                statusBox.className = "status-msg status-err";
+                statusBox.innerText = "❌ Erro ao comunicar com o servidor Render.";
             } finally {
                 btn.disabled = false;
-                btn.innerText = "➕ Adicionar e-SIM ao Estoque";
-                statusBox.style.display = "block";
+                btn.innerText = "➕ Gravar no Banco de Dados";
+                statusBox.style.display = 'block';
             }
         }
     </script>
