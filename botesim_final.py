@@ -351,15 +351,25 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_photo(chat_id=chat_id, photo=banner_url, caption=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 # ------------------------------------------------------------------------------
-# 🟢 RUNNER DA APLICAÇÃO NA RENDER
+# 🟢 RUNNER DA APLICAÇÃO NA RENDER (COM LIMPEZA AUTOMÁTICA DE CONFLITOS)
 # ------------------------------------------------------------------------------
 if __name__ == "__main__":
     import uvicorn
-    
-    # Inicializa o Bot do Telegram
+    import asyncio
+
+    # Inicializa o Bot do Telegram com limpeza de updates anteriores
     telegram_app = Application.builder().token(TOKEN).build()
     telegram_app.add_handler(CommandHandler("start", start))
-    telegram_app.run_polling(drop_pending_updates=True, close_loop=False)
+
+    # Função para arrancar o bot de forma limpa
+    async def run_bot():
+        await telegram_app.initialize()
+        await telegram_app.start()
+        # drop_pending_updates=True limpa conexões e atualizações presas
+        await telegram_app.updater.start_polling(drop_pending_updates=True)
+
+    loop = asyncio.get_event_loop()
+    loop.create_task(run_bot())
 
     # Executa a API Web na porta da Render
     port = int(os.environ.get("PORT", 10000))
