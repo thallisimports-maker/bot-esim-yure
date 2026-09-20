@@ -153,8 +153,7 @@
   <div id="painelConteudo">
     <h1>👑 Painel de Controle - e-SIMS Yure</h1>
 
-    <div class="grid-2">
-      <!-- CADASTRAR NOVO ESIM -->
+    <!-- CADASTRAR NOVO ESIM -->
       <div class="card">
         <h2>📦 Cadastrar Novo e-SIM (Estoque)</h2>
         <form id="formCadastro">
@@ -168,8 +167,13 @@
           </div>
 
           <div class="form-group">
-            <label>Plano / Descrição:</label>
-            <input type="text" id="plano" placeholder="Ex: 40GB Mensal" required>
+            <label>Plano / Nome:</label>
+            <input type="text" id="plano" placeholder="Ex: Vivo 40GB" required>
+          </div>
+
+          <div class="form-group">
+            <label>Descrição / Instruções Detalhadas:</label>
+            <input type="text" id="descricao" placeholder="Ex: Validade de 30 dias. Funciona em todo o Brasil.">
           </div>
 
           <div class="form-group">
@@ -178,8 +182,9 @@
           </div>
 
           <div class="form-group">
-            <label>Link / URL da Foto do QR Code:</label>
-            <input type="text" id="imagem_qr" placeholder="https://i.imgur.com/seuqrcode.png" required>
+            <label>Foto do QR Code (Upload de Ficheiro ou Caminho):</label>
+            <input type="file" id="arquivo_qr" accept="image/*" style="margin-bottom: 10px;">
+            <input type="text" id="imagem_qr" placeholder="Ou digite o caminho: qrcode/1.png ou URL">
           </div>
 
           <button type="submit">➕ Adicionar ao Estoque</button>
