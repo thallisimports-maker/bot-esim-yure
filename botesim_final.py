@@ -170,8 +170,15 @@ async def comando_saldo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 async def comando_suporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    texto = "📞 **ATENDIMENTO & SUPORTE YURE eSIMS**\n\nPrecisa de ajuda com a ativação ou trocas? Fale diretamente com o Yure no WhatsApp ou Telegram:\n\n📱 **WhatsApp:** (35) 99755-0084"
-    botoes = [[InlineKeyboardButton("💬 Chamar no WhatsApp", url="https://wa.me/5535997550084")]]
+    texto = (
+        "📞 **ATENDIMENTO & SUPORTE YURE eSIMS**\n\n"
+        "Precisa de ajuda com a ativação, dúvidas ou trocas?\n"
+        "Escolha abaixo por onde deseja falar diretamente conosco:"
+    )
+    botoes = [
+        [InlineKeyboardButton("💬 Atendimento via WhatsApp", url="https://wa.me/5535997550084")],
+        [InlineKeyboardButton("✈️ Atendimento via Telegram", url="https://t.me/Yureconsul7")] # Substitua pelo seu @username do Telegram
+    ]
     await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 async def comando_esims(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
