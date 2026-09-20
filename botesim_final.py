@@ -203,8 +203,12 @@ async def comando_esims(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    query = update.callback_query
-    await query.answer()  # <--- Isto remove o ícone de carregamento no Telegram!
+        query = update.callback_query
+        await query.answer()
+
+    if query.data == "comprar_bot":
+        # Exemplo enviando uma mensagem de resposta no chat:
+        await query.message.reply_text("✅ *Solicitação recebida!* \n\nGerando seu e-SIM e QR Code...", parse_mode="Markdown")
     
     # Se os botões tiverem ações personalizadas, trate o query.data aqui
     # ex: if query.data == "comprar": ...
@@ -213,13 +217,14 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 # ⚙️ GESTOR DE LIFESPAN (REGISTRO DO MENU DE COMANDOS NATIVO)
 # ------------------------------------------------------------------------------
 @asynccontextmanager
-async def lifespan(app: FastAPI):
-    telegram_app = Application.builder().token(TOKEN).build()
-    
+telegram_app = Application.builder().token(TOKEN).build()
+
     telegram_app.add_handler(CommandHandler("start", start))
     telegram_app.add_handler(CommandHandler("saldo", comando_saldo))
     telegram_app.add_handler(CommandHandler("suporte", comando_suporte))
     telegram_app.add_handler(CommandHandler("esims", comando_esims))
+    
+    # ⚠️ ADICIONE ESTA LINHA OBRIGATÓRIA AQUI:
     telegram_app.add_handler(CallbackQueryHandler(responder_botoes))
     
     await telegram_app.initialize()
