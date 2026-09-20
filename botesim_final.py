@@ -206,8 +206,11 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     query = update.callback_query
     await query.answer()
 
-    if query.data == "comprar_bot":
-        await query.message.reply_text("✅ *Solicitação recebida!*\n\nGerando seu e-SIM e QR Code...", parse_mode="Markdown")
+    mensagem_texto = (
+        "📱 *Solicitação de e-SIM Recebida!*\n\n"
+        "Estamos a processar o seu pedido. Caso tenha saldo na carteira, o seu QR Code será enviado aqui no chat!"
+    )
+    await query.message.reply_text(mensagem_texto, parse_mode="Markdown")
 
 
 # ------------------------------------------------------------------
