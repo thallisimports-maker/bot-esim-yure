@@ -572,6 +572,11 @@
                 document.getElementById('telegramId').innerText = telegramChatId;
                 document.getElementById('telegramUser').innerText = '@' + (tg.initDataUnsafe.user.username || 'usuario');
 
+                // Carrega a foto de perfil do cliente do Telegram se disponível
+                if (tg.initDataUnsafe.user.photo_url) {
+                    document.getElementById('userAvatarImg').src = tg.initDataUnsafe.user.photo_url;
+                }
+
                 carregarDadosUsuario(telegramChatId);
             }
         }
