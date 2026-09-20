@@ -63,13 +63,18 @@
         .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
         .metric-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; }
         .metric-card span { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: bold; }
-        .metric-card h3 { font-size: 24px; color: var(--blue-neon); margin-top: 5px; }
+        .metric-card h3 { font-size: 26px; color: var(--blue-neon); margin-top: 5px; }
 
         /* FORM DASHBOARD CARD */
-        .dash-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; margin-bottom: 20px; }
-        .dash-card h2 { font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; color: var(--blue-neon); }
+        .dash-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 25px; margin-bottom: 25px; }
+        .dash-card h2 { font-size: 16px; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; color: var(--blue-neon); display: flex; justify-content: space-between; align-items: center; }
 
         textarea { width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); color: white; padding: 12px; border-radius: 8px; font-size: 13px; outline: none; resize: vertical; height: 90px; }
+
+        /* TABELA DE CLIENTES */
+        .admin-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .admin-table th, .admin-table td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 13px; }
+        .admin-table th { color: var(--text-muted); font-size: 11px; text-transform: uppercase; }
 
         .status-msg { margin-top: 15px; padding: 12px; border-radius: 8px; font-size: 13px; text-align: center; display: none; }
         .status-ok { background: rgba(16, 185, 129, 0.2); border: 1px solid var(--green-success); color: #6ee7b7; }
@@ -113,8 +118,7 @@
                 <div class="brand">📶 YURE DASHBOARD</div>
                 <div class="nav-menu">
                     <a class="nav-link active">📦 Gerenciar e-SIMs</a>
-                    <a class="nav-link" onclick="alert('Seção de relatórios em breve!')">📊 Relatórios</a>
-                    <a class="nav-link" onclick="alert('Definições salvas!')">⚙️ Configurações</a>
+                    <a class="nav-link" onclick="carregarMetricasAdmin()">📊 Métricas / Clientes</a>
                 </div>
             </div>
             <a class="nav-link" style="color: var(--danger);" onclick="fazerLogout()">🚪 Encerrar Sessão</a>
@@ -124,31 +128,29 @@
         <div class="main-content">
             <div class="top-header">
                 <div>
-                    <h1>Visão Geral do Estoque</h1>
-                    <p style="font-size: 13px; color: var(--text-muted);">Adicione chips e configure respostas automáticas</p>
+                    <h1>Visão Geral do Bot</h1>
+                    <p style="font-size: 13px; color: var(--text-muted);">Acompanhe os usuários e adicione novos e-SIMs</p>
                 </div>
-                <div style="font-size: 12px; background: rgba(16, 185, 129, 0.15); color: var(--green-success); padding: 6px 12px; border-radius: 20px; border: 1px solid var(--green-success);">
-                    🟢 Servidor Render On-line
-                </div>
+                <button class="btn-blue" style="width: auto; padding: 8px 16px;" onclick="carregarMetricasAdmin()">🔄 Atualizar Dados</button>
             </div>
 
-            <!-- CARDS DE MÉTRICAS -->
+            <!-- CARDS DE MÉTRICAS REAIS DO BANCO DE DADOS -->
             <div class="metrics-grid">
                 <div class="metric-card">
-                    <span>E-SIMs em Estoque</span>
-                    <h3>Ativo</h3>
+                    <span>👥 Total Usuários Bot (/start)</span>
+                    <h3 id="mTotalUsuarios">0</h3>
                 </div>
                 <div class="metric-card">
-                    <span>Status da API</span>
-                    <h3 style="color: var(--green-success);">Conectado</h3>
+                    <span>📱 Acessos no MiniApp</span>
+                    <h3 id="mTotalMiniApp">0</h3>
                 </div>
                 <div class="metric-card">
-                    <span>Gateway Pix</span>
-                    <h3>PushinPay</h3>
+                    <span>🟢 Servidor API</span>
+                    <h3 style="color: var(--green-success);">On-line</h3>
                 </div>
             </div>
 
-            <!-- FORMULÁRIO DE CADASTRO -->
+            <!-- FORMULÁRIO DE CADASTRO DE E-SIMS -->
             <div class="dash-card">
                 <h2>➕ Adicionar Novo e-SIM ao Estoque</h2>
                 <form onsubmit="enviarEsim(event)">
@@ -176,6 +178,27 @@
                 </form>
                 <div id="dashStatus" class="status-msg"></div>
             </div>
+
+            <!-- TABELA DE CLIENTES QUE DERAM /START -->
+            <div class="dash-card">
+                <h2>👥 Usuários Recentes do Bot</h2>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Username</th>
+                            <th>ID Telegram</th>
+                            <th>Saldo Carteira</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaUsuariosBody">
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: var(--text-muted);">Clique em 'Atualizar Dados' para carregar a lista...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     </div>
 
@@ -187,20 +210,53 @@
         // AUTENTICAÇÃO REAL COM O SERVIDOR
         function autenticarServidor(event) {
             event.preventDefault();
-            const u = document.getElementById('userInput').value;
-            const p = document.getElementById('passInput').value;
-
-            // Salva na memória da sessão atual
-            sessionUser = u;
-            sessionPass = p;
+            sessionUser = document.getElementById('userInput').value;
+            sessionPass = document.getElementById('passInput').value;
 
             document.getElementById('loginOverlay').style.display = 'none';
+            carregarMetricasAdmin();
         }
 
         function fazerLogout() {
             sessionUser = "";
             sessionPass = "";
             document.getElementById('loginOverlay').style.display = 'flex';
+        }
+
+        // CARREGA AS MÉTRICAS E LISTA DE CLIENTES DO BACKEND PYTHON
+        async function carregarMetricasAdmin() {
+            if (!sessionUser || !sessionPass) return;
+
+            try {
+                const res = await fetch(`${URL_API_RENDER}/api/admin/metricas?usuario_admin=${sessionUser}&senha_admin=${sessionPass}`);
+                const dados = await res.json();
+
+                if (dados.status === "sucesso") {
+                    document.getElementById('mTotalUsuarios').innerText = dados.total_usuarios_bot;
+                    document.getElementById('mTotalMiniApp').innerText = dados.total_acessos_miniapp;
+
+                    // Preenche a tabela de usuários
+                    const tbody = document.getElementById('tabelaUsuariosBody');
+                    tbody.innerHTML = "";
+
+                    if (dados.usuarios.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center;">Nenhum usuário cadastrado ainda.</td></tr>`;
+                    } else {
+                        dados.usuarios.forEach(u => {
+                            tbody.innerHTML += `
+                                <tr>
+                                    <td><strong>${u.first_name || 'Usuário'}</strong></td>
+                                    <td>@${u.username || 'sem_user'}</td>
+                                    <td><code>${u.chat_id}</code></td>
+                                    <td style="color: var(--green-success); font-weight: bold;">R$ ${u.saldo.toFixed(2)}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("Erro ao carregar métricas:", e);
+            }
         }
 
         // ALTERA AS INSTRUÇÕES CONFORME A OPERADORA SELECIONADA
@@ -217,7 +273,7 @@
 
         document.getElementById('produtoSelect').dispatchEvent(new Event('change'));
 
-        // ENVIO DO E-SIM VALIDANDO CRUCIALMENTE NO BACKEND
+        // ENVIO DO E-SIM PARA O BANCO DE DADOS
         async function enviarEsim(event) {
             event.preventDefault();
             const btn = document.getElementById('btnSalvar');
@@ -248,7 +304,7 @@
                     document.getElementById('qrUrlInput').value = "";
                 } else {
                     statusBox.className = "status-msg status-err";
-                    statusBox.innerText = "❌ Acesso Negado/Erro: " + (dados.detail || dados.detalhe || "Credenciais inválidas");
+                    statusBox.innerText = "❌ Erro: " + (dados.detail || dados.detalhe || "Credenciais inválidas");
                     if (res.status === 401) {
                         setTimeout(() => fazerLogout(), 1500);
                     }
