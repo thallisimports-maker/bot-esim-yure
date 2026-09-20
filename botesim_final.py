@@ -316,22 +316,11 @@ from fastapi.responses import JSONResponse
 
 SENHA_ADMIN_SEGURA = "SuaSenhaAqui123!"
 
-@app.api_route("/api/admin/login", methods=["GET", "POST"])
-async def login_admin(request: Request):
-    try:
-        if request.method == "POST":
-            data = await request.json()
-            senha_recebida = data.get("senha", "")
-        else:
-            senha_recebida = request.query_params.get("senha", "")
-        
-        if str(senha_recebida).strip() == SENHA_ADMIN_SEGURA.strip():
-            return JSONResponse(content={"sucesso": True, "token": PUSHINPAY_TOKEN})
-        
-        return JSONResponse(status_code=401, content={"sucesso": False, "detail": "Senha incorreta!"})
-    except Exception as e:
-        return JSONResponse(status_code=400, content={"sucesso": False, "detail": str(e)})
-
+@app.get("/api/admin/login")
+async def login_admin(senha: str = ""):
+    if str(senha).strip() == SENHA_ADMIN_SEGURA.strip():
+        return JSONResponse(content={"sucesso": True, "token": PUSHINPAY_TOKEN})
+    return JSONResponse(status_code=401, content={"sucesso": False, "detail": "Senha incorreta!"})
 
 @app.get("/api/admin/dados")
 async def obter_dados_admin(authorization: str = Header(None)):
