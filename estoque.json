@@ -33,7 +33,7 @@
       "descricao": "ok",
       "preco": 25.0,
       "imagem_qr": "https://i.imgur.com/4qJnllA.jpeg",
-      "status": "disponivel"
+      "status": "vendido"
     }
   ],
   "utilizadores": {},
@@ -52,6 +52,14 @@
       "produto_id": "esim_2",
       "operadora": "Claro",
       "valor": 35.0,
+      "data": "2026-09-20"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "esim_4",
+      "operadora": "Claro",
+      "valor": 25.0,
       "data": "2026-09-20"
     }
   ],
