@@ -335,6 +335,43 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+GITHUB_REPO = "thallisimports-maker/bot-esim-yure"
+GITHUB_FILE_PATH = "estoque.json"
+
+
+def salvar_dados_no_github(dados_novos):
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+
+    # 1. Buscar o SHA atual do arquivo
+    res_get = requests.get(url, headers=headers)
+    if res_get.status_code != 200:
+        print("Erro ao buscar SHA do GitHub:", res_get.json())
+        return False
+
+    sha = res_get.json()["sha"]
+
+    # 2. Converter JSON para Base64
+    conteudo_json = json.dumps(dados_novos, indent=2, ensure_ascii=False)
+    conteudo_base64 = base64.b64encode(conteudo_json.encode("utf-8")).decode(
+        "utf-8"
+    )
+
+    # 3. Commit no GitHub
+    payload = {
+        "message": "📦 Atualização do estoque via Painel Admin",
+        "content": conteudo_base64,
+        "sha": sha,
+    }
+
+    res_put = requests.put(url, headers=headers, json=payload)
+    return res_put.status_code == 200
+
+
 class NovoProduto(BaseModel):
     operadora: str
     plano: str
@@ -370,7 +407,14 @@ async def adicionar_produto(
 
     produtos.append(novo_item)
     dados["produtos"] = produtos
+
     salvar_dados(dados)
+    sucesso_github = salvar_dados_no_github(dados)
+
+    if not sucesso_github:
+        print(
+            "Aviso: Salvo localmente, mas falhou ao sincronizar com o GitHub."
+        )
 
     return {"sucesso": True, "produto": novo_item}
     
