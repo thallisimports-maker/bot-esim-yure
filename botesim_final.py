@@ -257,12 +257,12 @@ async def comando_esims(
             f"   📦 Estoque: **{info['qtd']} un.**\n"
             f"   💰 Valor: **R$ {info['preco']:.2f}**\n\n"
         )
-        # Adiciona um botão interativo para comprar o item diretamente
+        # Utiliza exatamente o callback 'buy_ID' reconhecido pela sua função responder_botoes
         keyboard.append(
             [
                 InlineKeyboardButton(
                     f"🛒 Comprar {info['operadora']} {info['plano']} - R$ {info['preco']:.2f}",
-                    callback_data=f"comprar_{info['id_exemplo']}",
+                    callback_data=f"buy_{info['id_exemplo']}",
                 )
             ]
         )
