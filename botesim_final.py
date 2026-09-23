@@ -32,6 +32,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 TOKEN = "8826676433:AAEjicVbEpow_dbalsja15hFYCghRwAq0D0"
 PUSHINPAY_TOKEN = "71078|M1MASBFV155gtnKBttSvkE6u8bD8kSBFjAMLwOXa70ca5a25"
 URL_BACKEND = "https://bot-esim-yure.onrender.com"
+MODO_MANUTENCAO = False  # Mude para True quando for mexer no código
 
 # 🛡️ CREDENCIAIS DE SEGURANÇA DO PAINEL ADMIN
 USUARIO_ADMIN_MINISITE = "aguia2026"
