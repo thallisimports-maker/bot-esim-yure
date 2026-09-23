@@ -16,6 +16,7 @@ import sqlite3
 import logging
 import requests
 import base64
+import httpx
 from io import BytesIO
 from typing import Optional
 from contextlib import asynccontextmanager
@@ -419,6 +420,7 @@ async def lifespan(app: FastAPI):
     telegram_app.add_handler(CommandHandler("suporte", comando_suporte))
     telegram_app.add_handler(CommandHandler("esims", comando_esims))
     telegram_app.add_handler(CallbackQueryHandler(responder_botoes))
+    telegram_app.add_handler(CommandHandler("pix", comando_pix))
 
     await telegram_app.initialize()
     await telegram_app.start()
@@ -800,26 +802,30 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
 
     if not user_id or valor <= 0:
         raise HTTPException(
-            status_code=400, detail="Dados de recarga inválidos."
+            status_code=400, detail="Valor de recarga inválido."
         )
 
-    # Reutiliza suas configurações da PushinPay já existentes no código
-    headers = {
-        "Authorization": f"Bearer {PUSHINPAY_TOKEN}",
-        "Content-Type": "application/json",
-    }
-
-    body = {
-        "value": int(valor * 100),  # Converte R$ para centavos
-        "webhook_url": f"{URL_BACKEND}/webhook/pushinpay",
-    }
-
     try:
+        # Tenta gerar o PIX utilizando as credenciais da PushinPay do seu código
+        token_pushin = globals().get("PUSHINPAY_TOKEN", "")
+
+        headers = {
+            "Authorization": f"Bearer {token_pushin}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+
+        body = {
+            "value": int(round(valor * 100)),  # Valor em centavos
+            "webhook_url": f"{URL_BACKEND}/webhook/pushinpay",
+        }
+
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 "https://api.pushinpay.com.br/api/pix/cashIn",
                 json=body,
                 headers=headers,
+                timeout=10.0,
             )
             data = resp.json()
 
@@ -829,6 +835,12 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
             if qr_code_url and not qr_code_url.startswith("data:image"):
                 qr_code_url = f"data:image/png;base64,{qr_code_url}"
 
+            if not pix_copia_cola:
+                return {
+                    "status": "erro",
+                    "detalhe": "Não foi possível gerar a chave PIX no gateway.",
+                }
+
             return {
                 "status": "sucesso",
                 "pix_copia_cola": pix_copia_cola,
@@ -837,8 +849,20 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
     except Exception as e:
         return {
             "status": "erro",
-            "detalhe": f"Falha ao gerar cobrança PIX: {str(e)}",
+            "detalhe": f"Erro de conexão com o gateway PIX: {str(e)}",
         }
+
+
+# 2. COMANDO /pix DE VOLTA PARA O BOT TELEGRAM
+async def comando_pix(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    await update.message.reply_text(
+        "💳 **Recarga de Saldo via PIX**\n\n"
+        "Para recarregar sua carteira com PIX diretamente na tela, abra o nosso MiniApp:\n"
+        "Acesse a aba **Recarregar**, digite o valor e copie a chave PIX instantaneamente!",
+        parse_mode="Markdown",
+    )
 
 @app.post("/api/admin/gerar-pix-site")
 async def gerar_pix_site(payload: GerarPixPayload):
