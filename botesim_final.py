@@ -204,26 +204,55 @@ async def comando_suporte(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     ]
     await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
-async def comando_esims(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    con = conectar_banco()
-    cur = con.cursor()
-    try:
-        cur.execute("SELECT produto_id, quantidade FROM estoque")
-        est = {row["produto_id"]: row["quantidade"] for row in cur.fetchall()}
-    finally:
-        con.close()
+async def comando_esims(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    if not update.message:
+        return
 
-    texto = (
-        f"📊 **ESTOQUE DE eSIMS DISPONÍVEIS**\n\n"
-        f"📱 **Vivo eSIM:** {est.get('vivo_5gb', 0)} unidades\n"
-        f"📱 **Tim eSIM:** {est.get('tim_40gb', 0)} unidades\n"
-        f"📱 **Claro eSIM:** {est.get('claro_40gb', 0)} unidades\n\n"
-        f"⚡ *Ativação instantânea diretamente no MiniApp!*"
-    )
+    dados = carregar_dados()
+    produtos = dados.get("produtos", [])
 
-    url_miniapp = "https://e-simsyure.shop/"
-    botoes = [[InlineKeyboardButton("🛒 Comprar e-SIM pelo Bot", callback_data="comprar_bot")]]
-    await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+    # Filtra apenas os produtos com status 'disponivel'
+    disponiveis = [
+        p
+        for p in produtos
+        if str(p.get("status", "")).lower().strip() == "disponivel"
+    ]
+
+    if not disponiveis:
+        await update.message.reply_text(
+            "📱 **Estoque de e-SIMs**\n\n"
+            "❌ No momento não temos e-SIMs disponíveis em estoque.\n"
+            "Por favor, volte a consultar mais tarde ou faça a sua reserva no MiniApp!",
+            parse_mode="Markdown",
+        )
+        return
+
+    # Agrupa o estoque por Operadora + Plano
+    resumo_estoque = {}
+    for prod in disponiveis:
+        operadora = str(prod.get("operadora", "Geral")).strip()
+        plano = str(prod.get("plano", "Padrão")).strip()
+        preco = float(prod.get("preco", 0))
+
+        chave = f"{operadora} - {plano}"
+        if chave not in resumo_estoque:
+            resumo_estoque[chave] = {"qtd": 0, "preco": preco}
+        resumo_estoque[chave]["qtd"] += 1
+
+    # Monta a mensagem formatada para o cliente
+    texto = "📱 **ESTOQUE DE e-SIMs DISPONÍVEIS**\n\n"
+    for item, info in resumo_estoque.items():
+        texto += (
+            f"🔹 **{item}**\n"
+            f"   📦 Disponíveis: **{info['qtd']} un.**\n"
+            f"   💰 Valor: **R$ {info['preco']:.2f}**\n\n"
+        )
+
+    texto += "💡 *Para adquirir, abra o MiniApp da Loja clicando no menu abaixo!*"
+
+    await update.message.reply_text(texto, parse_mode="Markdown")
 
 
 async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
