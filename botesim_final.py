@@ -451,7 +451,7 @@ app = FastAPI(title="Yure e-SIM API", lifespan=lifespan)
 from fastapi import Header, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-SENHA_ADMIN_SEGURA = "SuaSenhaAqui123!"
+SENHA_ADMIN_SEGURA = "Yuresantos26*"
 
 @app.get("/api/admin/login")
 async def login_admin(senha: str = ""):
