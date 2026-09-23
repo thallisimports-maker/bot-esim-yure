@@ -427,11 +427,12 @@ async def lifespan(app: FastAPI):
     await telegram_app.start()
 
     comandos_menu = [
-        BotCommand("start", "👑 Menu Principal e Loja"),
-        BotCommand("saldo", "💳 Consultar Saldo / Carteira"),
-        BotCommand("esims", "📱 Ver eSIMs Disponíveis"),
-        BotCommand("suporte", "📞 Suporte e Atendimento")
-    ]
+            BotCommand("start", "👑 Menu Principal e Loja"),
+            BotCommand("saldo", "💳 Consultar Saldo / Carteira"),
+            BotCommand("pix", "⚡ Gerar Recarga PIX"),
+            BotCommand("esims", "📱 Ver eSIMs Disponíveis"),
+            BotCommand("suporte", "📞 Suporte e Atendimento"),
+        ]
     await telegram_app.bot.set_my_commands(comandos_menu)
 
     await telegram_app.updater.start_polling(drop_pending_updates=True)
