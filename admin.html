@@ -289,7 +289,7 @@
   document.getElementById('m-vendas').innerText = vendas.length;
   document.getElementById('m-gifts').innerText = cupons.filter(c => !c.usado).length;
 
-  // Tabela Estoque
+  // 1. Tabela Estoque e-SIMs
   let htmlE = '';
   prods.forEach(p => {
     const st = (p.status||'').toLowerCase() === 'disponivel';
@@ -304,7 +304,7 @@
   const elEstoque = document.getElementById('tabelaEstoque');
   if (elEstoque) elEstoque.innerHTML = htmlE || '<tr><td colspan="5">Nenhum item.</td></tr>';
 
-  // Tabela Gifts
+  // 2. Tabela Gifts / Cupons (Com quem resgatou)
   let htmlG = '';
   cupons.forEach(c => {
     const estaUsado = c.usado || c.status === 'usado';
@@ -329,6 +329,29 @@
   const elTabelaGifts = document.getElementById('tabelaGifts') || document.getElementById('tabelaCupons') || document.getElementById('listaCupons');
   if (elTabelaGifts) {
     elTabelaGifts.innerHTML = htmlG || '<tr><td colspan="4" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum Gift Card cadastrado.</td></tr>';
+  }
+
+  // 3. Tabela Histórico de Vendas
+  let htmlVendas = '';
+  vendas.forEach(v => {
+    const dataVenda = v.data ? new Date(v.data).toLocaleString('pt-BR') : '—';
+    const usuario = v.user_id || v.chat_id || '—';
+    const valor = parseFloat(v.preco || v.valor || 0).toFixed(2);
+    
+    htmlVendas += `
+      <tr>
+        <td><code>${usuario}</code></td>
+        <td>${v.plano || v.operadora || 'e-SIM'}</td>
+        <td>R$ ${valor}</td>
+        <td>${dataVenda}</td>
+        <td><span class="badge badge-success">Concluído</span></td>
+      </tr>
+    `;
+  });
+
+  const elTabelaVendas = document.getElementById('tabelaVendas') || document.getElementById('listaVendas');
+  if (elTabelaVendas) {
+    elTabelaVendas.innerHTML = htmlVendas || '<tr><td colspan="5" style="text-align:center; padding:12px; color:#94a3b8;">Nenhuma venda registrada até o momento.</td></tr>';
   }
 }
 
