@@ -304,30 +304,31 @@
       document.getElementById('tabelaEstoque').innerHTML = htmlE || '<tr><td colspan="5">Nenhum item.</td></tr>';
 
       // Tabela Gifts
-      let htmlG = '';
-      cupons.forEach(c => {
-        htmlG += `<tr>
-          <td><strong>${c.codigo}</strong></td>
-          <td>R$ ${parseFloat(c.valor||0).toFixed(2)}</td>
-          <td><span class="badge ${!c.usado ? 'badge-success' : 'badge-danger'}">${!c.usado ? 'Ativo' : 'Resgatado'}</span></td>
-          <td>${c.usado_por || '-'}</td>
-        </tr>`;
-      });
-      document.getElementById('tabelaGifts').innerHTML = htmlG || '<tr><td colspan="4">Nenhum Gift Card cadastrado.</td></tr>';
+  let htmlG = '';
+  cupons.forEach(c => {
+    const estaUsado = c.usado || c.status === 'usado';
+    const statusTag = estaUsado
+      ? '<span style="color: #ef4444; font-weight: 700;">🔴 Resgatado</span>' 
+      : '<span style="color: #10b981; font-weight: 700;">🟢 Ativo</span>';
 
-      // Tabela Vendas
-      let htmlV = '';
-      vendas.forEach(v => {
-        htmlV += `<tr>
-          <td>${v.data || '-'}</td>
-          <td>${v.cliente || 'Cliente'}</td>
-          <td>${v.user_id || '-'}</td>
-          <td>${v.operadora || '-'}</td>
-          <td>R$ ${parseFloat(v.valor||0).toFixed(2)}</td>
-        </tr>`;
-      });
-      document.getElementById('tabelaVendas').innerHTML = htmlV || '<tr><td colspan="5">Nenhuma venda registrada ainda.</td></tr>';
-    }
+    const quemResgatou = c.usado_por 
+      ? `<code style="background: #222734; padding: 2px 6px; border-radius: 4px; color: #d4af37;">${c.usado_por}</code>` 
+      : '<span style="color: #6b7280;">—</span>';
+
+    htmlG += `
+      <tr>
+        <td><strong>${c.codigo}</strong></td>
+        <td>R$ ${parseFloat(c.valor || 0).toFixed(2)}</td>
+        <td>${statusTag}</td>
+        <td>${quemResgatou}</td>
+      </tr>
+    `;
+  });
+
+  const elTabelaGifts = document.getElementById('tabelaGifts') || document.getElementById('tabelaCupons') || document.getElementById('listaCupons');
+  if (elTabelaGifts) {
+    elTabelaGifts.innerHTML = htmlG || '<tr><td colspan="4" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum Gift Card cadastrado.</td></tr>';
+  }
 
     // Formulário de Cadastro de Estoque
     document.getElementById('formEstoque').addEventListener('submit', async function(e) {
