@@ -279,31 +279,32 @@
     }
 
     function atualizarPainel(dados) {
-      const prods = dados.produtos || [];
-      const cupons = dados.cupons_detalhados || [];
-      const vendas = dados.vendas || [];
+  const prods = dados.produtos || [];
+  const cupons = dados.cupons_detalhados || dados.cupons || dados.giftcards || [];
+  const vendas = dados.vendas || [];
 
-      // Métricas
-      const disp = prods.filter(p => (p.status||'').toLowerCase() === 'disponivel').length;
-      document.getElementById('m-disponiveis').innerText = disp;
-      document.getElementById('m-vendas').innerText = vendas.length;
-      document.getElementById('m-gifts').innerText = cupons.filter(c => !c.usado).length;
+  // Métricas
+  const disp = prods.filter(p => (p.status||'').toLowerCase() === 'disponivel').length;
+  document.getElementById('m-disponiveis').innerText = disp;
+  document.getElementById('m-vendas').innerText = vendas.length;
+  document.getElementById('m-gifts').innerText = cupons.filter(c => !c.usado).length;
 
-      // Tabela Estoque
-      let htmlE = '';
-      prods.forEach(p => {
-        const st = (p.status||'').toLowerCase() === 'disponivel';
-        htmlE += `<tr>
-          <td>${p.id || '-'}</td>
-          <td>${p.operadora}</td>
-          <td>${p.plano}</td>
-          <td>R$ ${parseFloat(p.preco||0).toFixed(2)}</td>
-          <td><span class="badge ${st ? 'badge-success' : 'badge-danger'}">${p.status}</span></td>
-        </tr>`;
-      });
-      document.getElementById('tabelaEstoque').innerHTML = htmlE || '<tr><td colspan="5">Nenhum item.</td></tr>';
+  // Tabela Estoque
+  let htmlE = '';
+  prods.forEach(p => {
+    const st = (p.status||'').toLowerCase() === 'disponivel';
+    htmlE += `<tr>
+      <td>${p.id || '-'}</td>
+      <td>${p.operadora}</td>
+      <td>${p.plano}</td>
+      <td>R$ ${parseFloat(p.preco||0).toFixed(2)}</td>
+      <td><span class="badge ${st ? 'badge-success' : 'badge-danger'}">${p.status}</span></td>
+    </tr>`;
+  });
+  const elEstoque = document.getElementById('tabelaEstoque');
+  if (elEstoque) elEstoque.innerHTML = htmlE || '<tr><td colspan="5">Nenhum item.</td></tr>';
 
-      // Tabela Gifts
+  // Tabela Gifts
   let htmlG = '';
   cupons.forEach(c => {
     const estaUsado = c.usado || c.status === 'usado';
@@ -329,6 +330,7 @@
   if (elTabelaGifts) {
     elTabelaGifts.innerHTML = htmlG || '<tr><td colspan="4" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum Gift Card cadastrado.</td></tr>';
   }
+}
 
     // Formulário de Cadastro de Estoque
     document.getElementById('formEstoque').addEventListener('submit', async function(e) {
