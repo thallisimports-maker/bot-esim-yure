@@ -92,7 +92,7 @@
 
     async function carregarProdutosMinisite() {
       try {
-        const res = await fetch(URL_BACKEND + '/api/admin/dados');
+        const res = await fetch(URL_BACKEND + '/api/produtos-publico');
         const dados = await res.json();
         
         const container = document.getElementById('listaProdutos');
