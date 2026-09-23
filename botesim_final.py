@@ -631,6 +631,31 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
         "novo_saldo": novo_saldo,
     }
 
+# MODO DE MANUTENÇÃO (Troque para True se quiser pausar o bot)
+MODO_MANUTENCAO = False
+
+
+@app.get("/api/historico-usuario")
+async def obter_historico_usuario(chat_id: str):
+    user_id = str(chat_id).strip()
+    dados = carregar_dados()
+    vendas = dados.get("vendas", [])
+
+    # Filtra vendas do usuario especifico
+    minhas_vendas = [v for v in vendas if str(v.get("user_id")) == user_id]
+
+    # Associa a imagem_qr do produto original se disponível
+    produtos = dados.get("produtos", [])
+    for v in minhas_vendas:
+        prod_orig = next(
+            (p for p in produtos if str(p.get("id")) == str(v.get("produto_id"))),
+            None,
+        )
+        if prod_orig:
+            v["imagem_qr"] = prod_orig.get("imagem_qr", "")
+
+    return {"vendas": minhas_vendas}
+
 @app.post("/api/admin/produtos")
 async def adicionar_produto(
     produto: NovoProduto, authorization: str = Header(None)
