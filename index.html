@@ -223,7 +223,20 @@
     <div class="form-box">
       <h3>💳 Adicionar Saldo via PIX</h3>
       <input type="number" id="valorRecarga" placeholder="Valor da recarga (ex: 35.00)" step="0.01">
-      <button class="btn-action" onclick="gerarPixRecarga()">Gerar PIX de Recarga</button>
+      <button class="btn-action" onclick="gerarPixRecargaDirect()">Gerar PIX de Recarga</button>
+    </div>
+
+    <!-- ÁREA DE EXIBIÇÃO DO PIX GERADO -->
+    <div id="areaPix" class="form-box" style="display: none; text-align: center;">
+      <h3 style="color: var(--success);">✅ PIX Gerado com Sucesso!</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Escaneie o QR Code ou copie a chave abaixo:</p>
+      
+      <div id="qrPixContainer" style="background: #fff; padding: 10px; border-radius: 8px; display: inline-block; margin-bottom: 12px;">
+        <img id="imgQrPix" src="" alt="QR Code PIX" style="width: 180px; height: 180px; display: block;">
+      </div>
+
+      <input type="text" id="chavePixInput" readonly style="text-align: center; font-size: 11px; margin-bottom: 10px;">
+      <button class="btn-action" style="background: var(--accent-blue); color: #fff;" onclick="copiarChavePix()">📋 Copiar Chave PIX</button>
     </div>
   </div>
 
@@ -339,21 +352,64 @@
       }
     }
 
-    function gerarPixRecarga() {
-      const valor = parseFloat(document.getElementById('valorRecarga').value);
-      if (!valor || valor <= 0) return alert("Digite um valor válido!");
+    <!-- ABA 2: RECARGA PIX -->
+  <div id="aba-carteira" class="tab-content">
+    <div class="form-box">
+      <h3>💳 Adicionar Saldo via PIX</h3>
+      <input type="number" id="valorRecarga" placeholder="Valor da recarga (ex: 35.00)" step="0.01">
+      <button class="btn-action" onclick="gerarPixRecargaDirect()">Gerar PIX de Recarga</button>
+    </div>
 
-      if (tg && tg.initData) {
-        tg.sendData(JSON.stringify({ acao: 'recarga', valor: valor }));
-        tg.close();
-      } else {
-        alert("Abra pelo Telegram para solicitar o PIX.");
+    <!-- ÁREA DE EXIBIÇÃO DO PIX GERADO -->
+    <div id="areaPix" class="form-box" style="display: none; text-align: center;">
+      <h3 style="color: var(--success);">✅ PIX Gerado com Sucesso!</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">Escaneie o QR Code ou copie a chave abaixo:</p>
+      
+      <div id="qrPixContainer" style="background: #fff; padding: 10px; border-radius: 8px; display: inline-block; margin-bottom: 12px;">
+        <img id="imgQrPix" src="" alt="QR Code PIX" style="width: 180px; height: 180px; display: block;">
+      </div>
+
+      <input type="text" id="chavePixInput" readonly style="text-align: center; font-size: 11px; margin-bottom: 10px;">
+      <button class="btn-action" style="background: var(--accent-blue); color: #fff;" onclick="copiarChavePix()">📋 Copiar Chave PIX</button>
+    </div>
+  </div>
+
+  <script>
+    async function gerarPixRecargaDirect() {
+      const valor = parseFloat(document.getElementById('valorRecarga').value);
+      if (!valor || valor < 1) return alert("Digite um valor válido a partir de R$ 1,00!");
+
+      if (!chatId) {
+        return alert("Erro: ID do utilizador não identificado.");
+      }
+
+      try {
+        const res = await fetch(URL_BACKEND + '/api/gerar-pix-miniapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, valor: valor })
+        });
+
+        const data = await res.json();
+
+        if (data.status === 'sucesso') {
+          document.getElementById('areaPix').style.display = 'block';
+          document.getElementById('chavePixInput').value = data.pix_copia_cola;
+          document.getElementById('imgQrPix').src = data.qr_code_url || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.pix_copia_cola)}`;
+        } else {
+          alert("❌ " + (data.detalhe || "Erro ao gerar PIX."));
+        }
+      } catch (err) {
+        alert("Erro ao ligar ao servidor.");
       }
     }
 
-    // Inicialização
-    carregarPerfil();
-    carregarProdutosMinisite();
+    function copiarChavePix() {
+      const input = document.getElementById('chavePixInput');
+      input.select();
+      document.execCommand('copy');
+      alert("📋 Chave PIX copiada para a área de transferência!");
+    }
   </script>
 </body>
 </html>
