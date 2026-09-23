@@ -573,6 +573,8 @@ async def obter_dados_admin(authorization: str = Header(None)):
         "vendas": dados.get("vendas", []),
         "usuarios": dados.get("usuarios", []),
         "giftcards": cupons_lista,
+        "cupons": cupons_lista,
+        "cupons_detalhados": cupons_lista,
     }
 app.add_middleware(
     CORSMiddleware,
