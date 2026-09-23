@@ -857,12 +857,100 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
 async def comando_pix(
     update: Update, context: ContextTypes.DEFAULT_TYPE
 ) -> None:
-    await update.message.reply_text(
-        "💳 **Recarga de Saldo via PIX**\n\n"
-        "Para recarregar sua carteira com PIX diretamente na tela, abra o nosso MiniApp:\n"
-        "Acesse a aba **Recarregar**, digite o valor e copie a chave PIX instantaneamente!",
-        parse_mode="Markdown",
-    )
+    if not update.message:
+        return
+
+    user_id = str(update.message.from_user.id)
+
+    # 1. Verifica se o usuário digitou o valor junto ao comando (ex: /pix 25)
+    if not context.args:
+        await update.message.reply_text(
+            "💳 **Como usar o comando /pix:**\n\n"
+            "Digite `/pix` seguido do valor que deseja recarregar.\n"
+            "Exemplo: `/pix 20` ou `/pix 50`\n\n"
+            "*(Você também pode fazer recargas diretamente pelo nosso MiniApp)*",
+            parse_mode="Markdown",
+        )
+        return
+
+    try:
+        valor_str = context.args[0].replace(",", ".")
+        valor = float(valor_str)
+
+        if valor < 1:
+            await update.message.reply_text(
+                "❌ O valor mínimo para recarga é de **R$ 1,00**.",
+                parse_mode="Markdown",
+            )
+            return
+
+        msg_aguarde = await update.message.reply_text(
+            "⏳ Gerando cobrança PIX..."
+        )
+
+        # 2. Reutiliza o token e gera na PushinPay
+        token_pushin = globals().get("PUSHINPAY_TOKEN", "")
+        headers = {
+            "Authorization": f"Bearer {token_pushin}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+
+        body = {
+            "value": int(round(valor * 100)),
+            "webhook_url": "https://bot-esim-yure.onrender.com/webhook/pushinpay",
+        }
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.pushinpay.com.br/api/pix/cashIn",
+                json=body,
+                headers=headers,
+                timeout=10.0,
+            )
+            data = resp.json()
+
+            pix_copia_cola = data.get("qr_code") or data.get("pix_copia_cola")
+            qr_code_url = data.get("qr_code_base64") or ""
+
+            if not pix_copia_cola:
+                await msg_aguarde.edit_text(
+                    "❌ Erro ao gerar PIX. Tente novamente mais tarde."
+                )
+                return
+
+            texto_resposta = (
+                f"✅ **PIX GERADO COM SUCESSO!**\n\n"
+                f"💰 **Valor:** R$ {valor:.2f}\n\n"
+                f"👇 **Chave PIX Copia e Cola:**\n"
+                f"`{pix_copia_cola}`\n\n"
+                f"*(Copie o código acima e pague no seu aplicativo do banco)*"
+            )
+
+            # Envia a foto do QR Code se disponível ou apenas a chave
+            if qr_code_url:
+                if not qr_code_url.startswith("data:image"):
+                    qr_code_url = f"data:image/png;base64,{qr_code_url}"
+
+                await msg_aguarde.delete()
+                await context.bot.send_photo(
+                    chat_id=user_id,
+                    photo=qr_code_url,
+                    caption=texto_resposta,
+                    parse_mode="Markdown",
+                )
+            else:
+                await msg_aguarde.edit_text(
+                    texto_resposta, parse_mode="Markdown"
+                )
+
+    except ValueError:
+        await update.message.reply_text(
+            "❌ Digite um valor numérico válido. Exemplo: `/pix 20`",
+            parse_mode="Markdown",
+        )
+    except Exception as e:
+        await update.message.reply_text(f"❌ Falha ao processar PIX: {str(e)}")
 
 @app.post("/api/admin/gerar-pix-site")
 async def gerar_pix_site(payload: GerarPixPayload):
