@@ -712,16 +712,44 @@ async def obter_historico_usuario(chat_id: str):
             v["imagem_qr"] = prod_orig.get("imagem_qr", "")
 
     return {"vendas": minhas_vendas}
+# 1. ROTA GET (Usada pelo Admin para LER os dados do Dashboard)
+@app.get("/api/admin/produtos")
+async def obter_produtos_admin(authorization: str = Header(None)):
+    token_pushin = globals().get("PUSHINPAY_TOKEN", "").strip()
 
+    token_fornecido = ""
+    if authorization and authorization.startswith("Bearer "):
+        token_fornecido = authorization.replace("Bearer ", "").strip()
+
+    if not token_fornecido or (
+        token_pushin and token_fornecido != token_pushin
+    ):
+        raise HTTPException(
+            status_code=401, detail="Erro de Autenticação/Conexão."
+        )
+
+    dados = carregar_dados()
+    return {
+        "produtos": dados.get("produtos", []),
+        "vendas": dados.get("vendas", []),
+        "usuarios": dados.get("usuarios", []),
+    }
+
+
+# 2. ROTA POST (Usada pelo Admin para ADICIONAR novos e-SIMs)
 @app.post("/api/admin/produtos")
 async def adicionar_produto(
     produto: NovoProduto, authorization: str = Header(None)
 ):
-    if authorization != f"Bearer {PUSHINPAY_TOKEN}":
+    token_pushin = globals().get("PUSHINPAY_TOKEN", "").strip()
+    token_fornecido = (
+        authorization.replace("Bearer ", "").strip() if authorization else ""
+    )
+
+    if not token_fornecido or token_fornecido != token_pushin:
         raise HTTPException(
             status_code=401, detail="Acesso negado! Nao autorizado."
         )
-
     dados = carregar_dados()
     if "produtos" not in dados or not isinstance(dados["produtos"], list):
         dados["produtos"] = []
