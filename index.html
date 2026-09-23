@@ -1,791 +1,142 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yure eSIMS — MiniApp</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <style>
-        :root {
-            --bg-body: #05070a;
-            --bg-card: #0b0f19;
-            --bg-card-hover: #121828;
-            --bg-input: #0e1422;
-            
-            /* PALETA: PRETO, DOURADO E AZUL CYBER */
-            --gold-main: #d4af37;
-            --gold-gradient: linear-gradient(135deg, #f39c12 0%, #d4af37 50%, #f1c40f 100%);
-            --blue-cyber: #00d2ff;
-            --blue-gradient: linear-gradient(135deg, #00d2ff 0%, #0052d4 100%);
-            
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --green-success: #10b981;
-            --border-color: #1e293b;
-            --radius-main: 16px;
-            --radius-sm: 10px;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>eSIMS YURE - Loja</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-color: #0f1117;
+      --card-bg: #1e222d;
+      --accent-gold: #d4af37;
+      --text-color: #ffffff;
+      --text-muted: #9ca3af;
+      --border-color: #2e3446;
+    }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 15px;
+    }
 
-        body {
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            padding: 12px;
-            padding-bottom: 85px;
-            min-height: 100vh;
-        }
+    h2 {
+      color: var(--accent-gold);
+      text-align: center;
+      margin-bottom: 20px;
+    }
 
-        /* TOP BAR NAV */
-        .top-nav {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        }
+    .grid-produtos {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
 
-        .saldo-badge {
-            background: var(--bg-card);
-            border: 1px solid #d4af37;
-            padding: 8px 16px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 700;
-            font-size: 14px;
-            color: var(--text-main);
-            width: 100%;
-            justify-content: space-between;
-            box-shadow: 0 0 12px rgba(212, 175, 55, 0.2);
-        }
+    .card-produto {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-        .saldo-badge span {
-            color: var(--gold-main);
-        }
+    .info-produto h3 {
+      margin: 0 0 5px 0;
+      font-size: 16px;
+      color: #fff;
+    }
 
-        /* USER HEADER CARD COM MINI LOGO NO CANTO SUPERIOR ESQUERDO */
-        .user-card {
-            background: linear-gradient(135deg, #090e18 0%, #111a2e 100%);
-            border-radius: var(--radius-main);
-            padding: 16px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 16px;
-            box-shadow: 0 8px 25px rgba(0, 210, 255, 0.15);
-            position: relative;
-            overflow: hidden;
-            border: 1px solid var(--gold-main);
-        }
+    .info-produto p {
+      margin: 0;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
 
-        /* LOGO PEQUENA NO CANTO SUPERIOR ESQUERDO */
-        .mini-logo-avatar {
-            width: 58px;
-            height: 58px;
-            border-radius: 50%;
-            border: 2px solid var(--gold-main);
-            object-fit: cover;
-            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
-            flex-shrink: 0;
-        }
+    .btn-comprar {
+      background: var(--accent-gold);
+      color: #000;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
 
-        .user-info h2 {
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--gold-main);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .user-info h1 {
-            font-size: 19px;
-            font-weight: 800;
-            color: #ffffff;
-        }
-
-        .user-info p {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        /* CATEGORIES GRID */
-        .category-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .cat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            padding: 12px 6px;
-            text-align: center;
-            font-size: 12px;
-            font-weight: 700;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px;
-        }
-
-        .cat-card.active {
-            background: var(--gold-gradient);
-            color: #000000;
-            border-color: transparent;
-            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
-        }
-
-        /* BANNER HERO */
-        .hero-banner {
-            background: linear-gradient(180deg, rgba(0, 210, 255, 0.1) 0%, rgba(11, 15, 25, 1) 100%);
-            border: 1px solid var(--blue-cyber);
-            border-radius: var(--radius-main);
-            padding: 18px;
-            margin-bottom: 20px;
-            position: relative;
-            box-shadow: inset 0 0 15px rgba(0, 210, 255, 0.1);
-        }
-
-        .hero-badge {
-            background: var(--gold-main);
-            color: #000000;
-            font-size: 10px;
-            font-weight: 800;
-            padding: 4px 10px;
-            border-radius: 12px;
-            display: inline-block;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
-
-        .hero-title {
-            font-size: 17px;
-            font-weight: 800;
-            color: #ffffff;
-            margin-bottom: 6px;
-        }
-
-        .hero-desc {
-            font-size: 12px;
-            color: var(--text-muted);
-            line-height: 1.4;
-        }
-
-        /* SECTION TITLES */
-        .section-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-
-        .section-title {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* FORM SELECTOR */
-        .form-group {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-main);
-            padding: 14px;
-            margin-bottom: 20px;
-        }
-
-        .form-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: var(--gold-main);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        .custom-select {
-            width: 100%;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 12px;
-            border-radius: var(--radius-sm);
-            font-size: 14px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        /* PRODUCTS LIST */
-        .product-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-main);
-            padding: 16px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: relative;
-            z-index: 5;
-        }
-
-        .product-info h3 {
-            font-size: 16px;
-            font-weight: 700;
-            color: #ffffff;
-        }
-
-        .product-info p {
-            font-size: 13px;
-            color: var(--gold-main);
-            font-weight: 700;
-            margin-top: 4px;
-        }
-
-        .btn-buy {
-            background: var(--gold-gradient);
-            color: #000000;
-            border: none;
-            padding: 10px 18px;
-            border-radius: var(--radius-sm);
-            font-size: 13px;
-            font-weight: 800;
-            cursor: pointer;
-            position: relative;
-            z-index: 10;
-        }
-
-        /* RECHARGE BLOCK */
-        .recharge-box {
-            background: var(--bg-card);
-            border: 1px dashed var(--gold-main);
-            border-radius: var(--radius-main);
-            padding: 18px;
-            text-align: center;
-            margin-bottom: 16px;
-        }
-
-        .recharge-input {
-            width: 100%;
-            background: var(--bg-input);
-            border: 1px solid var(--border-color);
-            color: #ffffff;
-            font-size: 18px;
-            font-weight: 800;
-            text-align: center;
-            padding: 12px;
-            border-radius: var(--radius-sm);
-            margin: 12px 0;
-            outline: none;
-        }
-
-        .btn-purple {
-            width: 100%;
-            background: var(--gold-gradient);
-            color: #000000;
-            border: none;
-            padding: 14px;
-            border-radius: var(--radius-sm);
-            font-size: 15px;
-            font-weight: 800;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);
-        }
-
-        .modal-pix {
-            background: #064e3b;
-            border: 1px solid #10b981;
-            border-radius: var(--radius-main);
-            padding: 16px;
-            margin-top: 14px;
-            display: none;
-            text-align: center;
-        }
-
-        .qr-img {
-            width: 180px;
-            height: 180px;
-            border-radius: 8px;
-            border: 3px solid #ffffff;
-            margin: 12px auto;
-            display: block;
-        }
-
-        .pix-textarea {
-            width: 100%;
-            height: 60px;
-            background: #022c22;
-            border: 1px solid #059669;
-            color: #6ee7b7;
-            font-family: monospace;
-            font-size: 11px;
-            border-radius: 6px;
-            padding: 8px;
-            resize: none;
-            margin-bottom: 8px;
-        }
-
-        .history-item {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-sm);
-            padding: 14px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .history-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: #ffffff;
-        }
-
-        .history-subtitle {
-            font-size: 11px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        /* BOTTOM NAVBAR */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(11, 15, 25, 0.98);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            z-index: 1000;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            color: var(--text-muted);
-            font-size: 11px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            width: 25%;
-        }
-
-        .nav-item.active {
-            color: var(--gold-main);
-        }
-
-        .nav-item svg {
-            width: 22px;
-            height: 22px;
-            fill: currentColor;
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-    </style>
+    .sem-estoque {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 20px;
+      background: var(--card-bg);
+      border-radius: 10px;
+    }
+  </style>
 </head>
 <body>
 
-    <!-- TOP NAVIGATION BAR -->
-    <div class="top-nav">
-        <div class="saldo-badge">
-            <span>💳 Saldo em Carteira:</span>
-            <strong>R$ <span id="userSaldo">0.00</span></strong>
-        </div>
-    </div>
+  <h2>📱 Escolha seu e-SIM</h2>
+  
+  <div id="listaProdutos" class="grid-produtos">
+    <div class="sem-estoque">Carregando estoque disponível...</div>
+  </div>
 
-    <!-- USER HEADER CARD COM MINI LOGO NO CANTO SUPERIOR ESQUERDO -->
-    <div class="user-card">
-        <img id="userAvatarImg" src="logo.png" alt="Perfil do Usuário" class="mini-logo-avatar">
-        <div class="user-info">
-            <h2>Humildade, Lealdade & Atitude</h2>
-            <h1 id="userName">Yure</h1>
-            <p>✨ O melhor mercado de eSIMS do Brasil.</p>
-        </div>
-    </div>
+  <script>
+    const URL_BACKEND = "https://bot-esim-yure.onrender.com";
+    const tg = window.Telegram?.WebApp;
+    if (tg) tg.expand();
 
-    <!-- TAB 1: LOJA -->
-    <div id="tab-loja" class="tab-content active">
-        <div class="category-grid">
-            <div class="cat-card active" onclick="switchTab('loja', document.querySelector('.bottom-nav .nav-item:first-child'))">📱 eSIMs</div>
-            <div class="cat-card" onclick="switchTab('carteira', document.querySelectorAll('.bottom-nav .nav-item')[2])">⚡ Recargas</div>
-            <div class="cat-card" onclick="abrirSuporte()">⚙️ Suporte</div>
-        </div>
+    async function carregarProdutosMinisite() {
+      try {
+        const res = await fetch(URL_BACKEND + '/api/admin/dados');
+        const dados = await res.json();
+        
+        const container = document.getElementById('listaProdutos');
+        const produtos = dados.produtos || [];
 
-        <!-- HERO BANNER -->
-        <div class="hero-banner">
-            <div class="hero-badge">Qualidade Garantida</div>
-            <div class="hero-title">eSIMS Com Alta Qualidade E Durabilidade!</div>
-            <div class="hero-desc">Planos de alta velocidade com entrega instantânea e segurança no seu dispositivo.</div>
-        </div>
+        // Filtra apenas produtos com status 'disponivel'
+        const disponiveis = produtos.filter(p => (p.status || '').toLowerCase() === 'disponivel');
 
-        <div class="section-header">
-            <div class="section-title">📶 Selecionar Pacote</div>
-        </div>
+        if (disponiveis.length === 0) {
+          container.innerHTML = '<div class="sem-estoque">❌ Nenhum e-SIM disponível no momento.</div>';
+          return;
+        }
 
-        <div class="form-group">
-            <label class="form-label">📲 ESCOLHA A OPERADORA</label>
-            <select class="custom-select" id="operadoraSelect" onchange="filtrarPlanos()">
-                <option value="todas">-- Todas as Operadoras --</option>
-                <option value="vivo">Vivo</option>
-                <option value="tim">Tim</option>
-                <option value="claro">Claro</option>
-            </select>
-        </div>
-
-        <div id="listaProdutos">
-            <div class="product-card" data-op="vivo">
-                <div class="product-info">
-                    <h3>Vivo eSIM</h3>
-                    <p>R$ 25,00</p>
-                </div>
-                <button class="btn-buy" onclick="comprarNoBot('vivo_30gb', 25)">Comprar</button>
+        let html = '';
+        disponiveis.forEach(p => {
+          html += `
+            <div class="card-produto">
+              <div class="info-produto">
+                <h3>📲 ${p.operadora} - ${p.plano}</h3>
+                <p>Preço: <strong>R$ ${parseFloat(p.preco || 0).toFixed(2)}</strong></p>
+              </div>
+              <button class="btn-comprar" onclick="comprarItem('${p.id}')">Comprar</button>
             </div>
-            <div class="product-card" data-op="tim">
-                <div class="product-info">
-                    <h3>Tim eSIM</h3>
-                    <p>R$ 30,00</p>
-                </div>
-                <button class="btn-buy" onclick="comprarNoBot('tim_40gb', 30)">Comprar</button>
-            </div>
-            <div class="product-card" data-op="claro">
-                <div class="product-info">
-                    <h3>Claro eSIM</h3>
-                    <p>R$ 35,00</p>
-                </div>
-                <button class="btn-buy" onclick="comprarNoBot('claro_40gb', 35)">Comprar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- TAB 2: PEDIDOS -->
-    <div id="tab-pedidos" class="tab-content">
-        <div class="section-header">
-            <div class="section-title">📦 Histórico de Pedidos</div>
-        </div>
-        <div id="listaPedidos">
-            <div class="history-item">
-                <div>
-                    <div class="history-title">Nenhum pedido recente</div>
-                    <div class="history-subtitle">Seus chips comprados aparecerão aqui.</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- TAB 3: CARTEIRA -->
-    <div id="tab-carteira" class="tab-content">
-        <div class="recharge-box">
-            <div class="section-title" style="justify-content: center; color: var(--gold-main);">💳 Adicionar Saldo Instantâneo</div>
-            <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Insira o valor em Reais para gerar o Pix:</p>
-            <input type="number" id="valorPix" class="recharge-input" min="10" value="10">
-            <button id="btnGerar" class="btn-purple" onclick="solicitarPix()">Gerar QR Code Pix</button>
-
-            <div id="caixaSucesso" class="modal-pix">
-                <strong style="color: #6ee7b7; font-size: 14px;">📥 PIX GERADO COM SUCESSO!</strong>
-                <img id="imgQrCode" class="qr-img" src="" alt="QR Code Pix" style="display: none;">
-                <textarea id="copiaColaTexto" class="pix-textarea" readonly></textarea>
-                <button class="btn-buy" style="width: 100%; background: #ffffff; color: #000000;" onclick="copiarChave()">📋 Copiar Código Pix</button>
-            </div>
-        </div>
-
-        <div class="recharge-box">
-            <div class="section-title" style="justify-content: center; color: var(--gold-main);">🎁 Resgatar Gift Card / Cupom</div>
-            <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Possui um código de presente ou reembolso? Digite abaixo:</p>
-            <input type="text" id="inputGiftCard" class="recharge-input" placeholder="Ex: BONUS25" style="text-transform: uppercase;">
-            <button class="btn-purple" onclick="resgatarGiftCard()">Resgatar Saldo</button>
-        </div>
-    </div>
-
-    <!-- TAB 4: CONTA -->
-    <div id="tab-conta" class="tab-content">
-        <div class="section-header">
-            <div class="section-title">👤 Minha Conta</div>
-        </div>
-        <div class="form-group">
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 6px;">ID do Telegram: <strong id="telegramId" style="color: white;">123456789</strong></p>
-            <p style="font-size: 13px; color: var(--text-muted);">Nome de Usuário: <strong id="telegramUser" style="color: white;">@YureStore</strong></p>
-        </div>
-    </div>
-
-    <!-- BOTTOM NAVBAR -->
-    <div class="bottom-nav">
-        <div class="nav-item active" onclick="switchTab('loja', this)">
-            <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-            Loja
-        </div>
-        <div class="nav-item" onclick="switchTab('pedidos', this)">
-            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-            Pedidos
-        </div>
-        <div class="nav-item" onclick="switchTab('carteira', this)">
-            <svg viewBox="0 0 24 24"><path d="M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-            Carteira
-        </div>
-        <div class="nav-item" onclick="switchTab('conta', this)">
-            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-            Conta
-        </div>
-    </div>
-
-    <!-- SCRIPTS -->
-    <script>
-        let telegramChatId = null;
-        const URL_API_RENDER = "https://bot-esim-yure.onrender.com";
-
-        if (window.Telegram && window.Telegram.WebApp) {
-            const tg = window.Telegram.WebApp;
-            tg.ready();
-            tg.expand();
-            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-                telegramChatId = String(tg.initDataUnsafe.user.id);
-                document.getElementById('userName').innerText = tg.initDataUnsafe.user.first_name || 'Yure';
-                document.getElementById('telegramId').innerText = telegramChatId;
-                document.getElementById('telegramUser').innerText = '@' + (tg.initDataUnsafe.user.username || 'usuario');
-
-                // Carrega a foto de perfil do cliente do Telegram se disponível
-                if (tg.initDataUnsafe.user.photo_url) {
-                    document.getElementById('userAvatarImg').src = tg.initDataUnsafe.user.photo_url;
-                }
-
-                carregarDadosUsuario(telegramChatId);
-            }
-        }
-
-        async function carregarDadosUsuario(chatId) {
-            try {
-                const res = await fetch(`${URL_API_RENDER}/api/usuario/${chatId}`);
-                const dados = await res.json();
-                if (dados.status === "sucesso") {
-                    document.getElementById('userSaldo').innerText = dados.saldo.toFixed(2);
-                }
-            } catch (e) {
-                console.error("Erro ao carregar saldo:", e);
-            }
-        }
-
-        function switchTab(tabName, el) {
-            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
-            
-            const targetTab = document.getElementById('tab-' + tabName);
-            if (targetTab) targetTab.classList.add('active');
-            if (el) el.classList.add('active');
-        }
-
-        function abrirSuporte() {
-            const opcao = window.confirm("Deseja ser atendido via WhatsApp?\n\n[ OK ] = WhatsApp\n[ Cancelar ] = Telegram");
-            
-            if (opcao) {
-                // Redireciona para o WhatsApp
-                window.open("https://wa.me/5535997550084", "_blank");
-            } else {
-                // Redireciona para o Telegram (coloque o seu @ do Telegram aqui)
-                window.open("https://t.me/@Yureconsul7", "_blank");
-            }
-        }
-
-        async function comprarNoBot(planoId, preco) {
-            const chatIdFinal = telegramChatId || "123456789";
-
-            const confirmacao = window.confirm(`Deseja confirmar a compra do eSIM (${planoId.toUpperCase()}) por R$ ${preco},00?`);
-            if (!confirmacao) return;
-
-            try {
-                const resposta = await fetch(`${URL_API_RENDER}/api/comprar-esim`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chatIdFinal,
-                        produto_id: planoId
-                    })
-                });
-
-                const resultado = await resposta.json();
-
-                if (resultado.status === "sucesso") {
-                    if (document.getElementById('userSaldo')) {
-                        document.getElementById('userSaldo').innerText = resultado.novo_saldo.toFixed(2);
-                    }
-
-                    alert(`🎉 COMPRA REALIZADA COM SUCESSO!\n\nEnviamos a foto do seu QR Code no seu chat do Telegram!\n\n${resultado.instrucoes}`);
-                    switchTab('pedidos', document.querySelectorAll('.bottom-nav .nav-item')[1]);
-                } else {
-                    alert(`⚠️ Atenção: ${resultado.detalhe}`);
-                }
-            } catch (erro) {
-                alert("❌ Falha na conexão com o servidor ao realizar a compra.");
-            }
-        }
-
-        function filtrarPlanos() {
-            const op = document.getElementById('operadoraSelect').value;
-            const cards = document.querySelectorAll('.product-card');
-            cards.forEach(card => {
-                if (op === 'todas' || card.getAttribute('data-op') === op) {
-                    card.style.display = 'flex';
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-        }
-
-        async function solicitarPix() {
-            const valorInput = document.getElementById("valorPix").value;
-            const btn = document.getElementById("btnGerar");
-            const caixa = document.getElementById("caixaSucesso");
-            const imgQrCode = document.getElementById("imgQrCode");
-
-            if (!valorInput || parseFloat(valorInput) < 10) { 
-                alert("⚠️ O valor mínimo é R$ 10,00."); 
-                return; 
-            }
-
-            btn.disabled = true; 
-            btn.innerText = "Gerando PIX..."; 
-            caixa.style.display = "none";
-            imgQrCode.style.display = "none";
-
-            try {
-                const resposta = await fetch(`${URL_API_RENDER}/api/admin/gerar-pix-site`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ valor: parseFloat(valorInput) })
-                });
-
-                const dados = await resposta.json();
-
-                if (resposta.ok && dados.status === "sucesso" && dados.qr_code) {
-                    document.getElementById('copiaColaTexto').value = dados.qr_code;
-                    imgQrCode.src = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=" + encodeURIComponent(dados.qr_code);
-                    imgQrCode.style.display = "block";
-                    caixa.style.display = "block";
-                } else { 
-                    alert("⚠️ Erro na resposta: " + (dados.detalhe || JSON.stringify(dados))); 
-                }
-            } catch (erro) { 
-                alert("❌ Falha de conexão com a API na Render."); 
-            } finally { 
-                btn.disabled = false; 
-                btn.innerText = "Gerar QR Code Pix"; 
-            }
-        }
-
-        function copiarChave() {
-            const texto = document.getElementById('copiaColaTexto'); 
-            texto.select(); 
-            navigator.clipboard.writeText(texto.value).then(() => {
-                alert("📋 Código Pix copiado!");
-            });
-        }
-
-        async function resgatarGiftCard() {
-            const input = document.getElementById("inputGiftCard");
-            const codigo = input.value.trim();
-            const chatIdFinal = telegramChatId || "123456789";
-
-            if (!codigo) {
-                alert("⚠️ Por favor, informe o código do Gift Card!");
-                return;
-            }
-
-            try {
-                const resposta = await fetch(`${URL_API_RENDER}/api/resgatar-giftcard`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: chatIdFinal,
-                        codigo: codigo
-                    })
-                });
-
-                const resultado = await resposta.json();
-
-                if (resultado.status === "sucesso") {
-                    alert(resultado.mensagem);
-                    if (document.getElementById('userSaldo')) {
-                        document.getElementById('userSaldo').innerText = resultado.novo_saldo.toFixed(2);
-                    }
-                    input.value = "";
-                } else {
-                    alert("⚠️ " + (resultado.detalhe || "Código inválido ou já utilizado."));
-                }
-            } catch (erro) {
-                alert("❌ Falha de conexão ao validar o Gift Card.");
-            }
-        }
-
-        async function carregarEstoqueMiniApp() {
-            try {
-                const res = await fetch(`${URL_API_RENDER}/api/estoque`);
-                const dados = await res.json();
-
-                if (dados.status === "sucesso") {
-                    const est = dados.estoque;
-
-                    const produtosMap = {
-                        'vivo_30gb': document.querySelector('[onclick*="vivo_30gb"]'),
-                        'tim_40gb': document.querySelector('[onclick*="tim_40gb"]'),
-                        'claro_40gb': document.querySelector('[onclick*="claro_40gb"]')
-                    };
-
-                    for (const [prodId, btn] of Object.entries(produtosMap)) {
-                        if (btn) {
-                            const qtd = est[prodId] || 0;
-                            const card = btn.closest('.product-card');
-
-                            if (qtd <= 0) {
-                                btn.innerText = "Esgotado";
-                                btn.style.background = "#4b5563";
-                                btn.disabled = true;
-                                btn.onclick = null;
-                                if (card) card.style.opacity = "0.6";
-                            } else {
-                                btn.innerText = "Comprar";
-                                btn.style.background = "var(--gold-gradient)";
-                                btn.disabled = false;
-                                if (card) card.style.opacity = "1";
-                            }
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error("Erro ao carregar estoque:", e);
-            }
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            carregarEstoqueMiniApp();
+          `;
         });
-    </script>
+
+        container.innerHTML = html;
+
+      } catch (err) {
+        document.getElementById('listaProdutos').innerHTML = '<div class="sem-estoque">❌ Erro ao carregar estoque.</div>';
+      }
+    }
+
+    function comprarItem(idProduto) {
+      if (tg) {
+        // Envia o ID da compra de volta para o Bot via WebApp
+        tg.sendData(JSON.stringify({ acao: 'comprar', id: idProduto }));
+        tg.close();
+      } else {
+        alert("Para comprar, abra este MiniApp dentro do Telegram!");
+      }
+    }
+
+    carregarProdutosMinisite();
+  </script>
 </body>
 </html>
