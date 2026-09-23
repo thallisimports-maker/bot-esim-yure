@@ -298,6 +298,114 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         else:
             await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code em processamento)*", parse_mode="Markdown")
 
+async def receber_dados_webapp(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> None:
+    if not update.message or not update.message.web_app_data:
+        return
+
+    user_id = str(update.message.from_user.id)
+    nome_usuario = update.message.from_user.first_name
+
+    try:
+        dados_recebidos = json.loads(update.message.web_app_data.data)
+        acao = dados_recebidos.get("acao")
+
+        # 1. COMPRA DE E-SIM VIA MINIAPP
+        if acao == "comprar":
+            prod_id = dados_recebidos.get("id")
+            dados = carregar_dados()
+            produtos = dados.get("produtos", [])
+
+            produto = next(
+                (p for p in produtos if str(p.get("id")) == str(prod_id)), None
+            )
+
+            if (
+                not produto
+                or str(produto.get("status", "")).lower().strip()
+                != "disponivel"
+            ):
+                await update.message.reply_text(
+                    "❌ Este e-SIM já não se encontra disponível!"
+                )
+                return
+
+            preco = float(produto.get("preco", 0))
+
+            con = conectar_banco()
+            cur = con.cursor()
+            cur.execute(
+                "SELECT saldo FROM carteira WHERE chat_id = ?", (user_id,)
+            )
+            res_saldo = cur.fetchone()
+            saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
+
+            if saldo_atual < preco:
+                await update.message.reply_text(
+                    f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você possui **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para finalizar a compra.",
+                    parse_mode="Markdown",
+                )
+                con.close()
+                return
+
+            novo_saldo = saldo_atual - preco
+            cur.execute(
+                "UPDATE carteira SET saldo = ? WHERE chat_id = ?",
+                (novo_saldo, user_id),
+            )
+            con.commit()
+            con.close()
+
+            produto["status"] = "vendido"
+
+            registro_venda = {
+                "user_id": user_id,
+                "cliente": nome_usuario,
+                "produto_id": produto.get("id"),
+                "operadora": produto.get("operadora"),
+                "valor": preco,
+                "data": "2026-09-23",
+            }
+            dados.setdefault("vendas", []).append(registro_venda)
+
+            salvar_dados(dados)
+            salvar_dados_no_github(dados)
+
+            imagem_qr = produto.get("imagem_qr", "")
+            legenda = (
+                f"✅ **COMPRA REALIZADA COM SUCESSO VIA MINIAPP!**\n\n"
+                f"📱 **Operadora:** {produto.get('operadora')}\n"
+                f"📦 **Plano:** {produto.get('plano')}\n"
+                f"💰 **Valor:** R$ {preco:.2f}\n\n"
+                f"Seu QR Code de ativação encontra-se abaixo:"
+            )
+
+            if imagem_qr and imagem_qr.startswith("http"):
+                await context.bot.send_photo(
+                    chat_id=user_id,
+                    photo=imagem_qr,
+                    caption=legenda,
+                    parse_mode="Markdown",
+                )
+            else:
+                await context.bot.send_message(
+                    chat_id=user_id,
+                    text=legenda + "\n\n*(QR Code enviado com sucesso)*",
+                    parse_mode="Markdown",
+                )
+
+        # 2. SOLICITAÇÃO DE RECARGA
+        elif acao == "recarga":
+            valor = float(dados_recebidos.get("valor", 0))
+            await update.message.reply_text(
+                f"💳 **Solicitação de Recarga Recebida!**\n\nValor: **R$ {valor:.2f}**\nUtilize a opção de recarga do bot para gerar o PIX.",
+                parse_mode="Markdown",
+            )
+
+    except Exception as e:
+        await update.message.reply_text(f"❌ Erro ao processar pedido: {str(e)}")
+
 # ------------------------------------------------------------------
 # ⚙️ GESTOR DE LIFESPAN (REGISTRO DO MENU DE COMANDOS NATIVO)
 # ------------------------------------------------------------------
@@ -311,6 +419,9 @@ async def lifespan(app: FastAPI):
     telegram_app.add_handler(CommandHandler("suporte", comando_suporte))
     telegram_app.add_handler(CommandHandler("esims", comando_esims))
     telegram_app.add_handler(CallbackQueryHandler(responder_botoes))
+    telegram_app.add_handler(
+    MessageHandler(filters.StatusUpdate.WEB_APP_DATA, receber_dados_webapp)
+)
 
     await telegram_app.initialize()
     await telegram_app.start()
