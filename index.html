@@ -302,23 +302,14 @@
                 <p>Plano: <strong>${p.plano}</strong></p>
                 <div class="prod-preco">R$ ${parseFloat(p.preco || 0).toFixed(2)}</div>
               </div>
-              <button class="btn-comprar" onclick="comprarItem('${p.id}')">COMPRAR</button>
+              <button class="btn-comprar" type="button" onclick="comprarItemDirect('${p.id}')">COMPRAR</button>
             </div>
           `;
         });
 
         container.innerHTML = html;
       } catch (err) {
-        document.getElementById('listaProdutos').innerHTML = '<div class="sem-estoque">❌ Erro ao conectar com o servidor.</div>';
-      }
-    }
-
-    function comprarItem(idProduto) {
-      if (tg && tg.initData) {
-        tg.sendData(JSON.stringify({ acao: 'comprar', id: idProduto }));
-        tg.close();
-      } else {
-        alert("Abra o MiniApp pelo Telegram para efetuar a compra!");
+        document.getElementById('listaProdutos').innerHTML = '<div class="sem-estoque">❌ Erro ao conectar ao servidor.</div>';
       }
     }
 
