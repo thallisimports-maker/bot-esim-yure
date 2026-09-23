@@ -862,7 +862,6 @@ async def comando_pix(
 
     user_id = str(update.message.from_user.id)
 
-    # 1. Verifica se o usuário digitou o valor junto ao comando (ex: /pix 25)
     if not context.args:
         await update.message.reply_text(
             "💳 **Como usar o comando /pix:**\n\n"
@@ -888,7 +887,6 @@ async def comando_pix(
             "⏳ Gerando cobrança PIX..."
         )
 
-        # 2. Reutiliza o token e gera na PushinPay
         token_pushin = globals().get("PUSHINPAY_TOKEN", "")
         headers = {
             "Authorization": f"Bearer {token_pushin}",
@@ -911,13 +909,15 @@ async def comando_pix(
             data = resp.json()
 
             pix_copia_cola = data.get("qr_code") or data.get("pix_copia_cola")
-            qr_code_url = data.get("qr_code_base64") or ""
 
             if not pix_copia_cola:
                 await msg_aguarde.edit_text(
                     "❌ Erro ao gerar PIX. Tente novamente mais tarde."
                 )
                 return
+
+            # Gera a imagem do QR Code via URL pública aceita nativamente pelo Telegram
+            qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={pix_copia_cola}"
 
             texto_resposta = (
                 f"✅ **PIX GERADO COM SUCESSO!**\n\n"
@@ -927,22 +927,15 @@ async def comando_pix(
                 f"*(Copie o código acima e pague no seu aplicativo do banco)*"
             )
 
-            # Envia a foto do QR Code se disponível ou apenas a chave
-            if qr_code_url:
-                if not qr_code_url.startswith("data:image"):
-                    qr_code_url = f"data:image/png;base64,{qr_code_url}"
+            await msg_aguarde.delete()
 
-                await msg_aguarde.delete()
-                await context.bot.send_photo(
-                    chat_id=user_id,
-                    photo=qr_code_url,
-                    caption=texto_resposta,
-                    parse_mode="Markdown",
-                )
-            else:
-                await msg_aguarde.edit_text(
-                    texto_resposta, parse_mode="Markdown"
-                )
+            # Envia a foto com o QR Code gerado via URL
+            await context.bot.send_photo(
+                chat_id=user_id,
+                photo=qr_code_url,
+                caption=texto_resposta,
+                parse_mode="Markdown",
+            )
 
     except ValueError:
         await update.message.reply_text(
