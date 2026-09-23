@@ -1152,55 +1152,124 @@ async def obter_metricas_admin(usuario_admin: str, senha_admin: str):
     finally:
         con.close()
 
+# ROTA DE CRIAR GIFT CARD PELO PAINEL ADMIN
 @app.post("/api/admin/criar-giftcard")
-async def admin_criar_giftcard(payload: CriarGiftcardPayload):
-    if payload.usuario_admin != USUARIO_ADMIN_MINISITE or payload.senha_admin != SENHA_ADMIN_MINISITE:
-        raise HTTPException(status_code=401, detail="Credenciais inválidas!")
+async def admin_criar_giftcard(
+    payload: CriarGiftcardPayload, authorization: str = Header(None)
+):
+    senha_env = globals().get("SENHA_ADMIN_SEGURA", "admin123").strip()
+
+    token_fornecido = ""
+    if authorization and authorization.startswith("Bearer "):
+        token_fornecido = authorization.replace("Bearer ", "").strip()
+
+    if not token_fornecido and getattr(payload, "senha_admin", None):
+        token_fornecido = payload.senha_admin.strip()
+
+    if not token_fornecido or token_fornecido != senha_env:
+        raise HTTPException(
+            status_code=401,
+            detail="Credenciais inválidas ou sessão expirada!",
+        )
+
+    codigo_clean = payload.codigo.upper().strip()
+    if not codigo_clean or payload.valor <= 0:
+        raise HTTPException(
+            status_code=400, detail="Código ou valor inválido."
+        )
 
     con = conectar_banco()
     cur = con.cursor()
     try:
-        cur.execute("INSERT INTO giftcards (codigo, valor) VALUES (?, ?)", (payload.codigo.upper().strip(), payload.valor))
+        cur.execute(
+            "CREATE TABLE IF NOT EXISTS giftcards (codigo TEXT PRIMARY KEY, valor REAL, usado INTEGER DEFAULT 0, usado_por TEXT)"
+        )
+        cur.execute(
+            "INSERT INTO giftcards (codigo, valor, usado, usado_por) VALUES (?, ?, 0, '')",
+            (codigo_clean, payload.valor),
+        )
         con.commit()
-        return {"status": "sucesso", "mensagem": f"Gift Card '{payload.codigo.upper()}' no valor de R$ {payload.valor:.2f} criado com sucesso!"}
+        return {
+            "status": "sucesso",
+            "mensagem": f"Gift Card '{codigo_clean}' no valor de R$ {payload.valor:.2f} criado com sucesso!",
+        }
     except Exception:
-        raise HTTPException(status_code=400, detail="Este código de Gift Card já existe!")
+        raise HTTPException(
+            status_code=400, detail="Este código de Gift Card já existe!"
+        )
     finally:
         con.close()
 
+
+# ROTA DE RESGATAR GIFT CARD PELO MINIAPP
 @app.post("/api/resgatar-giftcard")
 async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
     codigo_clean = payload.codigo.upper().strip()
+    user_id = (
+        str(payload.chat_id).strip()
+        if getattr(payload, "chat_id", None)
+        else ""
+    )
+
+    if not user_id:
+        return {"status": "erro", "detalhe": "Usuário não identificado."}
 
     con = conectar_banco()
     cur = con.cursor()
     try:
-        cur.execute("SELECT valor, usado FROM giftcards WHERE UPPER(codigo) = ?", (codigo_clean,))
+        cur.execute(
+            "CREATE TABLE IF NOT EXISTS giftcards (codigo TEXT PRIMARY KEY, valor REAL, usado INTEGER DEFAULT 0, usado_por TEXT)"
+        )
+        cur.execute(
+            "SELECT valor, usado FROM giftcards WHERE UPPER(codigo) = ?",
+            (codigo_clean,),
+        )
         gc = cur.fetchone()
 
         if not gc:
-            return {"status": "erro", "detalhe": "Código de Gift Card inválido!"}
+            return {
+                "status": "erro",
+                "detalhe": "Gift Card inválido ou inexistente.",
+            }
+
         if gc["usado"] == 1:
-            return {"status": "erro", "detalhe": "Este Gift Card já foi resgatado!"}
+            return {
+                "status": "erro",
+                "detalhe": "Este Gift Card já foi utilizado!",
+            }
 
-        valor_gc = float(gc["valor"])
+        valor_gift = float(gc["valor"])
 
-        cur.execute("UPDATE carteira SET saldo = saldo + ? WHERE chat_id = ?", (valor_gc, payload.chat_id))
-        cur.execute("UPDATE giftcards SET usado = 1, usado_por = ? WHERE UPPER(codigo) = ?", (payload.chat_id, codigo_clean))
-        con.commit()
+        # Marca como usado
+        cur.execute(
+            "UPDATE giftcards SET usado = 1, usado_por = ? WHERE UPPER(codigo) = ?",
+            (user_id, codigo_clean),
+        )
 
-        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (payload.chat_id,))
+        # Adiciona o saldo na carteira do usuário no SQLite
+        cur.execute(
+            "SELECT saldo FROM carteira WHERE chat_id = ?", (user_id,)
+        )
         res_saldo = cur.fetchone()
-        novo_saldo = float(res_saldo["saldo"]) if res_saldo else valor_gc
+        saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
+        novo_saldo = saldo_atual + valor_gift
+
+        cur.execute(
+            "INSERT OR REPLACE INTO carteira (chat_id, saldo) VALUES (?, ?)",
+            (user_id, novo_saldo),
+        )
+        con.commit()
 
         return {
             "status": "sucesso",
-            "mensagem": f"🎉 R$ {valor_gc:.2f} adicionados à sua carteira!",
-            "novo_saldo": novo_saldo
+            "mensagem": f"🎉 Gift Card resgatado com sucesso! R$ {valor_gift:.2f} adicionados à sua carteira.",
+            "novo_saldo": novo_saldo,
         }
     except Exception as e:
-        con.rollback()
-        return {"status": "erro", "detalhe": f"Erro interno: {str(e)}"}
+        return {
+            "status": "erro",
+            "detalhe": f"Erro ao processar resgate: {str(e)}",
+        }
     finally:
         con.close()
 
