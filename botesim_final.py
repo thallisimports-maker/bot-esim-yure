@@ -141,9 +141,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     texto = (
         f"👑 **YURE eSIMS — HUMILDADE, LEALDADE, DISCIPLINA E ATITUDE**\n\n"
-        f"Olá, **{first_name}**! Seja bem-vindo ao melhor do mercado.\n\n"
+        f"Olá, **{first_name}**! Olá! 👋 Seja muito bem-vindo à YURE eSIMS.\n\n"
         f"💰 **Saldo na Carteira:** `R$ {saldo:.2f}`\n\n"
-        f"📱 **eSIMS Com Alta Qualidade E Durabilidade!**\n"
+        f"📱 **Nosso compromisso é oferecer uma experiência simples, transparente e eficiente — do pedido à ativação.**\n"
         f"Escolha uma opção abaixo para acessar a loja:"
     )
     
