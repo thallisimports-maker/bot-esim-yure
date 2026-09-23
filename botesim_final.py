@@ -222,37 +222,65 @@ async def comando_esims(
 
     if not disponiveis:
         await update.message.reply_text(
-            "📱 **Estoque de e-SIMs**\n\n"
+            "📱 **PRATELEIRA DE eSIMs**\n\n"
             "❌ No momento não temos e-SIMs disponíveis em estoque.\n"
-            "Por favor, volte a consultar mais tarde ou faça a sua reserva no MiniApp!",
+            "Por favor, consulte novamente mais tarde ou acompanhe no MiniApp!",
             parse_mode="Markdown",
         )
         return
 
-    # Agrupa o estoque por Operadora + Plano
+    # Agrupa e organiza o estoque
     resumo_estoque = {}
     for prod in disponiveis:
         operadora = str(prod.get("operadora", "Geral")).strip()
         plano = str(prod.get("plano", "Padrão")).strip()
         preco = float(prod.get("preco", 0))
+        prod_id = str(prod.get("id"))
 
         chave = f"{operadora} - {plano}"
         if chave not in resumo_estoque:
-            resumo_estoque[chave] = {"qtd": 0, "preco": preco}
+            resumo_estoque[chave] = {
+                "qtd": 0,
+                "preco": preco,
+                "id_exemplo": prod_id,
+                "operadora": operadora,
+                "plano": plano,
+            }
         resumo_estoque[chave]["qtd"] += 1
 
-    # Monta a mensagem formatada para o cliente
-    texto = "📱 **ESTOQUE DE e-SIMs DISPONÍVEIS**\n\n"
+    texto = "📱 **PRATELEIRA DE e-SIMs DISPONÍVEIS**\n\n"
+    keyboard = []
+
     for item, info in resumo_estoque.items():
         texto += (
-            f"🔹 **{item}**\n"
-            f"   📦 Disponíveis: **{info['qtd']} un.**\n"
+            f"🔹 **{info['operadora']} ({info['plano']})**\n"
+            f"   📦 Estoque: **{info['qtd']} un.**\n"
             f"   💰 Valor: **R$ {info['preco']:.2f}**\n\n"
         )
+        # Adiciona um botão interativo para comprar o item diretamente
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    f"🛒 Comprar {info['operadora']} {info['plano']} - R$ {info['preco']:.2f}",
+                    callback_data=f"comprar_{info['id_exemplo']}",
+                )
+            ]
+        )
 
-    texto += "💡 *Para adquirir, abra o MiniApp da Loja clicando no menu abaixo!*"
+    # Botão para abrir o MiniApp da loja
+    keyboard.append(
+        [
+            InlineKeyboardButton(
+                "👑 ABRIR LOJA COMPLETA (MINIAPP)",
+                web_app=WebAppInfo(url="https://bot-esim-yure.onrender.com"),
+            )
+        ]
+    )
 
-    await update.message.reply_text(texto, parse_mode="Markdown")
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await update.message.reply_text(
+        texto, parse_mode="Markdown", reply_markup=reply_markup
+    )
 
 
 async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
