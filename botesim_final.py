@@ -788,6 +788,58 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
     finally:
         con.close()
 
+class PayloadRecargaMiniApp(BaseModel):
+    chat_id: str
+    valor: float
+
+
+@app.post("/api/gerar-pix-miniapp")
+async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
+    user_id = str(payload.chat_id).strip()
+    valor = float(payload.valor)
+
+    if not user_id or valor <= 0:
+        raise HTTPException(
+            status_code=400, detail="Dados de recarga inválidos."
+        )
+
+    # Reutiliza suas configurações da PushinPay já existentes no código
+    headers = {
+        "Authorization": f"Bearer {PUSHINPAY_TOKEN}",
+        "Content-Type": "application/json",
+    }
+
+    body = {
+        "value": int(valor * 100),  # Converte R$ para centavos
+        "webhook_url": f"{URL_BACKEND}/webhook/pushinpay",
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.pushinpay.com.br/api/pix/cashIn",
+                json=body,
+                headers=headers,
+            )
+            data = resp.json()
+
+            pix_copia_cola = data.get("qr_code") or data.get("pix_copia_cola")
+            qr_code_url = data.get("qr_code_base64") or ""
+
+            if qr_code_url and not qr_code_url.startswith("data:image"):
+                qr_code_url = f"data:image/png;base64,{qr_code_url}"
+
+            return {
+                "status": "sucesso",
+                "pix_copia_cola": pix_copia_cola,
+                "qr_code_url": qr_code_url,
+            }
+    except Exception as e:
+        return {
+            "status": "erro",
+            "detalhe": f"Falha ao gerar cobrança PIX: {str(e)}",
+        }
+
 @app.post("/api/admin/gerar-pix-site")
 async def gerar_pix_site(payload: GerarPixPayload):
     try:
