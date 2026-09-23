@@ -806,7 +806,6 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
         )
 
     try:
-        # Tenta gerar o PIX utilizando as credenciais da PushinPay do seu código
         token_pushin = globals().get("PUSHINPAY_TOKEN", "")
 
         headers = {
@@ -834,17 +833,18 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
 
             if qr_code_url and not qr_code_url.startswith("data:image"):
                 qr_code_url = f"data:image/png;base64,{qr_code_url}"
-            if not pix_copia_cola:
-            return {
-                "status": "erro",
-                "detalhe": "Não foi possível gerar a chave PIX no gateway.",
-            }
 
-        return {
-            "status": "sucesso",
-            "pix_copia_cola": pix_copia_cola,
-            "qr_code_url": qr_code_url,
-        }
+            if not pix_copia_cola:
+                return {
+                    "status": "erro",
+                    "detalhe": "Não foi possível gerar a chave PIX no gateway.",
+                }
+
+            return {
+                "status": "sucesso",
+                "pix_copia_cola": pix_copia_cola,
+                "qr_code_url": qr_code_url,
+            }
     except Exception as e:
         return {
             "status": "erro",
