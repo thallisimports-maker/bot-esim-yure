@@ -419,9 +419,6 @@ async def lifespan(app: FastAPI):
     telegram_app.add_handler(CommandHandler("suporte", comando_suporte))
     telegram_app.add_handler(CommandHandler("esims", comando_esims))
     telegram_app.add_handler(CallbackQueryHandler(responder_botoes))
-    telegram_app.add_handler(
-    MessageHandler(filters.StatusUpdate.WEB_APP_DATA, receber_dados_webapp)
-)
 
     await telegram_app.initialize()
     await telegram_app.start()
@@ -550,6 +547,84 @@ class NovoProduto(BaseModel):
     preco: float
     imagem_qr: str
 
+class PayloadCompraMiniApp(BaseModel):
+    chat_id: str
+    produto_id: str
+
+
+@app.post("/api/comprar-miniapp")
+async def comprar_miniapp(payload: PayloadCompraMiniApp):
+    user_id = str(payload.chat_id).strip()
+    prod_id = str(payload.produto_id).strip()
+
+    if not user_id:
+        raise HTTPException(
+            status_code=400, detail="ID do usuário não identificado."
+        )
+
+    dados = carregar_dados()
+    produtos = dados.get("produtos", [])
+
+    produto = next(
+        (p for p in produtos if str(p.get("id")) == str(prod_id)), None
+    )
+
+    if (
+        not produto
+        or str(produto.get("status", "")).lower().strip() != "disponivel"
+    ):
+        return {
+            "status": "erro",
+            "detalhe": "Este e-SIM já não se encontra disponível!",
+        }
+
+    preco = float(produto.get("preco", 0))
+
+    con = conectar_banco()
+    cur = con.cursor()
+    cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (user_id,))
+    res_saldo = cur.fetchone()
+    saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
+
+    if saldo_atual < preco:
+        con.close()
+        return {
+            "status": "erro",
+            "detalhe": f"Saldo insuficiente! O e-SIM custa R$ {preco:.2f} e você possui R$ {saldo_atual:.2f} na carteira.",
+        }
+
+    novo_saldo = saldo_atual - preco
+    cur.execute(
+        "UPDATE carteira SET saldo = ? WHERE chat_id = ?",
+        (novo_saldo, user_id),
+    )
+    con.commit()
+    con.close()
+
+    produto["status"] = "vendido"
+
+    registro_venda = {
+        "user_id": user_id,
+        "cliente": f"Cliente ({user_id})",
+        "produto_id": produto.get("id"),
+        "operadora": produto.get("operadora"),
+        "valor": preco,
+        "data": "2026-09-23",
+    }
+    dados.setdefault("vendas", []).append(registro_venda)
+
+    salvar_dados(dados)
+    salvar_dados_no_github(dados)
+
+    return {
+        "status": "sucesso",
+        "mensagem": "Compra realizada com sucesso!",
+        "operadora": produto.get("operadora"),
+        "plano": produto.get("plano"),
+        "preco": preco,
+        "imagem_qr": produto.get("imagem_qr", ""),
+        "novo_saldo": novo_saldo,
+    }
 
 @app.post("/api/admin/produtos")
 async def adicionar_produto(
