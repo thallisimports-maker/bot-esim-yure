@@ -518,9 +518,15 @@ async def login_admin(senha: str = ""):
 
 @app.get("/api/admin/dados")
 async def obter_dados_admin(authorization: str = Header(None)):
-    if authorization != f"Bearer {PUSHINPAY_TOKEN}":
-        raise HTTPException(status_code=401, detail="Nao autorizado")
+    token_pushin = globals().get("PUSHINPAY_TOKEN", "").strip()
     
+    token_fornecido = ""
+    if authorization and authorization.startswith("Bearer "):
+        token_fornecido = authorization.replace("Bearer ", "").strip()
+
+    if not token_fornecido or (token_pushin and token_fornecido != token_pushin):
+        raise HTTPException(status_code=401, detail="Nao autorizado")
+
     dados = carregar_dados()
     
     # Busca os Gift Cards cadastrados no SQLite
