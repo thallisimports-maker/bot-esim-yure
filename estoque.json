@@ -54,6 +54,16 @@
       "imagem_qr": "https://i.imgur.com/rZTZ0qo.jpeg",
       "imagem_url": "https://i.imgur.com/rZTZ0qo.jpeg",
       "status": "disponivel"
+    },
+    {
+      "id": "esim_7",
+      "operadora": "Claro",
+      "plano": "35GB ❤️​",
+      "preco": 25.0,
+      "descricao": "",
+      "imagem_qr": "https://i.imgur.com/JfTYphM.jpeg",
+      "imagem_url": "https://i.imgur.com/JfTYphM.jpeg",
+      "status": "disponivel"
     }
   ],
   "utilizadores": {},
