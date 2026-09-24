@@ -3,16 +3,49 @@ import os
 
 def carregar_dados():
     if not os.path.exists("estoque.json"):
-Sim, é exatamente aí[cite: 1]! 
-
-Na imagem está visível a função `carregar_dados()` na **linha 4** do ficheiro `botesim_final.py` no GitHub[cite: 1]:
-
-```python
-def carregar_dados():
-    if not os.path.exists("estoque.json"):
+        return {
+            "produtos": [
+                {
+                    "id": "claro_40gb_001",
+                    "operadora": "Claro",
+                    "plano": "40GB",
+                    "preco": 35.0,
+                    "status": "vendido"
+                },
+                {
+                    "id": "esim_2",
+                    "operadora": "Claro",
+                    "plano": "35GB",
+                    "preco": 35.0,
+                    "status": "vendido"
+                },
+                {
+                    "id": "esim_3",
+                    "operadora": "Claro",
+                    "plano": "35GB",
+                    "preco": 35.0,
+                    "status": "vendido"
+                },
+                {
+                    "id": "esim_4",
+                    "operadora": "Claro",
+                    "plano": "35GB",
+                    "preco": 25.0,
+                    "status": "vendido"
+                }
+            ],
+            "utilizadores": {},
+            "vendas": []
+        }
+    try:
+        with open("estoque.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
         return {"produtos": [], "utilizadores": {}, "vendas": []}
-    with open("estoque.json", "r", encoding="utf-8") as f:
-        return json.load(f)
+
+def salvar_dados(dados):
+    with open("estoque.json", "w", encoding="utf-8") as f:
+        json.dump(dados, f, indent=4, ensure_ascii=False)
 
 def salvar_dados(dados):
     with open("estoque.json", "w", encoding="utf-8") as f:
