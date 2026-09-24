@@ -783,6 +783,12 @@ async def adicionar_produto(
     except Exception:
         data = {}
 
+    if not isinstance(data, dict):
+        try:
+            data = data.dict()
+        except Exception:
+            data = {}
+
     if not token_fornecido and data.get("senha_admin"):
         token_fornecido = str(data.get("senha_admin")).strip()
 
@@ -795,22 +801,22 @@ async def adicionar_produto(
             status_code=401, detail="Acesso negado! Nao autorizado."
         )
 
-    operadora = (
-        data.get("operadora")
-        or data.get("categoria")
-        or getattr(data, "operadora", "Claro")
-    )
-    plano = data.get("plano") or data.get("nome") or getattr(data, "plano", "")
-    preco_raw = (
-        data.get("preco")
-        or data.get("valor")
-        or getattr(data, "preco", 0.0)
-    )
+    operadora = data.get("operadora") or data.get("categoria") or "Claro"
+    plano = data.get("plano") or data.get("nome") or ""
+    preco_raw = data.get("preco") or data.get("valor") or 0.0
     imagem_url = (
         data.get("imagem_url")
         or data.get("link_imagem")
         or data.get("imagem")
         or data.get("imagem_qr")
+        or ""
+    )
+    
+    # 🔹 NOVO: Captura a descrição opcional (ex: avisos para chips da Vivo)
+    descricao = (
+        data.get("descricao")
+        or data.get("instrucoes")
+        or data.get("texto_instrucoes")
         or ""
     )
 
@@ -835,6 +841,7 @@ async def adicionar_produto(
         "operadora": operadora,
         "plano": plano,
         "preco": preco_float,
+        "descricao": descricao,  # 👈 Salva o aviso/descrição aqui
         "imagem_qr": imagem_url,
         "imagem_url": imagem_url,
         "status": "disponivel",
@@ -842,7 +849,13 @@ async def adicionar_produto(
 
     produtos.append(novo_item)
     dados["produtos"] = produtos
+
+    # Salva localmente e sincroniza com o GitHub se a função existir
     salvar_dados(dados)
+    if "salvar_dados_no_github" in globals():
+        sucesso_github = salvar_dados_no_github(dados)
+        if not sucesso_github:
+            print("Aviso: Salvo localmente, mas falhou ao sincronizar com o GitHub.")
 
     return {
         "status": "sucesso",
