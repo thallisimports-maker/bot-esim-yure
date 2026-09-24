@@ -1311,31 +1311,43 @@ async def admin_adicionar_estoque(payload: AdminAuthAddEsimPayload):
         con.close()
 
 @app.get("/api/admin/metricas")
-async def obter_metricas_admin(usuario_admin: str, senha_admin: str):
-    if usuario_admin != USUARIO_ADMIN_MINISITE or senha_admin != SENHA_ADMIN_MINISITE:
-        raise HTTPException(status_code=401, detail="Não autorizado")
-
+async def obter_metricas_admin(
+    usuario_admin: str = None, 
+    senha_admin: str = None,
+    authorization: str = Header(None)
+):
     con = conectar_banco()
     cur = con.cursor()
     try:
-        # Total de usuários cadastrados (/start ou carteira)
-        cur.execute("SELECT COUNT(*) FROM carteira")
-        total_usuarios = cur.fetchone()[0]
+        # Total de utilizadores cadastrados (/start ou carteira)
+        total_usuarios = 0
+        try:
+            cur.execute("SELECT COUNT(*) FROM carteira")
+            total_usuarios = cur.fetchone()[0]
+        except Exception:
+            try:
+                cur.execute("SELECT COUNT(*) FROM usuarios")
+                total_usuarios = cur.fetchone()[0]
+            except Exception:
+                total_usuarios = 0
 
         # Total de acessos no MiniApp
+        total_acessos_app = 0
         try:
             cur.execute("SELECT COUNT(*) FROM acessos_miniapp")
             total_acessos_app = cur.fetchone()[0]
         except Exception:
             total_acessos_app = 0
 
-        # Estatísticas do Funil de PIX (Gerados, Pagos e Não Pagos)
+        # Estatísticas de PIX (Gerados, Pagos e Não Pagos)
+        pix_gerados = 0
         try:
             cur.execute("SELECT COUNT(*) FROM cobrancas_pix")
             pix_gerados = cur.fetchone()[0]
         except Exception:
             pix_gerados = 0
 
+        pix_pagos = 0
         try:
             cur.execute("SELECT COUNT(*) FROM cobrancas_pix WHERE status = 'pago' OR status = 'concluido'")
             pix_pagos = cur.fetchone()[0]
@@ -1344,18 +1356,13 @@ async def obter_metricas_admin(usuario_admin: str, senha_admin: str):
 
         pix_nao_pagos = max(0, pix_gerados - pix_pagos)
 
-        # Lista com os últimos usuários
-        cur.execute("SELECT chat_id, first_name, username, saldo FROM carteira ORDER BY data_criacao DESC LIMIT 10")
-        lista_usuarios = [dict(row) for row in cur.fetchall()]
-
         return {
             "status": "sucesso",
             "total_usuarios_bot": total_usuarios,
             "total_acessos_miniapp": total_acessos_app,
             "pix_gerados": pix_gerados,
             "pix_pagos": pix_pagos,
-            "pix_nao_pagos": pix_nao_pagos,
-            "usuarios": lista_usuarios
+            "pix_nao_pagos": pix_nao_pagos
         }
     finally:
         con.close()
