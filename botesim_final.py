@@ -595,53 +595,66 @@ async def obter_dados_admin(
         try:
             cur.execute("SELECT id, produto_id, conteudo_esim, ddd, gb FROM estoque_codigos ORDER BY id DESC")
             for row in cur.fetchall():
+                p_id, prod_id, conteudo, ddd, gb = row
+                # Prepara o nome legível do plano
+                nome_plano = f"{gb}GB - DDD {ddd}" if (gb and ddd) else f"Plano {prod_id or 'e-SIM'}"
+                
                 produtos.append({
-                    "id": row[0],
+                    "id": p_id,
                     "operadora": "Vivo",
-                    "plano": f"{row[4]} GB - DDD {row[3]}" if row[4] and row[3] else f"Plano {row[1]}",
-                    "preco": 0,
+                    "plano": nome_plano,
+                    "preco": "0.00",
                     "status": "disponivel",
-                    "imagem_qr": row[2] or "",
-                    "iccid": row[2] or ""
+                    "imagem_url": conteudo or "",
+                    "imagem_qr": conteudo or "",
+                    "descricao": f"Conteúdo/QR: {conteudo}" if conteudo else ""
                 })
         except Exception as e:
-            print(f"Erro ao carregar estoque_codigos: {e}")
+            print(f"Erro ao ler estoque_codigos: {e}")
 
-        # 2. Tabela real de Giftcards: giftcards
+        # 2. Tabela real de Gift Cards: giftcards
         try:
             cur.execute("SELECT codigo, valor, usado, usado_por FROM giftcards")
             for row in cur.fetchall():
+                cod, val, us, us_por = row
                 cupons.append({
-                    "id": row[0],
-                    "codigo": row[0],
-                    "valor": row[1],
-                    "usado": bool(row[2]),
-                    "usado_por": row[3]
+                    "id": cod,
+                    "codigo": cod,
+                    "valor": val or 0.0,
+                    "usado": bool(us),
+                    "status": "usado" if us else "ativo",
+                    "usado_por": us_por or ""
                 })
         except Exception as e:
-            print(f"Erro ao carregar giftcards: {e}")
+            print(f"Erro ao ler giftcards: {e}")
 
-        # 3. Tabela real de Utilizadores: carteira
+        # 3. Tabela real de Clientes/Vendas: carteira
         try:
             cur.execute("SELECT chat_id, first_name, username, saldo, data_criacao FROM carteira ORDER BY data_criacao DESC")
             for row in cur.fetchall():
+                c_id, fname, uname, saldo, dt = row
                 vendas.append({
-                    "id": row[0],
-                    "chat_id": row[0],
-                    "plano": f"@{row[2]}" if row[2] else row[1],
-                    "valor": row[3],
-                    "data": row[4],
+                    "id": c_id,
+                    "chat_id": c_id,
+                    "user_id": c_id,
+                    "plano": f"Recarga / Usuário @{uname}" if uname else f"Cliente {fname or c_id}",
+                    "operadora": "Vivo",
+                    "valor": saldo or 0.0,
+                    "preco": saldo or 0.0,
+                    "data": dt or "",
                     "status": "pago"
                 })
         except Exception as e:
-            print(f"Erro ao carregar carteira: {e}")
+            print(f"Erro ao ler carteira: {e}")
 
         return {
             "status": "sucesso",
             "produtos": produtos,
             "vendas": vendas,
+            "historico_vendas": vendas,
             "cupons": cupons,
-            "giftcards": cupons
+            "giftcards": cupons,
+            "cupons_detalhados": cupons
         }
     finally:
         con.close()
