@@ -542,10 +542,19 @@ async def lifespan(app: FastAPI):
 # ------------------------------------------------------------------------------
 # 🚀 APLICAÇÃO FASTAPI
 # ------------------------------------------------------------------------------
+from fastapi import Header, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 app = FastAPI(title="Yure e-SIM API", lifespan=lifespan)
 
-from fastapi import Header, HTTPException, Request
-from fastapi.responses import JSONResponse
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 SENHA_ADMIN_SEGURA = "Yuresantos26*"
 
