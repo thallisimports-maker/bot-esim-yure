@@ -367,31 +367,92 @@
   }
 }
 
-    // Formulário de Cadastro de Estoque
-    document.getElementById('formEstoque').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const token = sessionStorage.getItem('token_admin');
-      const payload = {
-        operadora: document.getElementById('p_operadora').value,
-        plano: document.getElementById('p_plano').value,
-        preco: parseFloat(document.getElementById('p_preco').value),
-        imagem_qr: document.getElementById('p_qr').value.trim()
-      };
+    // Variável global para controlar se estamos a editar um e-SIM
+let produtoEmEdicao = null;
 
-      const res = await fetch(URL_BACKEND + '/api/admin/produtos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify(payload)
-      });
+// Função para preencher os campos ao clicar em Editar
+function prepararEdicao(id, operadora, plano, preco, imagem, descricao) {
+  produtoEmEdicao = id;
+  document.getElementById('p_operadora').value = operadora;
+  document.getElementById('p_plano').value = plano;
+  document.getElementById('p_preco').value = preco;
+  document.getElementById('p_qr').value = imagem;
+  if (document.getElementById('p_descricao')) {
+    document.getElementById('p_descricao').value = descricao;
+  }
 
-      if (res.ok) {
-        alert("✅ e-SIM cadastrado com sucesso!");
-        document.getElementById('formEstoque').reset();
-        carregarDashboard();
-      } else {
-        alert("❌ Erro ao cadastrar produto.");
-      }
-    });
+  const btn = document.querySelector('#formEstoque .btn-submit');
+  if (btn) {
+    btn.innerText = '💾 Salvar Alterações';
+    btn.style.background = '#f59e0b';
+  }
+}
+
+// Função para chamar a rota DELETE no backend
+async function excluirProduto(id) {
+  if (!confirm(`Deseja realmente excluir o e-SIM ${id}?`)) return;
+
+  const token = sessionStorage.getItem('token_admin');
+  const res = await fetch((typeof URL_BACKEND !== 'undefined' ? URL_BACKEND : '') + `/api/admin/produtos/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: 'Bearer ' + token }
+  });
+
+  if (res.ok) {
+    alert('e-SIM excluído com sucesso!');
+    if (typeof carregarDashboard === 'function') carregarDashboard(); else location.reload();
+  } else {
+    alert('Erro ao excluir e-SIM.');
+  }
+}
+
+// Formulário de Cadastro / Edição de Estoque
+document.getElementById('formEstoque').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const token = sessionStorage.getItem('token_admin');
+  
+  const payload = {
+    operadora: document.getElementById('p_operadora').value,
+    plano: document.getElementById('p_plano').value,
+    preco: parseFloat(document.getElementById('p_preco').value),
+    imagem_qr: document.getElementById('p_qr').value.trim(),
+    imagem_url: document.getElementById('p_qr').value.trim(),
+    descricao: document.getElementById('p_descricao') ? document.getElementById('p_descricao').value : ''
+  };
+
+  let url = (typeof URL_BACKEND !== 'undefined' ? URL_BACKEND : '') + '/api/admin/produtos';
+  let method = 'POST';
+
+  if (produtoEmEdicao) {
+    url = (typeof URL_BACKEND !== 'undefined' ? URL_BACKEND : '') + `/api/admin/produtos/${produtoEmEdicao}`;
+    method = 'PUT';
+  }
+
+  const res = await fetch(url, {
+    method: method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (res.ok) {
+    alert(produtoEmEdicao ? "✅ e-SIM atualizado com sucesso!" : "✅ e-SIM cadastrado com sucesso!");
+    document.getElementById('formEstoque').reset();
+    produtoEmEdicao = null;
+    
+    const btn = document.querySelector('#formEstoque .btn-submit');
+    if (btn) {
+      btn.innerText = '➕ Cadastrar no Estoque';
+      btn.style.background = '';
+    }
+
+    if (typeof carregarDashboard === 'function') carregarDashboard(); else location.reload();
+  } else {
+    alert("❌ Erro ao processar produto.");
+  }
+});
 
     // Formulário de Cadastro de Gift Card
     document.getElementById('formGiftCard').addEventListener('submit', async function(e) {
