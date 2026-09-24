@@ -492,10 +492,17 @@
             sessionStorage.setItem('senha_admin', token);
             sessionStorage.setItem('usuario_admin', 'admin');
             
-            // 🔒 ESCONDE A TELA DE LOGIN COMPLETAMENTE
-            const loginBlock = tokenInput.closest('.login-card') || tokenInput.closest('div') || document.getElementById('loginBlock');
-            if (loginBlock) {
-                loginBlock.style.setProperty('display', 'none', 'important');
+            // 🔒 ESCONDE A TELA/MODAL DE LOGIN COMPLETAMENTE
+        const loginContainer = document.getElementById('loginModal') || 
+                               document.getElementById('loginBlock') || 
+                               document.querySelector('.login-card') || 
+                               document.querySelector('.login-modal') ||
+                               tokenInput.closest('.card') || 
+                               tokenInput.parentElement.parentElement;
+
+        if (loginContainer) {
+            loginContainer.style.setProperty('display', 'none', 'important');
+        }
             }
             
             // EXIBE O DASHBOARD
