@@ -768,18 +768,62 @@ async def obter_produtos_admin(authorization: str = Header(None)):
 
 # 2. ROTA POST (Usada pelo Admin para ADICIONAR novos e-SIMs)
 @app.post("/api/admin/produtos")
+@app.post("/api/admin/adicionar-produto")
 async def adicionar_produto(
-    produto: NovoProduto, authorization: str = Header(None)
+    request: Request, authorization: str = Header(None)
 ):
-    token_pushin = globals().get("PUSHINPAY_TOKEN", "").strip()
-    token_fornecido = (
-        authorization.replace("Bearer ", "").strip() if authorization else ""
-    )
+    senha_env = globals().get("SENHA_ADMIN_SEGURA", "admin123").strip()
 
-    if not token_fornecido or token_fornecido != token_pushin:
+    token_fornecido = ""
+    if authorization and authorization.startswith("Bearer "):
+        token_fornecido = authorization.replace("Bearer ", "").strip()
+
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    if not token_fornecido and data.get("senha_admin"):
+        token_fornecido = str(data.get("senha_admin")).strip()
+
+    # Valida usando a Senha do Painel Admin
+    if (
+        token_fornecido != senha_env
+        and token_fornecido != globals().get("PUSHINPAY_TOKEN", "").strip()
+    ):
         raise HTTPException(
             status_code=401, detail="Acesso negado! Nao autorizado."
         )
+
+    operadora = (
+        data.get("operadora")
+        or data.get("categoria")
+        or getattr(data, "operadora", "Claro")
+    )
+    plano = data.get("plano") or data.get("nome") or getattr(data, "plano", "")
+    preco_raw = (
+        data.get("preco")
+        or data.get("valor")
+        or getattr(data, "preco", 0.0)
+    )
+    imagem_url = (
+        data.get("imagem_url")
+        or data.get("link_imagem")
+        or data.get("imagem")
+        or data.get("imagem_qr")
+        or ""
+    )
+
+    try:
+        preco_float = float(preco_raw)
+    except Exception:
+        preco_float = 0.0
+
+    if not plano or preco_float <= 0:
+        raise HTTPException(
+            status_code=400, detail="Plano ou preço inválido."
+        )
+
     dados = carregar_dados()
     if "produtos" not in dados or not isinstance(dados["produtos"], list):
         dados["produtos"] = []
@@ -788,26 +832,23 @@ async def adicionar_produto(
 
     novo_item = {
         "id": f"esim_{len(produtos) + 1}",
-        "operadora": produto.operadora,
-        "plano": produto.plano,
-        "descricao": produto.descricao,
-        "preco": float(produto.preco),
-        "imagem_qr": produto.imagem_qr,
+        "operadora": operadora,
+        "plano": plano,
+        "preco": preco_float,
+        "imagem_qr": imagem_url,
+        "imagem_url": imagem_url,
         "status": "disponivel",
     }
 
     produtos.append(novo_item)
     dados["produtos"] = produtos
-
     salvar_dados(dados)
-    sucesso_github = salvar_dados_no_github(dados)
 
-    if not sucesso_github:
-        print(
-            "Aviso: Salvo localmente, mas falhou ao sincronizar com o GitHub."
-        )
-
-    return {"sucesso": True, "produto": novo_item}
+    return {
+        "status": "sucesso",
+        "mensagem": f"Produto {plano} cadastrado com sucesso!",
+        "produto": novo_item,
+    }
     
 class CompraMiniAppPayload(BaseModel):
     chat_id: str
