@@ -433,40 +433,49 @@
 
   <script>
     const URL_BACKEND = "https://bot-esim-yure.onrender.com";
-    let produtoEmEdicao = null;
+let produtoEmEdicao = null;
 
-    // 1. AUTENTICAÇÃO E LOGIN
-    async function fazerLogin() {
-      const tokenInput = document.getElementById('tokenInput');
-      const token = tokenInput ? tokenInput.value.trim() : '';
+// 1. AUTENTICAÇÃO E LOGIN SEGURO (SEM EXPOSIÇÃO DE SENHA NA URL)
+async function fazerLogin() {
+  const tokenInput = document.getElementById('tokenInput');
+  const token = tokenInput ? tokenInput.value.trim() : '';
 
-      if (!token) return alert("Digite o token!");
+  if (!token) return alert("Digite o token!");
 
-      try {
-        const res = await fetch(`${URL_BACKEND}/api/admin/metricas?usuario_admin=admin&senha_admin=${encodeURIComponent(token)}`);
-
-        if (res.ok) {
-          sessionStorage.setItem('senha_admin', token);
-          sessionStorage.setItem('token_admin', token);
-          sessionStorage.setItem('usuario_admin', 'admin');
-
-          // Oculta login e exibe dashboard
-          document.getElementById('loginBox').style.setProperty('display', 'none', 'important');
-          document.getElementById('dashboardApp').style.setProperty('display', 'flex', 'important');
-
-          carregarDashboard();
-        } else {
-          alert("Token/Senha de administrador inválido!");
-        }
-      } catch (err) {
-        console.error("Erro ao autenticar:", err);
-        alert("Erro ao conectar ao servidor backend.");
+  try {
+    // Autentica enviando a credencial exclusivamente via Cabeçalho 'Authorization'
+    const res = await fetch(`${URL_BACKEND}/api/admin/metricas`, {
+      headers: {
+        'Authorization': 'Bearer ' + token
       }
-    }
+    });
 
-    function fazerLogout() {
-      sessionStorage.clear();
-      location.reload();
+    if (res.ok) {
+      sessionStorage.setItem('senha_admin', token);
+      sessionStorage.setItem('token_admin', token);
+      sessionStorage.setItem('usuario_admin', 'admin');
+
+      // Oculta a caixa de login e exibe o dashboard principal
+      const loginBox = document.getElementById('loginBox');
+      if (loginBox) loginBox.style.setProperty('display', 'none', 'important');
+
+      const dashboardApp = document.getElementById('dashboardApp');
+      if (dashboardApp) dashboardApp.style.setProperty('display', 'flex', 'important');
+
+      carregarDashboard();
+    } else {
+      alert("Token/Senha de administrador inválido!");
+    }
+  } catch (err) {
+    console.error("Erro ao autenticar:", err);
+    alert("Erro ao conectar ao servidor backend.");
+  }
+}
+
+function fazerLogout() {
+  sessionStorage.clear();
+  location.reload();
+}
     }
 
     // 2. TROCA DE ABAS
