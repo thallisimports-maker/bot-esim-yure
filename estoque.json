@@ -34,6 +34,16 @@
       "preco": 25.0,
       "imagem_qr": "https://i.imgur.com/4qJnllA.jpeg",
       "status": "vendido"
+    },
+    {
+      "id": "esim_5",
+      "operadora": "Vivo",
+      "plano": "30GB 💜​",
+      "preco": 25.0,
+      "descricao": "",
+      "imagem_qr": "https://i.imgur.com/kB6zxl6.png",
+      "imagem_url": "https://i.imgur.com/kB6zxl6.png",
+      "status": "disponivel"
     }
   ],
   "utilizadores": {},
