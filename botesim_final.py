@@ -1390,8 +1390,16 @@ async def obter_metricas_admin(
 ):
     con = conectar_banco()
     cur = con.cursor()
-    
+
     try:
+        # 🔒 VALIDAÇÃO DE SEGURANÇA 100% ALINHADA COM AS SUAS CONSTANTES
+        # Verifica se a senha enviada é igual a SENHA_ADMIN_MINISITE ou ao PUSHINPAY_TOKEN
+        if not senha_admin or (senha_admin.strip() != SENHA_ADMIN_MINISITE and senha_admin.strip() != PUSHINPAY_TOKEN):
+            raise HTTPException(
+                status_code=401,
+                detail="Acesso não autorizado. Credenciais de administrador inválidas."
+            )
+
         # Garante a existência da tabela de eventos do funil
         cur.execute("""
             CREATE TABLE IF NOT EXISTS funil_metricas (
