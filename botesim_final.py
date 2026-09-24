@@ -1612,6 +1612,23 @@ async def adicionar_cupom(
 
     return {"sucesso": True, "codigo": codigo_limpo, "valor": valor_float}
 
+@app.get("/api/admin/debug-tabelas")
+async def debug_tabelas():
+    con = conectar_banco()
+    cur = con.cursor()
+    try:
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tabelas = [row[0] for row in cur.fetchall()]
+        
+        estrutura = {}
+        for t in tabelas:
+            cur.execute(f"PRAGMA table_info({t});")
+            estrutura[t] = [row[1] for row in cur.fetchall()]
+            
+        return {"tabelas_existentes": tabelas, "colunas": estrutura}
+    finally:
+        con.close()
+
 # ------------------------------------------------------------------------------
 # 🟢 RUNNER DA APLICAÇÃO
 # ------------------------------------------------------------------------------
