@@ -237,13 +237,12 @@
     </div>
 
     <!-- ABA 5: MÉTRICAS & FUNIL DE CONVERSÃO -->
-    <div id="metricas" class="section-block" style="margin-top: 30px;">
-      <div class="header-bar">
-        <h1>📊 Métricas & Funil de Conversão</h1>
-      </div>
+    <div id="sec-metricas" class="section-block" style="margin-top: 30px;">
+  <div class="header-bar">
+    <h1>📊 Métricas & Funil de Conversão</h1>
+  </div>
 
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
       
       <div class="card-box" style="border-left: 4px solid #3b82f6;">
         <p style="color: #94a3b8; font-size: 13px; margin-bottom: 5px;">Total Clientes (/start)</p>
@@ -289,11 +288,17 @@
     }
 
     function trocarAba(idAba, el) {
-      document.querySelectorAll('.section-block').forEach(s => s.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-      document.getElementById('sec-' + idAba).classList.add('active');
-      el.classList.add('active');
-    }
+  document.querySelectorAll('.section-block').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-menu li, .nav-item').forEach(i => i.classList.remove('active'));
+  
+  const sec = document.getElementById('sec-' + idAba) || document.getElementById(idAba);
+  if (sec) sec.classList.add('active');
+  if (el) el.classList.add('active');
+
+  if (idAba === 'metricas') {
+    carregarMetricasAdmin();
+  }
+}
 
     async function carregarDashboard() {
       const token = sessionStorage.getItem('token_admin');
