@@ -478,29 +478,54 @@
 <script>
   const URL_BACKEND = "https://bot-esim-yure.onrender.com";
 
-    function fazerLogin() {
-      const token = document.getElementById('tokenInput').value.trim();
-      if(!token) return alert("Digite o token!");
-      sessionStorage.setItem('token_admin', token);
-      carregarDashboard();
+    async function fazerLogin() {
+    const tokenInput = document.getElementById('tokenInput');
+    const token = tokenInput ? tokenInput.value.trim() : '';
+
+    if (!token) return alert("Digite o token!");
+
+    try {
+      const backendUrl = typeof URL_BACKEND !== 'undefined' ? URL_BACKEND : '';
+      const res = await fetch(`${backendUrl}/api/admin/metricas?usuario_admin=admin&senha_admin=${encodeURIComponent(token)}`);
+
+      if (res.ok) {
+        sessionStorage.setItem('senha_admin', token);
+        sessionStorage.setItem('usuario_admin', 'admin');
+        
+        // Esconde a tela de login se ela existir num container separado
+        const loginCard = tokenInput.closest('.login-card') || tokenInput.closest('div');
+        
+        const dashboardApp = document.getElementById('dashboardApp');
+        if (dashboardApp) {
+          dashboardApp.style.setProperty('display', 'flex', 'important');
+        }
+
+        carregarMetricasAdmin();
+      } else {
+        alert("Token/Senha de administrador inválido!");
+      }
+    } catch (err) {
+      console.error("Erro ao autenticar:", err);
+      alert("Erro ao conectar ao servidor backend.");
     }
-
-    function fazerLogout() {
-      sessionStorage.clear();
-      location.reload();
-    }
-
-    function trocarAba(idAba, el) {
-  document.querySelectorAll('.section-block').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-menu li, .nav-item').forEach(i => i.classList.remove('active'));
-  
-  const sec = document.getElementById('sec-' + idAba) || document.getElementById(idAba);
-  if (sec) sec.classList.add('active');
-  if (el) el.classList.add('active');
-
-  if (idAba === 'metricas') {
-    carregarMetricasAdmin();
   }
+
+  function fazerLogout() {
+    sessionStorage.clear();
+    location.reload();
+  }
+
+  function trocarAba(idAba, el) {
+    document.querySelectorAll('.section-block').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-menu li, .nav-item').forEach(i => i.classList.remove('active'));
+
+    const sec = document.getElementById('sec-' + idAba) || document.getElementById(idAba);
+    if (sec) sec.classList.add('active');
+    if (el) el.classList.add('active');
+
+    if (idAba === 'metricas' || idAba === 'visao-geral') {
+      carregarMetricasAdmin();
+    }
 }
 
     async function carregarDashboard() {
