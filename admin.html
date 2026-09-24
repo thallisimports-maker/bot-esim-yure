@@ -20,11 +20,7 @@
     --warning-orange: #f59e0b;
   }
 
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
     background-color: var(--bg-dark);
@@ -42,6 +38,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    position: fixed;
+    top: 0; left: 0;
+    z-index: 9999;
   }
 
   .login-box {
@@ -55,10 +54,7 @@
     text-align: center;
   }
 
-  .login-box h2 {
-    margin-bottom: 20px;
-    color: #fff;
-  }
+  .login-box h2 { margin-bottom: 20px; color: #fff; }
 
   .login-box input {
     width: 100%;
@@ -73,7 +69,7 @@
 
   /* DASHBOARD E SIDEBAR */
   #dashboardApp {
-    display: flex;
+    display: none;
     width: 100%;
     min-height: 100vh;
   }
@@ -95,18 +91,9 @@
     margin-bottom: 15px;
   }
 
-  .sidebar-header h3 {
-    color: #fff;
-    font-size: 18px;
-    font-weight: 700;
-  }
+  .sidebar-header h3 { color: #fff; font-size: 18px; font-weight: 700; }
 
-  .nav-menu {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    flex-grow: 1;
-  }
+  .nav-menu { list-style: none; padding: 0; margin: 0; flex-grow: 1; }
 
   .nav-item {
     padding: 12px 16px;
@@ -119,12 +106,8 @@
     margin-bottom: 6px;
   }
 
-  .nav-item:hover {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #ffffff;
-  }
+  .nav-item:hover { background-color: rgba(255, 255, 255, 0.05); color: #ffffff; }
 
-  /* DESTAQUE DE ITEM ATIVO ESTILO PUSHINPAY */
   .nav-item.active, .nav-item.active:hover {
     background-color: var(--primary-purple) !important;
     color: #ffffff !important;
@@ -144,56 +127,38 @@
     margin-top: auto;
   }
 
-  .logout-btn:hover {
-    background-color: var(--danger-red);
-    color: #fff;
-  }
+  .logout-btn:hover { background-color: var(--danger-red); color: #fff; }
 
-  /* CONTEÚDO PRINCIPAL E ABAS */
   .main-content {
     margin-left: 240px;
     padding: 30px;
     width: calc(100% - 240px);
   }
 
-  .section-block {
-    display: none; /* Controlado pelo trocarAba */
-  }
+  .section-block { display: none; }
+  .section-block.active { display: block !important; }
 
-  .section-block.active {
-    display: block !important;
-  }
+  .header-bar { margin-bottom: 25px; }
+  .header-bar h1 { font-size: 22px; color: #fff; }
 
-  .header-bar {
-    margin-bottom: 25px;
-  }
-
-  .header-bar h1 {
-    font-size: 22px;
-    color: #fff;
-  }
-
-  /* CARDS DE ESTATÍSTICAS */
   .card-box {
     background-color: var(--card-bg);
     border: 1px solid var(--card-border);
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    margin-bottom: 20px;
   }
 
-  .card-box p {
-    color: var(--text-muted);
-    font-size: 13px;
-  }
+  .card-box p { color: var(--text-muted); font-size: 13px; }
+  .card-box h2 { color: #ffffff; font-size: 26px; font-weight: 700; }
 
-  .card-box h2 {
-    color: #ffffff;
-    font-size: 26px;
-    font-weight: 700;
-  }
+  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px; }
+  .metric-card { background-color: #1a1d24; border: 1px solid var(--card-border); padding: 15px; border-radius: 8px; }
 
-  /* FORMULÁRIOS & BOTÕES */
+  .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .form-group label { font-size: 13px; color: var(--text-muted); }
+
   input, select, textarea {
     background-color: #1a1d24;
     border: 1px solid var(--card-border);
@@ -203,7 +168,7 @@
     outline: none;
   }
 
-  button, .btn-primary {
+  button, .btn-primary, .btn-submit {
     background-color: var(--primary-purple);
     color: #ffffff;
     border: none;
@@ -212,20 +177,15 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    margin-top: 10px;
   }
 
-  button:hover, .btn-primary:hover {
+  button:hover, .btn-primary:hover, .btn-submit:hover {
     background-color: var(--primary-hover);
     box-shadow: 0 4px 12px rgba(91, 80, 246, 0.3);
   }
 
-  /* TABELAS */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-  }
-
+  table { width: 100%; border-collapse: collapse; margin-top: 15px; }
   th {
     background-color: #1a1d24;
     color: var(--text-muted);
@@ -235,23 +195,10 @@
     text-align: left;
     border-bottom: 1px solid var(--card-border);
   }
+  td { padding: 14px 16px; border-bottom: 1px solid var(--card-border); font-size: 14px; }
+  tr:hover td { background-color: rgba(255, 255, 255, 0.02); }
 
-  td {
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--card-border);
-    font-size: 14px;
-  }
-
-  tr:hover td {
-    background-color: rgba(255, 255, 255, 0.02);
-  }
-
-  .badge {
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-  }
+  .badge { padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
   .badge-success { background-color: rgba(16, 185, 129, 0.15); color: var(--success-green); }
   .badge-danger { background-color: rgba(239, 68, 68, 0.15); color: var(--danger-red); }
 </style>
@@ -262,13 +209,13 @@
   <div class="login-container" id="loginBox">
     <div class="login-box">
       <h2>👑 Painel Admin</h2>
-      <input type="password" id="tokenInput" placeholder="Sua Chave Token (PUSHINPAY_TOKEN)">
+      <input type="password" id="tokenInput" placeholder="Sua Chave Token (PUSHINPAY_TOKEN)" onkeydown="if(event.key==='Enter') fazerLogin()">
       <button onclick="fazerLogin()">Acessar Dashboard</button>
     </div>
   </div>
 
   <!-- DASHBOARD PRINCIPAL -->
-<div id="dashboardApp" style="display: none !important;">
+  <div id="dashboardApp">
     <!-- SIDEBAR -->
     <div class="sidebar">
       <div class="sidebar-header">
@@ -292,7 +239,7 @@
         <div class="header-bar">
           <h1>📊 Visão Geral do Sistema</h1>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
           <div style="background-color: #1f2937; padding: 1rem; border-radius: 0.5rem; border: 1px solid #d4af37;">
             <h3 style="color: #9ca3af; font-size: 0.875rem; margin-bottom: 0.25rem;">Entraram no Bot</h3>
             <p id="m_total_usuarios" style="font-size: 1.5rem; font-weight: bold; color: #ffffff; margin: 0;">0</p>
@@ -352,31 +299,34 @@
                 <input type="number" id="p_preco" step="0.01" value="25.00" required>
               </div>
               <div class="form-group">
-          <label>Link Direto Imagem (Imgur/ImgBB):</label>
-          <input type="text" id="p_qr" placeholder="https://i.imgur.com/..." required>
-        </div>
-        <div class="form-group" style="grid-column: span 2;">
-          <label>Descrição / Instruções (Opcional):</label>
-          <input type="text" id="p_descricao" placeholder="Ex: Para ativar o e-SIM Vivo, entre em contato via Suporte.">
-        </div>
-      </div>
-      <button type="submit" class="btn-submit">➕ Cadastrar no Estoque</button>
-    </form>
+                <label>Link Direto Imagem (Imgur/ImgBB):</label>
+                <input type="text" id="p_qr" placeholder="https://i.imgur.com/..." required>
+              </div>
+              <div class="form-group" style="grid-column: span 2;">
+                <label>Descrição / Instruções (Opcional):</label>
+                <input type="text" id="p_descricao" placeholder="Ex: Para ativar o e-SIM Vivo, entre em contato via Suporte.">
+              </div>
+            </div>
+            <button type="submit" class="btn-submit">➕ Cadastrar no Estoque</button>
+          </form>
         </div>
 
         <div class="card-box">
           <h3>Itens no Estoque</h3>
           <table>
             <thead>
-          <tr>
-            <th>ID</th>
-            <th>Operadora</th>
-            <th>Plano</th>
-            <th>Preço</th>
-            <th>Status</th>
-            <th>Ações</th>
-          </tr>
-            <tbody id="tabelaEstoque"></tbody>
+              <tr>
+                <th>ID</th>
+                <th>Operadora</th>
+                <th>Plano</th>
+                <th>Preço</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tabelaEstoque">
+              <tr><td colspan="6" style="text-align:center;">Carregando estoque...</td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -399,7 +349,7 @@
                 <input type="number" id="g_valor" step="0.01" value="10.00" required>
               </div>
             </div>
-            <button type="submit" class="btn-submit" style="background: var(--accent-blue); color: #fff;">🎁 Salvar Gift Card</button>
+            <button type="submit" class="btn-submit" style="background: var(--primary-purple); color: #fff;">🎁 Salvar Gift Card</button>
           </form>
         </div>
 
@@ -414,7 +364,9 @@
                 <th>Usado Por (Chat ID)</th>
               </tr>
             </thead>
-            <tbody id="tabelaGifts"></tbody>
+            <tbody id="tabelaGifts">
+              <tr><td colspan="4" style="text-align:center;">Carregando cupons...</td></tr>
+            </tbody>
           </table>
         </div>
       </div>
@@ -435,366 +387,345 @@
                 <th>Valor</th>
               </tr>
             </thead>
-            </table>
+            <tbody id="tabelaVendas">
+              <tr><td colspan="5" style="text-align:center;">Nenhuma venda registrada até o momento.</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
 
-    <!-- ABA 5: MÉTRICAS & FUNIL DE CONVERSÃO -->
-    <div id="sec-metricas" class="section-block" style="margin-top: 30px;">
-  <div class="header-bar">
-    <h1>📊 Métricas & Funil de Conversão</h1>
+      <!-- ABA 5: MÉTRICAS & FUNIL DE CONVERSÃO -->
+      <div id="sec-metricas" class="section-block">
+        <div class="header-bar">
+          <h1>📊 Métricas & Funil de Conversão</h1>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+          <div class="card-box" style="border-left: 4px solid #3b82f6;">
+            <p>Total Clientes (/start)</p>
+            <h2 id="m_total_usuarios_funil">0</h2>
+          </div>
+
+          <div class="card-box" style="border-left: 4px solid #8b5cf6;">
+            <p>Acessos no MiniApp</p>
+            <h2 id="m_acessos_miniapp">0</h2>
+          </div>
+
+          <div class="card-box" style="border-left: 4px solid #f59e0b;">
+            <p>PIX Gerados</p>
+            <h2 id="m_pix_gerados_funil" style="color: #f59e0b;">0</h2>
+          </div>
+
+          <div class="card-box" style="border-left: 4px solid #10b981;">
+            <p>PIX Pagos (Convertidos)</p>
+            <h2 id="m_pix_pagos_funil" style="color: #10b981;">0</h2>
+          </div>
+
+          <div class="card-box" style="border-left: 4px solid #ef4444;">
+            <p>PIX Não Pagos (Abandonos)</p>
+            <h2 id="m_pix_nao_pagos_funil" style="color: #ef4444;">0</h2>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </div>
 
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
-      
-      <div class="card-box" style="border-left: 4px solid #3b82f6;">
-        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 5px;">Total Clientes (/start)</p>
-        <h2 id="m_total_usuarios" style="margin: 0; font-size: 24px; color: #fff;">0</h2>
-      </div>
+  <script>
+    const URL_BACKEND = "https://bot-esim-yure.onrender.com";
+    let produtoEmEdicao = null;
 
-      <div class="card-box" style="border-left: 4px solid #8b5cf6;">
-        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 5px;">Acessos no MiniApp</p>
-        <h2 id="m_acessos_miniapp" style="margin: 0; font-size: 24px; color: #fff;">0</h2>
-      </div>
-
-      <div class="card-box" style="border-left: 4px solid #f59e0b;">
-        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 5px;">PIX Gerados</p>
-        <h2 id="m_pix_gerados" style="margin: 0; font-size: 24px; color: #f59e0b;">0</h2>
-      </div>
-
-      <div class="card-box" style="border-left: 4px solid #10b981;">
-        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 5px;">PIX Pagos (Convertidos)</p>
-        <h2 id="m_pix_pagos" style="margin: 0; font-size: 24px; color: #10b981;">0</h2>
-      </div>
-
-      <div class="card-box" style="border-left: 4px solid #ef4444;">
-        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 5px;">PIX Não Pagos (Abandonos)</p>
-        <h2 id="m_pix_nao_pagos" style="margin: 0; font-size: 24px; color: #ef4444;">0</h2>
-      </div>
-
-   </div>
-</div>
-
-<script>
-  const URL_BACKEND = "https://bot-esim-yure.onrender.com";
-
+    // 1. AUTENTICAÇÃO E LOGIN
     async function fazerLogin() {
-    const tokenInput = document.getElementById('tokenInput');
-    const token = tokenInput ? tokenInput.value.trim() : '';
+      const tokenInput = document.getElementById('tokenInput');
+      const token = tokenInput ? tokenInput.value.trim() : '';
 
-    if (!token) return alert("Digite o token!");
+      if (!token) return alert("Digite o token!");
 
-    try {
-        const backendUrl = typeof URL_BACKEND !== 'undefined' ? URL_BACKEND : '';
-        const res = await fetch(`${backendUrl}/api/admin/metricas?usuario_admin=admin&senha_admin=${encodeURIComponent(token)}`);
+      try {
+        const res = await fetch(`${URL_BACKEND}/api/admin/metricas?usuario_admin=admin&senha_admin=${encodeURIComponent(token)}`);
 
         if (res.ok) {
-            sessionStorage.setItem('senha_admin', token);
-            sessionStorage.setItem('usuario_admin', 'admin');
-            
-            // 🔒 ESCONDE A TELA/MODAL DE LOGIN COMPLETAMENTE
-        const loginContainer = document.getElementById('loginModal') || 
-                               document.getElementById('loginBlock') || 
-                               document.querySelector('.login-card') || 
-                               document.querySelector('.login-modal') ||
-                               tokenInput.closest('.card') || 
-                               tokenInput.parentElement.parentElement;
+          sessionStorage.setItem('senha_admin', token);
+          sessionStorage.setItem('token_admin', token);
+          sessionStorage.setItem('usuario_admin', 'admin');
 
-        if (loginContainer) {
-            loginContainer.style.setProperty('display', 'none', 'important');
-        }
-            }
-            
-            // EXIBE O DASHBOARD
-            const dashboardApp = document.getElementById('dashboardApp');
-            if (dashboardApp) {
-                dashboardApp.style.setProperty('display', 'flex', 'important');
-            }
+          // Oculta login e exibe dashboard
+          document.getElementById('loginBox').style.setProperty('display', 'none', 'important');
+          document.getElementById('dashboardApp').style.setProperty('display', 'flex', 'important');
 
-            // CARREGA DADOS DO ESTOQUE E MÉTRICAS
-            carregarEstoque();
-            carregarMetricasAdmin();
+          carregarDashboard();
         } else {
-            alert("Token/Senha de administrador inválido!");
+          alert("Token/Senha de administrador inválido!");
         }
-    } catch (err) {
+      } catch (err) {
         console.error("Erro ao autenticar:", err);
         alert("Erro ao conectar ao servidor backend.");
+      }
     }
-}
 
-  function fazerLogout() {
-    sessionStorage.clear();
-    location.reload();
-  }
-
-  function trocarAba(idAba, el) {
-    document.querySelectorAll('.section-block').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.nav-menu li, .nav-item').forEach(i => i.classList.remove('active'));
-
-    const sec = document.getElementById('sec-' + idAba) || document.getElementById(idAba);
-    if (sec) sec.classList.add('active');
-    if (el) el.classList.add('active');
-
-    if (idAba === 'metricas' || idAba === 'visao-geral') {
-      carregarMetricasAdmin();
+    function fazerLogout() {
+      sessionStorage.clear();
+      location.reload();
     }
-}
 
+    // 2. TROCA DE ABAS
+    function trocarAba(idAba, el) {
+      document.querySelectorAll('.section-block').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-menu .nav-item').forEach(i => i.classList.remove('active'));
+
+      const sec = document.getElementById('sec-' + idAba);
+      if (sec) sec.classList.add('active');
+      if (el) el.classList.add('active');
+
+      if (idAba === 'metricas' || idAba === 'visao-geral') {
+        carregarMetricasAdmin();
+      } else {
+        carregarDashboard();
+      }
+    }
+
+    // 3. CARREGAR DADOS GERAIS DO DASHBOARD
     async function carregarDashboard() {
-      const token = sessionStorage.getItem('token_admin');
+      const token = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
       if (!token) return;
 
       try {
-        const res = await fetch(URL_BACKEND + '/api/admin/dados', {
+        const res = await fetch(URL_BACKEND + `/api/admin/dados?senha_admin=${encodeURIComponent(token)}`, {
           headers: { 'Authorization': 'Bearer ' + token }
         });
 
-        if (!res.ok) throw new Error("Acesso negado");
+        if (res.ok) {
+          document.getElementById('loginBox').style.setProperty('display', 'none', 'important');
+          document.getElementById('dashboardApp').style.setProperty('display', 'flex', 'important');
 
-        document.getElementById('loginBox').style.display = 'none';
-        document.getElementById('dashboardApp').style.display = 'flex';
-
-        const dados = await res.json();
-        atualizarPainel(dados);
+          const dados = await res.json();
+          atualizarPainel(dados);
+        }
       } catch (err) {
-        alert("Erro de Autenticação/Conexão.");
+        console.error("Erro ao carregar dados:", err);
       }
+      carregarMetricasAdmin();
     }
-// Função para carregar as métricas e funil de vendas
-async function carregarMetricasAdmin() {
-    const uAdmin = sessionStorage.getItem('usuario_admin') || localStorage.getItem('usuario_admin') || 'admin';
-    const sAdmin = sessionStorage.getItem('senha_admin') || localStorage.getItem('senha_admin') || 'admin123';
 
-    try {
-        const backendUrl = typeof URL_BACKEND !== 'undefined' ? URL_BACKEND : '';
-        const url = `${backendUrl}/api/admin/metricas?usuario_admin=${encodeURIComponent(uAdmin)}&senha_admin=${encodeURIComponent(sAdmin)}`;
-        
+    // 4. CARREGAR MÉTRICAS E FUNIL DE CONVERSÃO
+    async function carregarMetricasAdmin() {
+      const uAdmin = sessionStorage.getItem('usuario_admin') || 'admin';
+      const sAdmin = sessionStorage.getItem('senha_admin') || sessionStorage.getItem('token_admin') || '';
+
+      if (!sAdmin) return;
+
+      try {
+        const url = `${URL_BACKEND}/api/admin/metricas?usuario_admin=${encodeURIComponent(uAdmin)}&senha_admin=${encodeURIComponent(sAdmin)}`;
         const res = await fetch(url);
-        if (!res.ok) throw new Error("Erro ao carregar métricas");
+        if (!res.ok) return;
 
         const data = await res.json();
 
-        if (data.status === 'sucesso' || data.total_usuarios !== undefined) {
-            // Preenche os cards do dashboard com os dados do backend
-            if (document.getElementById('m_total_usuarios')) {
-                document.getElementById('m_total_usuarios').innerText = data.total_usuarios || data.total_usuarios_bot || 0;
-            }
-            if (document.getElementById('m_pix_gerados')) {
-                document.getElementById('m_pix_gerados').innerText = data.pix_gerados || 0;
-            }
-            if (document.getElementById('m_pix_pagos')) {
-                document.getElementById('m_pix_pagos').innerText = data.pix_pagos || data.vendas_concluidas || 0;
-            }
-            if (document.getElementById('m_pix_nao_pagos')) {
-                document.getElementById('m_pix_nao_pagos').innerText = data.pix_nao_pagos || 0;
-            }
-            if (document.getElementById('m_taxa_conversao')) {
-                document.getElementById('m_taxa_conversao').innerText = (data.taxa_conversao || 0) + '%';
-            }
-        }
-    } catch (err) {
+        // Atualiza Visão Geral
+        if (document.getElementById('m_total_usuarios')) document.getElementById('m_total_usuarios').innerText = data.total_usuarios || 0;
+        if (document.getElementById('m_pix_gerados')) document.getElementById('m_pix_gerados').innerText = data.pix_gerados || 0;
+        if (document.getElementById('m_pix_pagos')) document.getElementById('m_pix_pagos').innerText = data.pix_pagos || 0;
+        if (document.getElementById('m_taxa_conversao')) document.getElementById('m_taxa_conversao').innerText = (data.taxa_conversao || 0) + '%';
+
+        // Atualiza Seção Métricas
+        if (document.getElementById('m_total_usuarios_funil')) document.getElementById('m_total_usuarios_funil').innerText = data.total_usuarios || 0;
+        if (document.getElementById('m_acessos_miniapp')) document.getElementById('m_acessos_miniapp').innerText = data.acessos_miniapp || 0;
+        if (document.getElementById('m_pix_gerados_funil')) document.getElementById('m_pix_gerados_funil').innerText = data.pix_gerados || 0;
+        if (document.getElementById('m_pix_pagos_funil')) document.getElementById('m_pix_pagos_funil').innerText = data.pix_pagos || 0;
+        if (document.getElementById('m_pix_nao_pagos_funil')) document.getElementById('m_pix_nao_pagos_funil').innerText = data.pix_nao_pagos || 0;
+
+      } catch (err) {
         console.error("Erro ao carregar métricas:", err);
+      }
     }
-}
+
+    // 5. ATUALIZAR TABELAS E CARDS DO PAINEL
     function atualizarPainel(dados) {
-  if (!dados) return;
+      if (!dados) return;
 
-  const prods = dados.produtos || dados.estoque || [];
-  const cupons = dados.cupons_detalhados || dados.cupons || dados.giftcards || [];
-  const vendas = dados.vendas || dados.historico_vendas || [];
+      const prods = dados.produtos || dados.estoque || [];
+      const cupons = dados.cupons_detalhados || dados.cupons || dados.giftcards || [];
+      const vendas = dados.vendas || dados.historico_vendas || [];
 
-  // Métricas com validação segura de elementos
-  const disp = prods.filter(p => (p.status||'').toLowerCase() === 'disponivel').length;
+      const disp = prods.filter(p => (p.status||'').toLowerCase() === 'disponivel').length;
 
-  const elDisp = document.getElementById('m-disponiveis') || document.getElementById('total-esims');
-  const elVendas = document.getElementById('m-vendas') || document.getElementById('total-vendas');
-  const elGifts = document.getElementById('m-gifts') || document.getElementById('total-gifts');
+      const elDisp = document.getElementById('m-disponiveis');
+      const elVendas = document.getElementById('m-vendas');
+      const elGifts = document.getElementById('m-gifts');
 
-  if (elDisp) elDisp.innerText = disp;
-  if (elVendas) elVendas.innerText = vendas.length;
-  if (elGifts) elGifts.innerText = cupons.filter(c => !c.usado).length;
+      if (elDisp) elDisp.innerText = disp;
+      if (elVendas) elVendas.innerText = vendas.length;
+      if (elGifts) elGifts.innerText = cupons.filter(c => !c.usado).length;
 
-  try {
-    if (typeof carregarMetricasAdmin === 'function') {
-      carregarMetricasAdmin();
-    }
-  } catch (e) {
-    console.log("Métricas aguardando carregamento:", e);
-  }
+      // 1. Tabela Estoque e-SIMs
+      let htmlE = '';
+      prods.forEach(p => {
+        const st = (p.status||'').toLowerCase() === 'disponivel';
+        const imgUrl = p.imagem_url || p.imagem_qr || '';
+        const desc = (p.descricao || '').replace(/'/g, "\\'");
+        const planoStr = (p.plano || '').replace(/'/g, "\\'");
 
-  // 1. Tabela Estoque e-SIMs
-  let htmlE = '';
-  prods.forEach(p => {
-    const st = (p.status||'').toLowerCase() === 'disponivel';
-    const imgUrl = p.imagem_url || p.imagem_qr || '';
-    const desc = (p.descricao || '').replace(/'/g, "\\'");
-    const planoStr = (p.plano || '').replace(/'/g, "\\'");
+        htmlE += `<tr>
+          <td>${p.id || '-'}</td>
+          <td>${p.operadora || '-'}</td>
+          <td>${p.plano || '-'}</td>
+          <td>R$ ${parseFloat(p.preco||0).toFixed(2)}</td>
+          <td><span class="badge ${st ? 'badge-success' : 'badge-danger'}">${p.status || '-'}</span></td>
+          <td>
+            <button onclick="prepararEdicao('${p.id}', '${p.operadora}', '${planoStr}', ${p.preco||0}, '${imgUrl}', '${desc}')" style="background:#f59e0b; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-right:5px;">✏️ Editar</button>
+            <button onclick="excluirProduto('${p.id}')" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">🗑️ Excluir</button>
+          </td>
+        </tr>`;
+      });
+      
+      const elEstoque = document.getElementById('tabelaEstoque');
+      if (elEstoque) elEstoque.innerHTML = htmlE || '<tr><td colspan="6" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum item cadastrado.</td></tr>';
 
-    htmlE += `<tr>
-      <td>${p.id || '-'}</td>
-      <td>${p.operadora || '-'}</td>
-      <td>${p.plano || '-'}</td>
-      <td>R$ ${parseFloat(p.preco||0).toFixed(2)}</td>
-      <td><span class="badge ${st ? 'badge-success' : 'badge-danger'}">${p.status || '-'}</span></td>
-      <td>
-        <button onclick="prepararEdicao('${p.id}', '${p.operadora}', '${planoStr}', ${p.preco||0}, '${imgUrl}', '${desc}')" style="background:#f59e0b; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-right:5px;">✏️ Editar</button>
-        <button onclick="excluirProduto('${p.id}')" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">🗑️ Excluir</button>
-      </td>
-    </tr>`;
-  });
-  
-  const elEstoque = document.getElementById('tabelaEstoque');
-  if (elEstoque) elEstoque.innerHTML = htmlE || '<tr><td colspan="6" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum item.</td></tr>';
+      // 2. Tabela Gifts / Cupons
+      let htmlG = '';
+      cupons.forEach(c => {
+        const estaUsado = c.usado || c.status === 'usado';
+        const statusTag = estaUsado
+          ? '<span style="color: #ef4444; font-weight: 700;">🔴 Resgatado</span>' 
+          : '<span style="color: #10b981; font-weight: 700;">🟢 Ativo</span>';
 
-  // 2. Tabela Gifts / Cupons (Com quem resgatou)
-  let htmlG = '';
-  cupons.forEach(c => {
-    const estaUsado = c.usado || c.status === 'usado';
-    const statusTag = estaUsado
-      ? '<span style="color: #ef4444; font-weight: 700;">🔴 Resgatado</span>' 
-      : '<span style="color: #10b981; font-weight: 700;">🟢 Ativo</span>';
+        const quemResgatou = c.usado_por 
+          ? `<code style="background: #222734; padding: 2px 6px; border-radius: 4px; color: #d4af37;">${c.usado_por}</code>` 
+          : '<span style="color: #6b7280;">—</span>';
 
-    const quemResgatou = c.usado_por 
-      ? `<code style="background: #222734; padding: 2px 6px; border-radius: 4px; color: #d4af37;">${c.usado_por}</code>` 
-      : '<span style="color: #6b7280;">—</span>';
+        htmlG += `
+          <tr>
+            <td><strong>${c.codigo}</strong></td>
+            <td>R$ ${parseFloat(c.valor || 0).toFixed(2)}</td>
+            <td>${statusTag}</td>
+            <td>${quemResgatou}</td>
+          </tr>
+        `;
+      });
 
-    htmlG += `
-      <tr>
-        <td><strong>${c.codigo}</strong></td>
-        <td>R$ ${parseFloat(c.valor || 0).toFixed(2)}</td>
-        <td>${statusTag}</td>
-        <td>${quemResgatou}</td>
-      </tr>
-    `;
-  });
+      const elTabelaGifts = document.getElementById('tabelaGifts');
+      if (elTabelaGifts) {
+        elTabelaGifts.innerHTML = htmlG || '<tr><td colspan="4" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum Gift Card cadastrado.</td></tr>';
+      }
 
-  const elTabelaGifts = document.getElementById('tabelaGifts') || document.getElementById('tabelaCupons') || document.getElementById('listaCupons');
-  if (elTabelaGifts) {
-    elTabelaGifts.innerHTML = htmlG || '<tr><td colspan="4" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum Gift Card cadastrado.</td></tr>';
-  }
+      // 3. Tabela Histórico de Vendas
+      let htmlVendas = '';
+      vendas.forEach(v => {
+        const dataVenda = v.data ? new Date(v.data).toLocaleString('pt-BR') : '—';
+        const usuario = v.user_id || v.chat_id || '—';
+        const valor = parseFloat(v.preco || v.valor || 0).toFixed(2);
+        
+        htmlVendas += `
+          <tr>
+            <td>${dataVenda}</td>
+            <td>Cliente</td>
+            <td><code>${usuario}</code></td>
+            <td>${v.plano || v.operadora || 'e-SIM'}</td>
+            <td>R$ ${valor}</td>
+          </tr>
+        `;
+      });
 
-  // 3. Tabela Histórico de Vendas
-  let htmlVendas = '';
-  vendas.forEach(v => {
-    const dataVenda = v.data ? new Date(v.data).toLocaleString('pt-BR') : '—';
-    const usuario = v.user_id || v.chat_id || '—';
-    const valor = parseFloat(v.preco || v.valor || 0).toFixed(2);
-    
-    htmlVendas += `
-      <tr>
-        <td><code>${usuario}</code></td>
-        <td>${v.plano || v.operadora || 'e-SIM'}</td>
-        <td>R$ ${valor}</td>
-        <td>${dataVenda}</td>
-        <td><span class="badge badge-success">Concluído</span></td>
-      </tr>
-    `;
-  });
-
-  const elTabelaVendas = document.getElementById('tabelaVendas') || document.getElementById('listaVendas');
-  if (elTabelaVendas) {
-    elTabelaVendas.innerHTML = htmlVendas || '<tr><td colspan="5" style="text-align:center; padding:12px; color:#94a3b8;">Nenhuma venda registrada até o momento.</td></tr>';
-  }
-}
-
-    // Variável global para controlar se estamos a editar um e-SIM
-let produtoEmEdicao = null;
-
-// Função para preencher os campos ao clicar em Editar
-function prepararEdicao(id, operadora, plano, preco, imagem, descricao) {
-  produtoEmEdicao = id;
-  document.getElementById('p_operadora').value = operadora;
-  document.getElementById('p_plano').value = plano;
-  document.getElementById('p_preco').value = preco;
-  document.getElementById('p_qr').value = imagem;
-  if (document.getElementById('p_descricao')) {
-    document.getElementById('p_descricao').value = descricao;
-  }
-
-  const btn = document.querySelector('#formEstoque .btn-submit');
-  if (btn) {
-    btn.innerText = '💾 Salvar Alterações';
-    btn.style.background = '#f59e0b';
-  }
-}
-
-// Função para chamar a rota DELETE no backend
-async function excluirProduto(id) {
-  if (!confirm(`Deseja realmente excluir o e-SIM ${id}?`)) return;
-
-  const token = sessionStorage.getItem('token_admin');
-  const res = await fetch((typeof URL_BACKEND !== 'undefined' ? URL_BACKEND : '') + `/api/admin/produtos/${id}`, {
-    method: 'DELETE',
-    headers: { Authorization: 'Bearer ' + token }
-  });
-
-  if (res.ok) {
-    alert('e-SIM excluído com sucesso!');
-    if (typeof carregarDashboard === 'function') carregarDashboard(); else location.reload();
-  } else {
-    alert('Erro ao excluir e-SIM.');
-  }
-}
-
-// Formulário de Cadastro / Edição de Estoque
-document.getElementById('formEstoque').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  const token = sessionStorage.getItem('token_admin');
-  
-  const payload = {
-    operadora: document.getElementById('p_operadora').value,
-    plano: document.getElementById('p_plano').value,
-    preco: parseFloat(document.getElementById('p_preco').value),
-    imagem_qr: document.getElementById('p_qr').value.trim(),
-    imagem_url: document.getElementById('p_qr').value.trim(),
-    descricao: document.getElementById('p_descricao') ? document.getElementById('p_descricao').value : ''
-  };
-
-  let url = (typeof URL_BACKEND !== 'undefined' ? URL_BACKEND : '') + '/api/admin/produtos';
-  let method = 'POST';
-
-  if (produtoEmEdicao) {
-    url = (typeof URL_BACKEND !== 'undefined' ? URL_BACKEND : '') + `/api/admin/produtos/${produtoEmEdicao}`;
-    method = 'PUT';
-  }
-
-  const res = await fetch(url, {
-    method: method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + token
-    },
-    body: JSON.stringify(payload)
-  });
-
-  if (res.ok) {
-    alert(produtoEmEdicao ? "✅ e-SIM atualizado com sucesso!" : "✅ e-SIM cadastrado com sucesso!");
-    document.getElementById('formEstoque').reset();
-    produtoEmEdicao = null;
-    
-    const btn = document.querySelector('#formEstoque .btn-submit');
-    if (btn) {
-      btn.innerText = '➕ Cadastrar no Estoque';
-      btn.style.background = '';
+      const elTabelaVendas = document.getElementById('tabelaVendas');
+      if (elTabelaVendas) {
+        elTabelaVendas.innerHTML = htmlVendas || '<tr><td colspan="5" style="text-align:center; padding:12px; color:#94a3b8;">Nenhuma venda registrada até o momento.</td></tr>';
+      }
     }
 
-    if (typeof carregarDashboard === 'function') carregarDashboard(); else location.reload();
-  } else {
-    alert("❌ Erro ao processar produto.");
-  }
-});
+    // 6. FUNÇÕES DE EDIÇÃO E EXCLUSÃO
+    function prepararEdicao(id, operadora, plano, preco, imagem, descricao) {
+      produtoEmEdicao = id;
+      document.getElementById('p_operadora').value = operadora;
+      document.getElementById('p_plano').value = plano;
+      document.getElementById('p_preco').value = preco;
+      document.getElementById('p_qr').value = imagem;
+      if (document.getElementById('p_descricao')) {
+        document.getElementById('p_descricao').value = descricao;
+      }
 
-    // Formulário de Cadastro de Gift Card
+      const btn = document.querySelector('#formEstoque .btn-submit');
+      if (btn) {
+        btn.innerText = '💾 Salvar Alterações';
+        btn.style.background = '#f59e0b';
+      }
+    }
+
+    async function excluirProduto(id) {
+      if (!confirm(`Deseja realmente excluir o e-SIM ${id}?`)) return;
+
+      const token = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
+      const res = await fetch(`${URL_BACKEND}/api/admin/produtos/${id}?senha_admin=${encodeURIComponent(token)}`, {
+        method: 'DELETE',
+        headers: { Authorization: 'Bearer ' + token }
+      });
+
+      if (res.ok) {
+        alert('e-SIM excluído com sucesso!');
+        carregarDashboard();
+      } else {
+        alert('Erro ao excluir e-SIM.');
+      }
+    }
+
+    // 7. FORMULÁRIO ESTOQUE
+    document.getElementById('formEstoque').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const token = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
+      
+      const payload = {
+        operadora: document.getElementById('p_operadora').value,
+        plano: document.getElementById('p_plano').value,
+        preco: parseFloat(document.getElementById('p_preco').value),
+        imagem_qr: document.getElementById('p_qr').value.trim(),
+        imagem_url: document.getElementById('p_qr').value.trim(),
+        descricao: document.getElementById('p_descricao') ? document.getElementById('p_descricao').value : ''
+      };
+
+      let url = `${URL_BACKEND}/api/admin/produtos?senha_admin=${encodeURIComponent(token)}`;
+      let method = 'POST';
+
+      if (produtoEmEdicao) {
+        url = `${URL_BACKEND}/api/admin/produtos/${produtoEmEdicao}?senha_admin=${encodeURIComponent(token)}`;
+        method = 'PUT';
+      }
+
+      const res = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        alert(produtoEmEdicao ? "✅ e-SIM atualizado com sucesso!" : "✅ e-SIM cadastrado com sucesso!");
+        document.getElementById('formEstoque').reset();
+        produtoEmEdicao = null;
+        
+        const btn = document.querySelector('#formEstoque .btn-submit');
+        if (btn) {
+          btn.innerText = '➕ Cadastrar no Estoque';
+          btn.style.background = '';
+        }
+
+        carregarDashboard();
+      } else {
+        alert("❌ Erro ao processar produto.");
+      }
+    });
+
+    // 8. FORMULÁRIO GIFT CARD
     document.getElementById('formGiftCard').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const token = sessionStorage.getItem('token_admin');
+      const token = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
       const payload = {
         codigo: document.getElementById('g_codigo').value.trim().toUpperCase(),
         valor: parseFloat(document.getElementById('g_valor').value)
       };
 
-      const res = await fetch(URL_BACKEND + '/api/admin/cupons', {
+      const res = await fetch(`${URL_BACKEND}/api/admin/cupons?senha_admin=${encodeURIComponent(token)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
         body: JSON.stringify(payload)
@@ -809,8 +740,13 @@ document.getElementById('formEstoque').addEventListener('submit', async function
       }
     });
 
-    // Auto-carrega se logado
-    if (sessionStorage.getItem('token_admin')) carregarDashboard();
+    // AUTO-CARREGAMENTO SE LOGADO
+    document.addEventListener("DOMContentLoaded", () => {
+      const tokenSalvo = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
+      if (tokenSalvo) {
+        carregarDashboard();
+      }
+    });
   </script>
 </body>
 </html>
