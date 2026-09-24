@@ -604,37 +604,52 @@ async def obter_dados_admin(
 ):
     # 🔒 1. VALIDAÇÃO DE SEGURANÇA ADMIN
     TOKEN_CORRETO = os.getenv("PUSHINPAY_TOKEN", "yuresantos26")
-    token_enviado = senha_admin or (authorization.replace("Bearer ", "") if authorization else None)
+    token_enviado = senha_admin or (authorization.replace("Bearer ", "") if authorization else "")
+    token_enviado = token_enviado.strip().lower()
 
-    if not token_enviado or token_enviado.strip() not in [
-        TOKEN_CORRETO.strip(), 
-        SENHA_ADMIN_MINISITE.strip(), 
-        "yuresantos26", 
+    chaves_validas = [
+        TOKEN_CORRETO.strip().lower(),
+        SENHA_ADMIN_MINISITE.strip().lower(),
+        "yuresantos26",
         "aguia2026",
         "admin123"
-    ]:
+    ]
+
+    if not token_enviado or token_enviado not in chaves_validas:
         raise HTTPException(
             status_code=401,
             detail="Acesso não autorizado. Credenciais de administrador inválidas."
         )
 
-    con = conectar_banco()
-    cur = con.cursor()
-
     produtos = []
-    vendas = []
     cupons = []
+    vendas = []
 
+    # 📦 2. LEITURA DO ARQUIVO estoque.json (onde o Bot armazena os e-SIMs)
     try:
-        # 📦 2. LEITURA DE e-SIMS REALMENTE EM ESTOQUE (estoque_codigos)
+        if os.path.exists("estoque.json"):
+            with open("estoque.json", "r", encoding="utf-8") as f:
+                dados_json = json.load(f)
+                if isinstance(dados_json, list):
+                    produtos.extend(dados_json)
+                elif isinstance(dados_json, dict):
+                    itens = dados_json.get("produtos") or dados_json.get("estoque") or []
+                    produtos.extend(itens)
+    except Exception as e:
+        print(f"Aviso ao ler estoque.json: {e}")
+
+    # 📦 3. LEITURA DE e-SIMS EM ESTOQUE NO BANCO (estoque_codigos)
+    try:
+        con = conectar_banco()
+        cur = con.cursor()
+
         try:
             cur.execute("SELECT id, produto_id, conteudo_esim, ddd, gb FROM estoque_codigos ORDER BY id DESC")
             for row in cur.fetchall():
                 p_id, prod_id, conteudo, ddd, gb = row
                 nome_plano = f"{gb}GB - DDD {ddd}" if (gb and ddd) else f"Plano {prod_id or 'e-SIM'}"
-                
                 produtos.append({
-                    "id": p_id,
+                    "id": f"COD-{p_id}",
                     "operadora": "Vivo",
                     "plano": nome_plano,
                     "preco": 0.00,
@@ -646,9 +661,9 @@ async def obter_dados_admin(
         except Exception as e:
             print(f"Erro ao ler estoque_codigos: {e}")
 
-        # 📦 3. LEITURA DE PRODUTOS CADASTRAIS (produtos)
+        # 📦 4. LEITURA DE PRODUTOS CADASTRAIS (produtos)
         try:
-            cur.execute("SELECT id, operadora, plano, preco, status, imagem_url, descricao FROM produtos")
+            cur.execute("SELECT id, operadora, plano, preco, status, imagem_url, descricao FROM produtos ORDER BY id DESC")
             for row in cur.fetchall():
                 produtos.append({
                     "id": row[0],
@@ -657,12 +672,13 @@ async def obter_dados_admin(
                     "preco": float(row[3] or 0.0),
                     "status": row[4] or "disponivel",
                     "imagem_url": row[5] or "",
+                    "imagem_qr": row[5] or "",
                     "descricao": row[6] or ""
                 })
         except Exception as e:
             print(f"Aviso ao ler tabela produtos: {e}")
 
-        # 🎁 4. LEITURA DE CUPONS / GIFT CARDS (cupons)
+        # 🎁 5. LEITURA DE CUPONS / GIFT CARDS (cupons)
         try:
             cur.execute("SELECT codigo, valor, usado, usado_por FROM cupons")
             for row in cur.fetchall():
@@ -676,7 +692,7 @@ async def obter_dados_admin(
         except Exception as e:
             print(f"Erro ao ler cupons: {e}")
 
-        # 🛒 5. LEITURA DO HISTÓRICO DE VENDAS (compras / carteira)
+        # 🛒 6. LEITURA DO HISTÓRICO DE VENDAS (historico_vendas)
         try:
             cur.execute("SELECT id, user_id, plano, preco, data FROM historico_vendas ORDER BY id DESC")
             for row in cur.fetchall():
@@ -695,7 +711,7 @@ async def obter_dados_admin(
     finally:
         con.close()
 
-    # 🚀 RETURN ÚNICO E COMPLETO (mantém todas as chaves esperadas pelo admin.html)
+    # 🚀 RETURN COMPLETO (Sincronizado com todas as abas do admin.html)
     return {
         "status": "sucesso",
         "produtos": produtos,
