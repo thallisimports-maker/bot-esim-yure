@@ -3,10 +3,16 @@ import os
 
 def carregar_dados():
     if not os.path.exists("estoque.json"):
+Sim, é exatamente aí[cite: 1]! 
+
+Na imagem está visível a função `carregar_dados()` na **linha 4** do ficheiro `botesim_final.py` no GitHub[cite: 1]:
+
+```python
+def carregar_dados():
+    if not os.path.exists("estoque.json"):
         return {"produtos": [], "utilizadores": {}, "vendas": []}
     with open("estoque.json", "r", encoding="utf-8") as f:
         return json.load(f)
-
 
 def salvar_dados(dados):
     with open("estoque.json", "w", encoding="utf-8") as f:
