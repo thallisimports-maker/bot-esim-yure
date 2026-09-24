@@ -540,51 +540,54 @@ async function carregarMetricasAdmin() {
   }
 }
     function atualizarPainel(dados) {
-    if (!dados) return;
+  if (!dados) return;
 
-    const prods = dados.produtos || dados.estoque || [];
-    const cupons = dados.cupons_detalhados || dados.cupons || dados.giftcards || [];
-    const vendas = dados.vendas || dados.historico_vendas || [];
+  const prods = dados.produtos || dados.estoque || [];
+  const cupons = dados.cupons_detalhados || dados.cupons || dados.giftcards || [];
+  const vendas = dados.vendas || dados.historico_vendas || [];
 
-    // Métricas com validação segura de elementos
-    const disp = prods.filter(p => (p.status||'').toLowerCase() === 'disponivel').length;
+  // Métricas com validação segura de elementos
+  const disp = prods.filter(p => (p.status||'').toLowerCase() === 'disponivel').length;
 
-    const elDisp = document.getElementById('m-disponiveis') || document.getElementById('total-esims');
-    const elVendas = document.getElementById('m-vendas') || document.getElementById('total-vendas');
-    const elGifts = document.getElementById('m-gifts') || document.getElementById('total-gifts');
+  const elDisp = document.getElementById('m-disponiveis') || document.getElementById('total-esims');
+  const elVendas = document.getElementById('m-vendas') || document.getElementById('total-vendas');
+  const elGifts = document.getElementById('m-gifts') || document.getElementById('total-gifts');
 
-    if (elDisp) elDisp.innerText = disp;
-    if (elVendas) elVendas.innerText = vendas.length;
-    if (elGifts) elGifts.innerText = cupons.filter(c => !c.usado).length;
+  if (elDisp) elDisp.innerText = disp;
+  if (elVendas) elVendas.innerText = vendas.length;
+  if (elGifts) elGifts.innerText = cupons.filter(c => !c.usado).length;
 
-    try {
+  try {
+    if (typeof carregarMetricasAdmin === 'function') {
       carregarMetricasAdmin();
-    } catch (e) {
-      console.log("Métricas aguardando carregamento:", e);
     }
+  } catch (e) {
+    console.log("Métricas aguardando carregamento:", e);
+  }
 
   // 1. Tabela Estoque e-SIMs
-      let htmlE = '';
-      prods.forEach(p => {
-        const st = (p.status||'').toLowerCase() === 'disponivel';
-        const imgUrl = p.imagem_url || p.imagem_qr || '';
-        const desc = (p.descricao || '').replace(/'/g, "\\'");
-        const planoStr = (p.plano || '').replace(/'/g, "\\'");
+  let htmlE = '';
+  prods.forEach(p => {
+    const st = (p.status||'').toLowerCase() === 'disponivel';
+    const imgUrl = p.imagem_url || p.imagem_qr || '';
+    const desc = (p.descricao || '').replace(/'/g, "\\'");
+    const planoStr = (p.plano || '').replace(/'/g, "\\'");
 
-        htmlE += `<tr>
-          <td>${p.id || '-'}</td>
-          <td>${p.operadora || '-'}</td>
-          <td>${p.plano || '-'}</td>
-          <td>R$ ${parseFloat(p.preco||0).toFixed(2)}</td>
-          <td><span class="badge ${st ? 'badge-success' : 'badge-danger'}">${p.status || '-'}</span></td>
-          <td>
-            <button onclick="prepararEdicao('${p.id}', '${p.operadora}', '${planoStr}', ${p.preco||0}, '${imgUrl}', '${desc}')" style="background:#f59e0b; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-right:5px;">✏️ Editar</button>
-            <button onclick="excluirProduto('${p.id}')" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">🗑️ Excluir</button>
-          </td>
-        </tr>`;
-      });
-      const elEstoque = document.getElementById('tabelaEstoque');
-      if (elEstoque) elEstoque.innerHTML = htmlE || '<tr><td colspan="6">Nenhum item.</td></tr>';
+    htmlE += `<tr>
+      <td>${p.id || '-'}</td>
+      <td>${p.operadora || '-'}</td>
+      <td>${p.plano || '-'}</td>
+      <td>R$ ${parseFloat(p.preco||0).toFixed(2)}</td>
+      <td><span class="badge ${st ? 'badge-success' : 'badge-danger'}">${p.status || '-'}</span></td>
+      <td>
+        <button onclick="prepararEdicao('${p.id}', '${p.operadora}', '${planoStr}', ${p.preco||0}, '${imgUrl}', '${desc}')" style="background:#f59e0b; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-right:5px;">✏️ Editar</button>
+        <button onclick="excluirProduto('${p.id}')" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">🗑️ Excluir</button>
+      </td>
+    </tr>`;
+  });
+  
+  const elEstoque = document.getElementById('tabelaEstoque');
+  if (elEstoque) elEstoque.innerHTML = htmlE || '<tr><td colspan="6" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum item.</td></tr>';
 
   // 2. Tabela Gifts / Cupons (Com quem resgatou)
   let htmlG = '';
