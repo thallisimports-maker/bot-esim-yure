@@ -570,39 +570,43 @@ async def admin_login(payload: AdminLoginPayload):
 
 @app.get("/api/admin/dados")
 async def obter_dados_admin(authorization: str = Header(None)):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "admin123").strip()
-
-    token_fornecido = ""
-    if authorization and authorization.startswith("Bearer "):
-        token_fornecido = authorization.replace("Bearer ", "").strip()
-
-    # Valida o token recebido contra a SENHA_ADMIN_SEGURA do painel
-    if not token_fornecido or token_fornecido != senha_env:
-        raise HTTPException(status_code=401, detail="Não autorizado")
-
-    dados = carregar_dados()
-
-    # Busca os Gift Cards cadastrados no SQLite
     con = conectar_banco()
     cur = con.cursor()
-    cupons_lista = []
     try:
-        cur.execute(
-            "CREATE TABLE IF NOT EXISTS giftcards (codigo TEXT PRIMARY KEY, valor REAL, usado INTEGER DEFAULT 0, usado_por TEXT)"
-        )
-        cur.execute(
-            "SELECT codigo, valor, usado, usado_por FROM giftcards"
-        )
-        linhas = cur.fetchall()
-        for row in linhas:
-            cupons_lista.append({
-                "codigo": row["codigo"],
-                "valor": float(row["valor"]),
-                "usado": bool(row["usado"]),
-                "usado_por": row["usado_por"] or "",
-            })
-    except Exception as e:
-        print("Erro ao ler giftcards:", e)
+        # Produtos/eSIMs
+        cur.execute("SELECT id, operadora, plano, preco, status, QR, iccid FROM esim_estoque")
+        produtos = [
+            {"id": r[0], "operadora": r[1], "plano": r[2], "preco": r[3], "status": r[4], "imagem_qr": r[5], "iccid": r[6]}
+            for r in cur.fetchall()
+        ]
+
+        # Vendas efetuadas
+        try:
+            cur.execute("SELECT id, chat_id, plano, valor, data, status FROM vendas ORDER BY id DESC")
+            vendas = [
+                {"id": r[0], "chat_id": r[1], "plano": r[2], "valor": r[3], "data": r[4], "status": r[5]}
+                for r in cur.fetchall()
+            ]
+        except Exception:
+            vendas = []
+
+        # Gifts/Cupons
+        try:
+            cur.execute("SELECT id, codigo, valor, usado, criado_em FROM cupons ORDER BY id DESC")
+            cupons = [
+                {"id": r[0], "codigo": r[1], "valor": r[2], "usado": bool(r[3]), "criado_em": r[4]}
+                for r in cur.fetchall()
+            ]
+        except Exception:
+            cupons = []
+
+        return {
+            "status": "sucesso",
+            "produtos": produtos,
+            "vendas": vendas,
+            "cupons": cupons,
+            "giftcards": cupons
+        }
     finally:
         con.close()
 
