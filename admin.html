@@ -433,49 +433,45 @@
 
   <script>
     const URL_BACKEND = "https://bot-esim-yure.onrender.com";
-let produtoEmEdicao = null;
+    let produtoEmEdicao = null;
 
-// 1. AUTENTICAÇÃO E LOGIN SEGURO (SEM EXPOSIÇÃO DE SENHA NA URL)
-async function fazerLogin() {
-  const tokenInput = document.getElementById('tokenInput');
-  const token = tokenInput ? tokenInput.value.trim() : '';
+    // 1. AUTENTICAÇÃO E LOGIN SEGURO (SENHA INVISÍVEL NO DEVTOOLS)
+    async function fazerLogin() {
+      const tokenInput = document.getElementById('tokenInput');
+      const token = tokenInput ? tokenInput.value.trim() : '';
 
-  if (!token) return alert("Digite o token!");
+      if (!token) return alert("Digite o token!");
 
-  try {
-    // Autentica enviando a credencial exclusivamente via Cabeçalho 'Authorization'
-    const res = await fetch(`${URL_BACKEND}/api/admin/metricas`, {
-      headers: {
-        'Authorization': 'Bearer ' + token
+      try {
+        const res = await fetch(`${URL_BACKEND}/api/admin/dados`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (res.ok) {
+          sessionStorage.setItem('senha_admin', token);
+          sessionStorage.setItem('token_admin', token);
+          sessionStorage.setItem('usuario_admin', 'admin');
+
+          // Oculta login e exibe dashboard
+          const loginBox = document.getElementById('loginBox');
+          if (loginBox) loginBox.style.setProperty('display', 'none', 'important');
+          
+          const dashboardApp = document.getElementById('dashboardApp');
+          if (dashboardApp) dashboardApp.style.setProperty('display', 'flex', 'important');
+
+          carregarDashboard();
+        } else {
+          alert("Token/Senha de administrador inválido!");
+        }
+      } catch (err) {
+        console.error("Erro ao autenticar:", err);
+        alert("Erro ao conectar ao servidor backend.");
       }
-    });
-
-    if (res.ok) {
-      sessionStorage.setItem('senha_admin', token);
-      sessionStorage.setItem('token_admin', token);
-      sessionStorage.setItem('usuario_admin', 'admin');
-
-      // Oculta a caixa de login e exibe o dashboard principal
-      const loginBox = document.getElementById('loginBox');
-      if (loginBox) loginBox.style.setProperty('display', 'none', 'important');
-
-      const dashboardApp = document.getElementById('dashboardApp');
-      if (dashboardApp) dashboardApp.style.setProperty('display', 'flex', 'important');
-
-      carregarDashboard();
-    } else {
-      alert("Token/Senha de administrador inválido!");
     }
-  } catch (err) {
-    console.error("Erro ao autenticar:", err);
-    alert("Erro ao conectar ao servidor backend.");
-  }
-}
 
-function fazerLogout() {
-  sessionStorage.clear();
-  location.reload();
-}
+    function fazerLogout() {
+      sessionStorage.clear();
+      location.reload();
     }
 
     // 2. TROCA DE ABAS
@@ -494,22 +490,28 @@ function fazerLogout() {
       }
     }
 
-    // 3. CARREGAR DADOS GERAIS DO DASHBOARD
+    // 3. CARREGAR DADOS GERAIS (SENHA INVISÍVEL)
     async function carregarDashboard() {
       const token = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
       if (!token) return;
 
       try {
-        const res = await fetch(URL_BACKEND + `/api/admin/dados?senha_admin=${encodeURIComponent(token)}`, {
+        const res = await fetch(`${URL_BACKEND}/api/admin/dados`, {
           headers: { 'Authorization': 'Bearer ' + token }
         });
 
         if (res.ok) {
-          document.getElementById('loginBox').style.setProperty('display', 'none', 'important');
-          document.getElementById('dashboardApp').style.setProperty('display', 'flex', 'important');
+          const loginBox = document.getElementById('loginBox');
+          if (loginBox) loginBox.style.setProperty('display', 'none', 'important');
+          
+          const dashboardApp = document.getElementById('dashboardApp');
+          if (dashboardApp) dashboardApp.style.setProperty('display', 'flex', 'important');
 
           const dados = await res.json();
           atualizarPainel(dados);
+        } else if (res.status === 401) {
+          // Se o token for inválido, força o logout para não travar a tela
+          fazerLogout();
         }
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
@@ -517,16 +519,15 @@ function fazerLogout() {
       carregarMetricasAdmin();
     }
 
-    // 4. CARREGAR MÉTRICAS E FUNIL DE CONVERSÃO
+    // 4. CARREGAR MÉTRICAS E FUNIL (SENHA INVISÍVEL)
     async function carregarMetricasAdmin() {
-      const uAdmin = sessionStorage.getItem('usuario_admin') || 'admin';
-      const sAdmin = sessionStorage.getItem('senha_admin') || sessionStorage.getItem('token_admin') || '';
-
-      if (!sAdmin) return;
+      const token = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
+      if (!token) return;
 
       try {
-        const url = `${URL_BACKEND}/api/admin/metricas?usuario_admin=${encodeURIComponent(uAdmin)}&senha_admin=${encodeURIComponent(sAdmin)}`;
-        const res = await fetch(url);
+        const res = await fetch(`${URL_BACKEND}/api/admin/metricas`, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
         if (!res.ok) return;
 
         const data = await res.json();
@@ -642,7 +643,7 @@ function fazerLogout() {
       }
     }
 
-    // 6. FUNÇÕES DE EDIÇÃO E EXCLUSÃO
+    // 6. FUNÇÕES DE EDIÇÃO E EXCLUSÃO (SENHA INVISÍVEL)
     function prepararEdicao(id, operadora, plano, preco, imagem, descricao) {
       produtoEmEdicao = id;
       document.getElementById('p_operadora').value = operadora;
@@ -663,10 +664,10 @@ function fazerLogout() {
     async function excluirProduto(id) {
       if (!confirm(`Deseja realmente excluir o e-SIM ${id}?`)) return;
 
-      const token = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
-      const res = await fetch(`${URL_BACKEND}/api/admin/produtos/${id}?senha_admin=${encodeURIComponent(token)}`, {
+      const token = sessionStorage.getItem('token_admin');
+      const res = await fetch(`${URL_BACKEND}/api/admin/produtos/${id}`, {
         method: 'DELETE',
-        headers: { Authorization: 'Bearer ' + token }
+        headers: { 'Authorization': 'Bearer ' + token }
       });
 
       if (res.ok) {
@@ -677,10 +678,10 @@ function fazerLogout() {
       }
     }
 
-    // 7. FORMULÁRIO ESTOQUE
+    // 7. FORMULÁRIO ESTOQUE (SENHA INVISÍVEL)
     document.getElementById('formEstoque').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const token = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
+      const token = sessionStorage.getItem('token_admin');
       
       const payload = {
         operadora: document.getElementById('p_operadora').value,
@@ -691,11 +692,11 @@ function fazerLogout() {
         descricao: document.getElementById('p_descricao') ? document.getElementById('p_descricao').value : ''
       };
 
-      let url = `${URL_BACKEND}/api/admin/produtos?senha_admin=${encodeURIComponent(token)}`;
+      let url = `${URL_BACKEND}/api/admin/produtos`;
       let method = 'POST';
 
       if (produtoEmEdicao) {
-        url = `${URL_BACKEND}/api/admin/produtos/${produtoEmEdicao}?senha_admin=${encodeURIComponent(token)}`;
+        url = `${URL_BACKEND}/api/admin/produtos/${produtoEmEdicao}`;
         method = 'PUT';
       }
 
@@ -725,18 +726,21 @@ function fazerLogout() {
       }
     });
 
-    // 8. FORMULÁRIO GIFT CARD
+    // 8. FORMULÁRIO GIFT CARD (SENHA INVISÍVEL)
     document.getElementById('formGiftCard').addEventListener('submit', async function(e) {
       e.preventDefault();
-      const token = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
+      const token = sessionStorage.getItem('token_admin');
       const payload = {
         codigo: document.getElementById('g_codigo').value.trim().toUpperCase(),
         valor: parseFloat(document.getElementById('g_valor').value)
       };
 
-      const res = await fetch(`${URL_BACKEND}/api/admin/cupons?senha_admin=${encodeURIComponent(token)}`, {
+      const res = await fetch(`${URL_BACKEND}/api/admin/cupons`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        headers: { 
+          'Content-Type': 'application/json', 
+          'Authorization': 'Bearer ' + token 
+        },
         body: JSON.stringify(payload)
       });
 
@@ -751,7 +755,7 @@ function fazerLogout() {
 
     // AUTO-CARREGAMENTO SE LOGADO
     document.addEventListener("DOMContentLoaded", () => {
-      const tokenSalvo = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
+      const tokenSalvo = sessionStorage.getItem('token_admin');
       if (tokenSalvo) {
         carregarDashboard();
       }
