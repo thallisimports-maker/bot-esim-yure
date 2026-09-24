@@ -514,11 +514,23 @@
         }
 
         let html = '';
-        disponiveis.forEach(p => {
+        disponiveis.forEach((p, index) => {
           const opClean = (p.operadora || '').toLowerCase();
+          const planoClean = (p.plano || '').toLowerCase();
+
+          // Define o selo de destaque dinamicamente
+          let badgeHtml = '<span class="prod-badge badge-green">⚡ Ativação Instantânea</span>';
+
+          if (index === 0 || planoClean.includes('35gb') || planoClean.includes('50gb')) {
+            badgeHtml = '<span class="prod-badge badge-gold">🔥 Mais Vendido</span>';
+          } else if (opClean.includes('vivo') || opClean.includes('claro')) {
+            badgeHtml = '<span class="prod-badge badge-blue">🚀 5G Liberado</span>';
+          }
+
           html += `
             <div class="card-produto" data-operadora="${opClean}">
               <div class="prod-info">
+                ${badgeHtml}
                 <h4>📲 ${p.operadora}</h4>
                 <p>Plano: <strong>${p.plano}</strong></p>
                 <div class="prod-preco">R$ ${parseFloat(p.preco || 0).toFixed(2)}</div>
