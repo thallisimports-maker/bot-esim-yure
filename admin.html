@@ -231,11 +231,50 @@
                 <th>Valor</th>
               </tr>
             </thead>
-            <tbody id="tabelaVendas"></tbody>
-          </table>
-        </div>
+            </table>
+      </div>
+    </div>
+
+    <!-- ABA 5: MÉTRICAS & FUNIL DE CONVERSÃO -->
+    <div id="sec-metricas" class="section-block" style="margin-top: 30px;">
+      <div class="header-bar">
+        <h1>📊 Métricas & Funil de Conversão</h1>
       </div>
 
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
+      
+      <div class="card-box" style="border-left: 4px solid #3b82f6;">
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 5px;">Total Clientes (/start)</p>
+        <h2 id="m_total_usuarios" style="margin: 0; font-size: 24px; color: #fff;">0</h2>
+      </div>
+
+      <div class="card-box" style="border-left: 4px solid #8b5cf6;">
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 5px;">Acessos no MiniApp</p>
+        <h2 id="m_acessos_miniapp" style="margin: 0; font-size: 24px; color: #fff;">0</h2>
+      </div>
+
+      <div class="card-box" style="border-left: 4px solid #f59e0b;">
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 5px;">PIX Gerados</p>
+        <h2 id="m_pix_gerados" style="margin: 0; font-size: 24px; color: #f59e0b;">0</h2>
+      </div>
+
+      <div class="card-box" style="border-left: 4px solid #10b981;">
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 5px;">PIX Pagos (Convertidos)</p>
+        <h2 id="m_pix_pagos" style="margin: 0; font-size: 24px; color: #10b981;">0</h2>
+      </div>
+
+      <div class="card-box" style="border-left: 4px solid #ef4444;">
+        <p style="color: #94a3b8; font-size: 13px; margin-bottom: 5px;">PIX Não Pagos (Abandonos)</p>
+        <h2 id="m_pix_nao_pagos" style="margin: 0; font-size: 24px; color: #ef4444;">0</h2>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
     </div>
   </div>
 
