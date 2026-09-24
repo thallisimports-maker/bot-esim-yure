@@ -1,6 +1,25 @@
 import json
 import os
+import sqlite3
+from datetime import datetime
 
+def registrar_evento_funil(user_id, etapa):
+    try:
+        conn = sqlite3.connect("database.db")
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS funil_metricas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                etapa TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (?, ?)", (user_id, etapa))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Erro ao registrar métrica: {e}")
 def carregar_dados():
     if not os.path.exists("estoque.json"):
         return {
@@ -1365,60 +1384,96 @@ async def admin_adicionar_estoque(payload: AdminAuthAddEsimPayload):
 
 @app.get("/api/admin/metricas")
 async def obter_metricas_admin(
-    usuario_admin: str = None, 
+    usuario_admin: str = None,
     senha_admin: str = None,
     authorization: str = Header(None)
 ):
     con = conectar_banco()
     cur = con.cursor()
+    
     try:
-        # Total de utilizadores cadastrados (/start ou carteira)
-        total_usuarios = 0
-        try:
-            cur.execute("SELECT COUNT(*) FROM carteira")
-            total_usuarios = cur.fetchone()[0]
-        except Exception:
+        # Garante a existência da tabela de eventos do funil
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS funil_metricas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                etapa TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # 1. Total de Usuários Únicos que iniciaram o Bot
+        cur.execute("SELECT COUNT(DISTINCT user_id) FROM funil_metricas WHERE etapa = 'start_bot'")
+        total_usuarios = cur.fetchone()[0] or 0
+        
+        # Fallback para tabelas antigas caso o funil seja novo
+        if total_usuarios == 0:
             try:
-                cur.execute("SELECT COUNT(*) FROM usuarios")
-                total_usuarios = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM carteira")
+                total_usuarios = cur.fetchone()[0] or 0
             except Exception:
-                total_usuarios = 0
+                try:
+                    cur.execute("SELECT COUNT(*) FROM usuarios")
+                    total_usuarios = cur.fetchone()[0] or 0
+                except Exception:
+                    total_usuarios = 0
 
-        # Total de acessos no MiniApp
-        total_acessos_app = 0
-        try:
-            cur.execute("SELECT COUNT(*) FROM acessos_miniapp")
-            total_acessos_app = cur.fetchone()[0]
-        except Exception:
-            total_acessos_app = 0
+        # 2. Total de PIX Gerados
+        cur.execute("SELECT COUNT(DISTINCT user_id) FROM funil_metricas WHERE etapa = 'gerou_pix'")
+        pix_gerados = cur.fetchone()[0] or 0
 
-        # Estatísticas de PIX (Gerados, Pagos e Não Pagos)
-        pix_gerados = 0
-        try:
-            cur.execute("SELECT COUNT(*) FROM cobrancas_pix")
-            pix_gerados = cur.fetchone()[0]
-        except Exception:
-            pix_gerados = 0
+        # Fallback de PIX para tabela cobrancas_pix
+        if pix_gerados == 0:
+            try:
+                cur.execute("SELECT COUNT(*) FROM cobrancas_pix")
+                pix_gerados = cur.fetchone()[0] or 0
+            except Exception:
+                pix_gerados = 0
 
-        pix_pagos = 0
-        try:
-            cur.execute("SELECT COUNT(*) FROM cobrancas_pix WHERE status = 'pago' OR status = 'concluido'")
-            pix_pagos = cur.fetchone()[0]
-        except Exception:
-            pix_pagos = 0
+        # 3. Total de Vendas Concluídas (PIX Pagos)
+        cur.execute("SELECT COUNT(DISTINCT user_id) FROM funil_metricas WHERE etapa = 'compra_concluida'")
+        pix_pagos = cur.fetchone()[0] or 0
+
+        # Fallback de Vendas para tabela cobrancas_pix
+        if pix_pagos == 0:
+            try:
+                cur.execute("SELECT COUNT(*) FROM cobrancas_pix WHERE status = 'pago' OR status = 'concluido'")
+                pix_pagos = cur.fetchone()[0] or 0
+            except Exception:
+                pix_pagos = 0
 
         pix_nao_pagos = max(0, pix_gerados - pix_pagos)
+
+        # 4. Cálculo das Taxas de Conversão
+        taxa_pix = round((pix_gerados / total_usuarios * 100), 1) if total_usuarios > 0 else 0.0
+        taxa_conversao = round((pix_pagos / total_usuarios * 100), 1) if total_usuarios > 0 else 0.0
 
         return {
             "status": "sucesso",
             "total_usuarios_bot": total_usuarios,
-            "total_acessos_miniapp": total_acessos_app,
+            "total_usuarios": total_usuarios,
             "pix_gerados": pix_gerados,
             "pix_pagos": pix_pagos,
-            "pix_nao_pagos": pix_nao_pagos
+            "vendas_concluidas": pix_pagos,
+            "pix_nao_pagos": pix_nao_pagos,
+            "taxa_pix": taxa_pix,
+            "taxa_conversao": taxa_conversao
+        }
+
+    except Exception as e:
+        return {
+            "status": "erro",
+            "mensagem": str(e),
+            "total_usuarios_bot": 0,
+            "pix_gerados": 0,
+            "pix_pagos": 0,
+            "pix_nao_pagos": 0,
+            "taxa_pix": 0.0,
+            "taxa_conversao": 0.0
         }
     finally:
-        con.close()
+        if con:
+            con.close()
 
 # ROTA DE CRIAR GIFT CARD PELO PAINEL ADMIN
 # ROTA DE CRIAR GIFT CARD / CUPONS (Compatível com admin.html)
