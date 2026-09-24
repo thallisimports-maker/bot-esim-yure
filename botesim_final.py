@@ -1154,6 +1154,40 @@ async def obter_metricas_admin(usuario_admin: str, senha_admin: str):
     finally:
         con.close()
 
+# ROTA DE TESTE DE WEBHOOK (Simula o pagamento aprovado sem gastar dinheiro)
+@app.get("/api/testar-pagamento/{chat_id}/{valor}")
+async def simular_pagamento(chat_id: str, valor: float):
+    con = conectar_banco()
+    cur = con.cursor()
+    try:
+        # 1. Adiciona o saldo na carteira do usuário
+        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
+        res = cur.fetchone()
+        saldo_atual = float(res["saldo"]) if res else 0.0
+        novo_saldo = saldo_atual + valor
+
+        cur.execute("INSERT OR REPLACE INTO carteira (chat_id, saldo) VALUES (?, ?)", (chat_id, novo_saldo))
+        
+        # 2. Registra na tabela de vendas
+        cur.execute(
+            "CREATE TABLE IF NOT EXISTS vendas (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT, plano TEXT, preco REAL, data DATETIME)",
+        )
+        cur.execute(
+            "INSERT INTO vendas (chat_id, plano, preco, data) VALUES (?, ?, ?, datetime('now'))",
+            (chat_id, "Recarga Pix Simulada", valor),
+        )
+        con.commit()
+
+        return {
+            "status": "sucesso",
+            "mensagem": f"✅ Pagamento de R$ {valor:.2f} simulado com sucesso para o chat {chat_id}!",
+            "novo_saldo": novo_saldo,
+        }
+    except Exception as e:
+        return {"status": "erro", "detalhe": str(e)}
+    finally:
+        con.close()
+
 # ROTA DE CRIAR GIFT CARD PELO PAINEL ADMIN
 # ROTA DE CRIAR GIFT CARD / CUPONS (Compatível com admin.html)
 @app.post("/api/admin/cupons")
