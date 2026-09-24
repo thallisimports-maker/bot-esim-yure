@@ -195,7 +195,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     finally:
         con.close()
 
-    url_miniapp = "https://e-simsyure.shop"
+    url_miniapp = "https://baseyure.shop"
 
     texto = (
         f"👑 **YURE eSIMS — HUMILDADE, LEALDADE, DISCIPLINA E ATITUDE**\n\n"
