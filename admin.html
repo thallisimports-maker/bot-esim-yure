@@ -294,19 +294,27 @@
   document.getElementById('m-gifts').innerText = cupons.filter(c => !c.usado).length;
 
   // 1. Tabela Estoque e-SIMs
-  let htmlE = '';
-  prods.forEach(p => {
-    const st = (p.status||'').toLowerCase() === 'disponivel';
-    htmlE += `<tr>
-      <td>${p.id || '-'}</td>
-      <td>${p.operadora}</td>
-      <td>${p.plano}</td>
-      <td>R$ ${parseFloat(p.preco||0).toFixed(2)}</td>
-      <td><span class="badge ${st ? 'badge-success' : 'badge-danger'}">${p.status}</span></td>
-    </tr>`;
-  });
-  const elEstoque = document.getElementById('tabelaEstoque');
-  if (elEstoque) elEstoque.innerHTML = htmlE || '<tr><td colspan="5">Nenhum item.</td></tr>';
+      let htmlE = '';
+      prods.forEach(p => {
+        const st = (p.status||'').toLowerCase() === 'disponivel';
+        const imgUrl = p.imagem_url || p.imagem_qr || '';
+        const desc = (p.descricao || '').replace(/'/g, "\\'");
+        const planoStr = (p.plano || '').replace(/'/g, "\\'");
+
+        htmlE += `<tr>
+          <td>${p.id || '-'}</td>
+          <td>${p.operadora || '-'}</td>
+          <td>${p.plano || '-'}</td>
+          <td>R$ ${parseFloat(p.preco||0).toFixed(2)}</td>
+          <td><span class="badge ${st ? 'badge-success' : 'badge-danger'}">${p.status || '-'}</span></td>
+          <td>
+            <button onclick="prepararEdicao('${p.id}', '${p.operadora}', '${planoStr}', ${p.preco||0}, '${imgUrl}', '${desc}')" style="background:#f59e0b; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-right:5px;">✏️ Editar</button>
+            <button onclick="excluirProduto('${p.id}')" style="background:#ef4444; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">🗑️ Excluir</button>
+          </td>
+        </tr>`;
+      });
+      const elEstoque = document.getElementById('tabelaEstoque');
+      if (elEstoque) elEstoque.innerHTML = htmlE || '<tr><td colspan="6">Nenhum item.</td></tr>';
 
   // 2. Tabela Gifts / Cupons (Com quem resgatou)
   let htmlG = '';
