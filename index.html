@@ -534,89 +534,112 @@
       });
     }
 
-    async function carregarProdutosMinisite() {
-      try {
-        const res = await fetch(URL_BACKEND + '/api/produtos-publico');
-        const dados = await res.json();
-        
-        const container = document.getElementById('listaProdutos');
-        const produtos = dados.produtos || [];
-        const disponiveis = produtos.filter(p => (p.status || '').toLowerCase() === 'disponivel');
+    let saldoAtualCliente = 0.00;
 
-        if (disponiveis.length === 0) {
-          container.innerHTML = '<div class="sem-estoque">❌ Nenhum e-SIM disponível no momento.</div>';
-          return;
-        }
+// Redireciona para a recarga preenchendo o valor faltante automaticamente
+function irParaRecargaComValor(valorNecessario) {
+  mudarAba('carteira');
+  const inputRecarga = document.getElementById('valorRecarga');
+  if (inputRecarga) {
+    inputRecarga.value = parseFloat(valorNecessario).toFixed(2);
+    inputRecarga.scrollIntoView({ behavior: 'smooth' });
+  }
+}
 
-        let html = '';
-        disponiveis.forEach((p, index) => {
-          const opClean = (p.operadora || '').toLowerCase();
-          const planoClean = (p.plano || '').toLowerCase();
+async function carregarProdutosMinisite() {
+  try {
+    const res = await fetch(URL_BACKEND + '/api/produtos-publico');
+    const dados = await res.json();
+    
+    const container = document.getElementById('listaProdutos');
+    const produtos = dados.produtos || [];
+    const disponiveis = produtos.filter(p => (p.status || '').toLowerCase() === 'disponivel');
 
-          // Define o selo de destaque dinamicamente
-          let badgeHtml = '<span class="prod-badge badge-green">⚡ Ativação Instantânea</span>';
-
-          if (index === 0 || planoClean.includes('35gb') || planoClean.includes('50gb')) {
-            badgeHtml = '<span class="prod-badge badge-gold">🔥 Mais Vendido</span>';
-          } else if (opClean.includes('vivo') || opClean.includes('claro')) {
-            badgeHtml = '<span class="prod-badge badge-blue">🚀 5G Liberado</span>';
-          }
-
-          html += `
-            <div class="card-produto" data-operadora="${opClean}">
-              <div class="prod-info">
-                ${badgeHtml}
-                <h4>📲 ${p.operadora}</h4>
-                <p>Plano: <strong>${p.plano}</strong></p>
-                <div class="prod-preco">R$ ${parseFloat(p.preco || 0).toFixed(2)}</div>
-              </div>
-              <button class="btn-comprar" onclick="comprarItemDirect('${p.id}')">COMPRAR</button>
-            </div>
-          `;
-        });
-
-        container.innerHTML = html;
-      } catch (err) {
-        document.getElementById('listaProdutos').innerHTML = '<div class="sem-estoque">❌ Erro ao conectar ao servidor.</div>';
-      }
+    if (disponiveis.length === 0) {
+      container.innerHTML = '<div class="sem-estoque">❌ Nenhum e-SIM disponível no momento.</div>';
+      return;
     }
 
-    async function carregarHistorico() {
-      const container = document.getElementById('listaHistorico');
-      if (!chatId) {
-        container.innerHTML = '<div class="sem-estoque">Abra pelo Telegram para consultar seu histórico.</div>';
-        return;
+    let html = '';
+    disponiveis.forEach((p, index) => {
+      const opClean = (p.operadora || '').toLowerCase();
+      const planoClean = (p.plano || '').toLowerCase();
+      const preco = parseFloat(p.preco || 0);
+
+      // Selos de Destaque Dinâmicos
+      let badgeHtml = '<span class="prod-badge badge-green">⚡ Ativação Instantânea</span>';
+      if (index === 0 || planoClean.includes('35gb') || planoClean.includes('50gb')) {
+        badgeHtml = '<span class="prod-badge badge-gold">🔥 Mais Vendido</span>';
+      } else if (opClean.includes('vivo') || opClean.includes('claro')) {
+        badgeHtml = '<span class="prod-badge badge-blue">🚀 5G Liberado</span>';
       }
 
-      try {
-        const res = await fetch(`${URL_BACKEND}/api/historico-usuario?chat_id=${chatId}`);
-        const dados = await res.json();
-        const vendas = dados.vendas || [];
-
-        if (vendas.length === 0) {
-          container.innerHTML = '<div class="sem-estoque">Nenhuma compra encontrada no seu histórico.</div>';
-          return;
-        }
-
-        let html = '';
-        vendas.forEach(v => {
-          html += `
-            <div class="card-produto">
-              <div class="prod-info">
-                <h4>📲 ${v.operadora}</h4>
-                <p>Data: ${v.data}</p>
-                <div class="prod-preco">R$ ${parseFloat(v.valor || 0).toFixed(2)}</div>
-              </div>
-              <button class="btn-comprar" style="background: var(--accent-blue); color: #fff;" onclick="verQrHistorico('${v.imagem_qr || ''}')">VER QR</button>
-            </div>
-          `;
-        });
-
-        container.innerHTML = html;
-      } catch(err) {
-        container.innerHTML = '<div class="sem-estoque">Erro ao carregar histórico.</div>';
+      // Botão Dinâmico (Comprar ou Recarregar Valor Faltante)
+      let botaoHtml = `<button class="btn-comprar" onclick="comprarItemDirect('${p.id}')">COMPRAR</button>`;
+      if (saldoAtualCliente < preco && chatId) {
+        const faltam = preco - saldoAtualCliente;
+        botaoHtml = `<button class="btn-recarregar-card" onclick="irParaRecargaComValor(${faltam})">💳 Recarregar R$ ${faltam.toFixed(2)}</button>`;
       }
+
+      html += `
+        <div class="card-produto" data-operadora="${opClean}">
+          <div class="prod-info">
+            ${badgeHtml}
+            <h4>📲 ${p.operadora}</h4>
+            <p>Plano: <strong>${p.plano}</strong></p>
+            <div class="prod-preco">R$ ${preco.toFixed(2)}</div>
+          </div>
+          ${botaoHtml}
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  } catch (err) {
+    document.getElementById('listaProdutos').innerHTML = '<div class="sem-estoque">❌ Erro ao conectar ao servidor.</div>';
+  }
+}
+
+async function carregarHistorico() {
+  const container = document.getElementById('listaHistorico');
+  if (!chatId) {
+    container.innerHTML = '<div class="sem-estoque">Abra pelo Telegram para consultar seu histórico.</div>';
+    return;
+  }
+
+  try {
+    const res = await fetch(`${URL_BACKEND}/api/historico-usuario?chat_id=${chatId}`);
+    const dados = await res.json();
+    const vendas = dados.vendas || [];
+
+    if (vendas.length === 0) {
+      container.innerHTML = '<div class="sem-estoque">Nenhuma compra encontrada no seu histórico.</div>';
+      return;
     }
+
+    let html = '';
+    vendas.forEach(v => {
+      const codigoEsim = (v.conteudo_esim || v.imagem_qr || '').replace(/'/g, "\\'");
+      html += `
+        <div class="card-produto">
+          <div class="prod-info">
+            <h4>📲 ${v.operadora || 'e-SIM'}</h4>
+            <p>Data: ${v.data || '—'}</p>
+            <div class="prod-preco">R$ ${parseFloat(v.valor || 0).toFixed(2)}</div>
+          </div>
+          <div style="display:flex; gap:6px; flex-direction:column;">
+            <button class="btn-comprar" style="background: var(--accent-blue); color: #fff;" onclick="verQrHistorico('${v.imagem_qr || ''}')">VER QR</button>
+            ${codigoEsim ? `<button onclick="navigator.clipboard.writeText('${codigoEsim}'); alert('📋 Código do e-SIM copiado!');" style="background:var(--bg-input); color:#fff; border:1px solid var(--border-color); padding:6px 10px; border-radius:6px; font-size:10px; font-weight:600; cursor:pointer;">📋 Copiar Código</button>` : ''}
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  } catch(err) {
+    container.innerHTML = '<div class="sem-estoque">Erro ao carregar histórico.</div>';
+  }
+}
 
     function verQrHistorico(urlQr) {
       if (!urlQr) return alert("QR Code não disponível para este pedido.");
