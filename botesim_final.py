@@ -591,42 +591,50 @@ async def obter_dados_admin(
     cupons = []
 
     try:
-        # 1. Buscar Estoque / Produtos
+        # 1. Tabela real de e-SIMs: estoque_codigos
         try:
-            cur.execute("SELECT * FROM esim_estoque")
-            colunas = [desc[0] for desc in cur.description]
+            cur.execute("SELECT id, produto_id, conteudo_esim, ddd, gb FROM estoque_codigos ORDER BY id DESC")
             for row in cur.fetchall():
-                item = dict(zip(colunas, row))
-                # Adapta campos para o frontend
                 produtos.append({
-                    "id": item.get("id"),
-                    "operadora": item.get("operadora", "Vivo"),
-                    "plano": item.get("plano", "Geral"),
-                    "preco": item.get("preco", 0),
-                    "status": item.get("status", "disponivel"),
-                    "imagem_qr": item.get("QR") or item.get("imagem_qr") or "",
-                    "iccid": item.get("iccid", "")
+                    "id": row[0],
+                    "operadora": "Vivo",
+                    "plano": f"{row[4]} GB - DDD {row[3]}" if row[4] and row[3] else f"Plano {row[1]}",
+                    "preco": 0,
+                    "status": "disponivel",
+                    "imagem_qr": row[2] or "",
+                    "iccid": row[2] or ""
                 })
         except Exception as e:
-            print(f"Erro ao buscar produtos: {e}")
+            print(f"Erro ao carregar estoque_codigos: {e}")
 
-        # 2. Buscar Vendas
+        # 2. Tabela real de Giftcards: giftcards
         try:
-            cur.execute("SELECT * FROM vendas ORDER BY id DESC")
-            colunas = [desc[0] for desc in cur.description]
+            cur.execute("SELECT codigo, valor, usado, usado_por FROM giftcards")
             for row in cur.fetchall():
-                vendas.append(dict(zip(colunas, row)))
+                cupons.append({
+                    "id": row[0],
+                    "codigo": row[0],
+                    "valor": row[1],
+                    "usado": bool(row[2]),
+                    "usado_por": row[3]
+                })
         except Exception as e:
-            print(f"Erro ao buscar vendas: {e}")
+            print(f"Erro ao carregar giftcards: {e}")
 
-        # 3. Buscar Cupons / Gifts
+        # 3. Tabela real de Utilizadores: carteira
         try:
-            cur.execute("SELECT * FROM cupons ORDER BY id DESC")
-            colunas = [desc[0] for desc in cur.description]
+            cur.execute("SELECT chat_id, first_name, username, saldo, data_criacao FROM carteira ORDER BY data_criacao DESC")
             for row in cur.fetchall():
-                cupons.append(dict(zip(colunas, row)))
+                vendas.append({
+                    "id": row[0],
+                    "chat_id": row[0],
+                    "plano": f"@{row[2]}" if row[2] else row[1],
+                    "valor": row[3],
+                    "data": row[4],
+                    "status": "pago"
+                })
         except Exception as e:
-            print(f"Erro ao buscar cupons: {e}")
+            print(f"Erro ao carregar carteira: {e}")
 
         return {
             "status": "sucesso",
@@ -635,17 +643,9 @@ async def obter_dados_admin(
             "cupons": cupons,
             "giftcards": cupons
         }
-    except Exception as err:
-        print(f"Erro geral na rota dados admin: {err}")
-        return {
-            "status": "sucesso",
-            "produtos": [],
-            "vendas": [],
-            "cupons": [],
-            "giftcards": []
-        }
     finally:
         con.close()
+        
     return {
         "status": "sucesso",
         "produtos": dados.get("produtos", []),
