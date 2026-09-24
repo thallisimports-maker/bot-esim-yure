@@ -320,7 +320,40 @@
         alert("Erro de Autenticação/Conexão.");
       }
     }
+// Função para carregar as métricas e funil de vendas
+async function carregarMetricasAdmin() {
+  const uAdmin = sessionStorage.getItem('usuario_admin') || localStorage.getItem('usuario_admin') || 'admin';
+  const sAdmin = sessionStorage.getItem('senha_admin') || localStorage.getItem('senha_admin') || 'admin123';
 
+  try {
+    const backendUrl = typeof URL_BACKEND !== 'undefined' ? URL_BACKEND : '';
+    const url = `${backendUrl}/api/admin/metricas?usuario_admin=${encodeURIComponent(uAdmin)}&senha_admin=${encodeURIComponent(sAdmin)}`;
+    
+    const res = await fetch(url);
+
+    if (res.ok) {
+      const data = await res.json();
+      
+      if (document.getElementById('m_total_usuarios')) {
+        document.getElementById('m_total_usuarios').innerText = data.total_usuarios_bot || 0;
+      }
+      if (document.getElementById('m_acessos_miniapp')) {
+        document.getElementById('m_acessos_miniapp').innerText = data.total_acessos_miniapp || 0;
+      }
+      if (document.getElementById('m_pix_gerados')) {
+        document.getElementById('m_pix_gerados').innerText = data.pix_gerados || 0;
+      }
+      if (document.getElementById('m_pix_pagos')) {
+        document.getElementById('m_pix_pagos').innerText = data.pix_pagos || 0;
+      }
+      if (document.getElementById('m_pix_nao_pagos')) {
+        document.getElementById('m_pix_nao_pagos').innerText = data.pix_nao_pagos || 0;
+      }
+    }
+  } catch (err) {
+    console.error("Erro ao carregar métricas admin:", err);
+  }
+}
     function atualizarPainel(dados) {
   const prods = dados.produtos || [];
   const cupons = dados.cupons_detalhados || dados.cupons || dados.giftcards || [];
@@ -331,6 +364,8 @@
   document.getElementById('m-disponiveis').innerText = disp;
   document.getElementById('m-vendas').innerText = vendas.length;
   document.getElementById('m-gifts').innerText = cupons.filter(c => !c.usado).length;
+      
+  carregarMetricasAdmin();
 
   // 1. Tabela Estoque e-SIMs
       let htmlE = '';
