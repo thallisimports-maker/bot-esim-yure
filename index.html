@@ -91,7 +91,47 @@
     .banner h3 { color: var(--accent-gold); font-size: 13px; margin-bottom: 3px; display: flex; align-items: center; justify-content: center; gap: 6px; }
     .banner p { color: var(--text-muted); font-size: 11px; line-height: 1.4; }
 
-    /* BOTÕES DE SUGESTÃO DE RECARGA (2 LINHAS X 2 BOTOES MAIORES) */
+    /* FILTROS RÁPIDOS DE OPERADORA */
+    .filter-container {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .filter-container::-webkit-scrollbar { display: none; }
+
+    .filter-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .filter-btn:hover {
+      background: var(--card-bg);
+      color: #fff;
+    }
+
+    .filter-btn.active {
+      background: var(--accent-gold) !important;
+      color: #000 !important;
+      border-color: var(--accent-gold) !important;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    }
+
+    /* BOTÕES DE SUGESTÃO DE RECARGA */
     .sugestoes-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -127,6 +167,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      transition: all 0.2s ease;
     }
     .prod-info h4 { font-size: 15px; color: #fff; font-weight: 700; margin-bottom: 2px; }
     .prod-info p { font-size: 12px; color: var(--text-muted); }
@@ -184,7 +225,7 @@
       font-size: 13px;
     }
 
-    /* BARRA DE NAVEGAÇÃO INFERIOR FIXA (BOTTOM NAV) */
+    /* BARRA DE NAVEGAÇÃO INFERIOR FIXA */
     .bottom-nav {
       position: fixed;
       bottom: 0;
@@ -271,6 +312,15 @@
       <h3>⚡ Ativação Instantânea via QR Code</h3>
       <p>O QR Code para ativação é gerado na tela imediatamente após a confirmação da compra.</p>
     </div>
+
+    <!-- BARRINHA DE FILTROS RÁPIDOS -->
+    <div class="filter-container">
+      <button class="filter-btn active" onclick="filtrarOperadora('todos', this)">📱 Todos</button>
+      <button class="filter-btn" onclick="filtrarOperadora('vivo', this)">🟣 Vivo</button>
+      <button class="filter-btn" onclick="filtrarOperadora('claro', this)">🔴 Claro</button>
+      <button class="filter-btn" onclick="filtrarOperadora('tim', this)">🔵 TIM</button>
+    </div>
+
     <div class="grid-produtos" id="listaProdutos">
       <div class="sem-estoque">⏳ A carregar os e-SIMs...</div>
     </div>
@@ -281,7 +331,6 @@
     <div class="form-box">
       <h3>💳 Escolha um Valor de Recarga</h3>
       
-      <!-- BOTÕES DE SUGESTÃO (2 COLUNAS X 2 LINHAS MAIORES) -->
       <div class="sugestoes-grid">
         <button class="btn-sugestao" onclick="selecionarValorRecarga(15)">R$ 15,00 <span>Recarga Rápida</span></button>
         <button class="btn-sugestao" onclick="selecionarValorRecarga(25)">R$ 25,00 <span>Popular</span></button>
@@ -388,7 +437,7 @@
 
     function mudarAba(nomeAba) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.nav-menu li, .nav-item').forEach(b => b.classList.remove('active'));
       document.getElementById('aba-' + nomeAba).classList.add('active');
       document.getElementById('nav-' + nomeAba).classList.add('active');
 
@@ -400,6 +449,22 @@
     function selecionarValorRecarga(valor) {
       document.getElementById('valorRecarga').value = valor;
       gerarPixRecargaDirect();
+    }
+
+    // FUNÇÃO DE FILTRAGEM RÁPIDA DE OPERADORAS
+    function filtrarOperadora(operadora, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      const cards = document.querySelectorAll('#listaProdutos .card-produto');
+      cards.forEach(card => {
+        const opStr = (card.getAttribute('data-operadora') || card.innerText || '').toLowerCase();
+        if (operadora === 'todos' || opStr.includes(operadora.toLowerCase())) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
     }
 
     async function carregarProdutosMinisite() {
@@ -418,8 +483,9 @@
 
         let html = '';
         disponiveis.forEach(p => {
+          const opClean = (p.operadora || '').toLowerCase();
           html += `
-            <div class="card-produto">
+            <div class="card-produto" data-operadora="${opClean}">
               <div class="prod-info">
                 <h4>📲 ${p.operadora}</h4>
                 <p>Plano: <strong>${p.plano}</strong></p>
