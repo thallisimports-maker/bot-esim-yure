@@ -902,6 +902,95 @@ async def adicionar_produto(
         "produto": novo_item,
     }
     
+    # ROTA PUT (Usada para EDITAR um e-SIM)
+@app.put("/api/admin/produtos/{produto_id}")
+async def editar_produto(
+    produto_id: str, request: Request, authorization: str = Header(None)
+):
+    senha_env = globals().get("SENHA_ADMIN_SEGURA", "admin123").strip()
+    token_fornecido = ""
+    if authorization and authorization.startswith("Bearer "):
+        token_fornecido = authorization.replace("Bearer ", "").strip()
+
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    if not token_fornecido and data.get("senha_admin"):
+        token_fornecido = str(data.get("senha_admin")).strip()
+
+    if (
+        token_fornecido != senha_env
+        and token_fornecido != globals().get("PUSHINPAY_TOKEN", "").strip()
+    ):
+        raise HTTPException(
+            status_code=401, detail="Acesso negado! Não autorizado."
+        )
+
+    dados = carregar_dados()
+    produtos = dados.get("produtos", [])
+
+    produto_encontrado = None
+    for p in produtos:
+        if str(p.get("id")) == str(produto_id):
+            produto_encontrado = p
+            break
+
+    if not produto_encontrado:
+        raise HTTPException(status_code=404, detail="Produto não encontrado.")
+
+    if "operadora" in data:
+        produto_encontrado["operadora"] = data["operadora"]
+    if "plano" in data:
+        produto_encontrado["plano"] = data["plano"]
+    if "preco" in data:
+        try:
+            produto_encontrado["preco"] = float(data["preco"])
+        except ValueError:
+            pass
+    if "imagem_url" in data:
+        produto_encontrado["imagem_url"] = data["imagem_url"]
+        produto_encontrado["imagem_qr"] = data["imagem_url"]
+    if "descricao" in data:
+        produto_encontrado["descricao"] = data["descricao"]
+
+    dados["produtos"] = produtos
+    salvar_dados(dados)
+    return {
+        "status": "sucesso",
+        "mensagem": "Produto editado com sucesso!",
+        "produto": produto_encontrado,
+    }
+
+
+# ROTA DELETE (Usada para EXCLUIR um e-SIM)
+@app.delete("/api/admin/produtos/{produto_id}")
+async def excluir_produto(
+    produto_id: str, request: Request, authorization: str = Header(None)
+):
+    senha_env = globals().get("SENHA_ADMIN_SEGURA", "admin123").strip()
+    token_fornecido = ""
+    if authorization and authorization.startswith("Bearer "):
+        token_fornecido = authorization.replace("Bearer ", "").strip()
+
+    if token_fornecido != senha_env:
+        raise HTTPException(
+            status_code=401, detail="Acesso negado! Não autorizado."
+        )
+
+    dados = carregar_dados()
+    produtos = dados.get("produtos", [])
+
+    novos_produtos = [p for p in produtos if str(p.get("id")) != str(produto_id)]
+
+    if len(novos_produtos) == len(produtos):
+        raise HTTPException(status_code=404, detail="Produto não encontrado.")
+
+    dados["produtos"] = novos_produtos
+    salvar_dados(dados)
+    return {"status": "sucesso", "mensagem": "Produto excluído com sucesso!"}
+    
 class CompraMiniAppPayload(BaseModel):
     chat_id: str
     produto_id: str
