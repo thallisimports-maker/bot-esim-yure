@@ -540,17 +540,28 @@ async function carregarMetricasAdmin() {
   }
 }
     function atualizarPainel(dados) {
-  const prods = dados.produtos || [];
-  const cupons = dados.cupons_detalhados || dados.cupons || dados.giftcards || [];
-  const vendas = dados.vendas || [];
+    if (!dados) return;
 
-  // Métricas
-  const disp = prods.filter(p => (p.status||'').toLowerCase() === 'disponivel').length;
-  document.getElementById('m-disponiveis').innerText = disp;
-  document.getElementById('m-vendas').innerText = vendas.length;
-  document.getElementById('m-gifts').innerText = cupons.filter(c => !c.usado).length;
-      
-  carregarMetricasAdmin();
+    const prods = dados.produtos || dados.estoque || [];
+    const cupons = dados.cupons_detalhados || dados.cupons || dados.giftcards || [];
+    const vendas = dados.vendas || dados.historico_vendas || [];
+
+    // Métricas com validação segura de elementos
+    const disp = prods.filter(p => (p.status||'').toLowerCase() === 'disponivel').length;
+
+    const elDisp = document.getElementById('m-disponiveis') || document.getElementById('total-esims');
+    const elVendas = document.getElementById('m-vendas') || document.getElementById('total-vendas');
+    const elGifts = document.getElementById('m-gifts') || document.getElementById('total-gifts');
+
+    if (elDisp) elDisp.innerText = disp;
+    if (elVendas) elVendas.innerText = vendas.length;
+    if (elGifts) elGifts.innerText = cupons.filter(c => !c.usado).length;
+
+    try {
+      carregarMetricasAdmin();
+    } catch (e) {
+      console.log("Métricas aguardando carregamento:", e);
+    }
 
   // 1. Tabela Estoque e-SIMs
       let htmlE = '';
