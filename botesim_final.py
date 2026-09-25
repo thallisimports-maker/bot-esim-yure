@@ -103,7 +103,7 @@ import psycopg2
 # 🗄️ INICIALIZAÇÃO DO BANCO DE DADOS POSTGRESQL (NUVEM)
 # ------------------------------------------------------------------------------
 # ⚠️ COLE AQUI O SEU LINK COM A SENHA REAL:
-DATABASE_URL = "postgresql://postgres:EwU6T4Ako0xN1JGR@db.sagiihnsvovyblhkyqlf.supabase.co:5432/postgres"
+DATABASE_URL = postgresql://postgres.sagiihnsvovyblhkyqlf:[EwU6T4Ako0xN1JGR]@aws-0-ca-central-1.pooler.supabase.com:5432/postgres
 
 class SmartRow:
     def __init__(self, t_row, c_names):
