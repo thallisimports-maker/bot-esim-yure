@@ -547,16 +547,62 @@
   }
 }
 
-    function mudarAba(nomeAba) {
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.nav-menu li, .nav-item').forEach(b => b.classList.remove('active'));
-      document.getElementById('aba-' + nomeAba).classList.add('active');
-      document.getElementById('nav-' + nomeAba).classList.add('active');
+async function carregarProdutosMinisite() {
+  const container = document.getElementById('listaProdutos');
+  if (!container) return;
 
-      if (nomeAba === 'pedidos') {
-        carregarHistorico();
-      }
+  try {
+    // Requisição protegida enviando o ID do Telegram
+    const res = await fetch(`${URL_BACKEND}/api/produtos-publico?chat_id=${chatId}`);
+    if (!res.ok) throw new Error('Erro na resposta do servidor');
+    
+    const dados = await res.json();
+    const produtos = dados.produtos || [];
+    const disponiveis = produtos.filter(p => (p.status || '').toLowerCase() === 'disponivel');
+
+    if (disponiveis.length === 0) {
+      container.innerHTML = '<div class="sem-estoque">❌ Nenhum e-SIM disponível no momento.</div>';
+      return;
     }
+
+    let html = '';
+    disponiveis.forEach((p, index) => {
+      const opClean = (p.operadora || '').toLowerCase();
+      const planoClean = (p.plano || '').toLowerCase();
+      const preco = parseFloat(p.preco || 0);
+
+      let badgeHtml = '<span class="prod-badge badge-green">⚡ Ativação Instantânea</span>';
+      if (index === 0 || planoClean.includes('35gb') || planoClean.includes('50gb')) {
+        badgeHtml = '<span class="prod-badge badge-gold">🔥 Mais Vendido</span>';
+      } else if (opClean.includes('vivo') || opClean.includes('claro')) {
+        badgeHtml = '<span class="prod-badge badge-blue">🚀 5G Liberado</span>';
+      }
+
+      let botaoHtml = `<button class="btn-comprar" onclick="comprarItemDirect('${p.id}')">COMPRAR</button>`;
+      if (typeof saldoAtualCliente !== 'undefined' && saldoAtualCliente < preco && chatId) {
+        const faltam = preco - saldoAtualCliente;
+        botaoHtml = `<button class="btn-recarregar-card" onclick="irParaRecargaComValor(${faltam})">💳 Recarregar R$ ${faltam.toFixed(2)}</button>`;
+      }
+
+      html += `
+        <div class="card-produto" data-operadora="${opClean}">
+          <div class="prod-info">
+            ${badgeHtml}
+            <h4>📲 ${p.operadora}</h4>
+            <p>Plano: <strong>${p.plano}</strong></p>
+            <div class="prod-preco">R$ ${preco.toFixed(2)}</div>
+          </div>
+          ${botaoHtml}
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  } catch (err) {
+    console.error("Erro ao carregar produtos:", err);
+    container.innerHTML = '<div class="sem-estoque">❌ Erro ao conectar ao servidor. Recarregue a página.</div>';
+  }
+}
 
     function selecionarValorRecarga(valor) {
       document.getElementById('valorRecarga').value = valor;
