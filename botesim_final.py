@@ -1506,15 +1506,28 @@ async def obter_metricas_admin(
 
         # 3.1. Total de Usuários Únicos
         try:
-            cur.execute("SELECT COUNT(DISTINCT user_id) FROM funil_metricas")
-            total_usuarios = cur.fetchone()[0] or 0
+            cur.execute("SELECT COUNT(DISTINCT chat_id) FROM carteira")
+            row = cur.fetchone()
+            if row and row[0]:
+                total_usuarios = row[0]
         except Exception as e:
             total_usuarios = 0
 
         if total_usuarios == 0:
             try:
+                cur.execute("SELECT COUNT(DISTINCT user_id) FROM funil_metricas")
+                row = cur.fetchone()
+                if row and row[0]:
+                    total_usuarios = row[0]
+            except Exception as e:
+                total_usuarios = 0
+
+        if total_usuarios == 0:
+            try:
                 cur.execute("SELECT COUNT(DISTINCT user_id) FROM historico_vendas")
-                total_usuarios = cur.fetchone()[0] or 0
+                row = cur.fetchone()
+                if row and row[0]:
+                    total_usuarios = row[0]
             except Exception as e:
                 total_usuarios = 0
 
