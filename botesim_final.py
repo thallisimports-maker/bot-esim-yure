@@ -9,7 +9,7 @@ def registrar_evento_funil(user_id, etapa):
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS funil_metricas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id SERIAL PRIMARY KEY,
                 user_id TEXT,
                 etapa TEXT,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
