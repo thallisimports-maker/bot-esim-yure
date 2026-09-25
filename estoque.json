@@ -63,7 +63,7 @@
       "descricao": "",
       "imagem_qr": "https://i.imgur.com/JfTYphM.jpeg",
       "imagem_url": "https://i.imgur.com/JfTYphM.jpeg",
-      "status": "disponivel"
+      "status": "vendido"
     },
     {
       "id": "esim_8",
@@ -118,6 +118,14 @@
       "produto_id": "esim_3",
       "operadora": "Claro",
       "valor": 35.0,
+      "data": "2026-09-20"
+    },
+    {
+      "user_id": "7903954192",
+      "cliente": "Kamikaze",
+      "produto_id": "esim_7",
+      "operadora": "Claro",
+      "valor": 25.0,
       "data": "2026-09-20"
     }
   ],
