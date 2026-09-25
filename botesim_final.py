@@ -1317,7 +1317,7 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
             "detalhe": f"Erro de conexão com o gateway PIX: {str(e)}",
         }
 
-            return {
+        return {
                 "status": "sucesso",
                 "pix_copia_cola": pix_copia_cola,
                 "qr_code_url": qr_code_url,
