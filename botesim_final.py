@@ -762,7 +762,7 @@ async def obter_dados_admin(
                     usado_por TEXT
                 )
             """)
-            cur.execute("SELECT codigo, valor, usado, usado_por FROM giftcards ORDER BY rowid DESC")
+            cur.execute("SELECT codigo, valor, usado, usado_por FROM giftcards ORDER BY codigo DESC")
             for row in cur.fetchall():
                 is_usado = bool(row[2]) if row[2] is not None else False
                 cupons.append({
@@ -772,8 +772,8 @@ async def obter_dados_admin(
                     "status": "usado" if is_usado else "disponivel",
                     "usado_por": str(row[3] or "")
                 })
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Erro ao ler giftcards: {e}")
 
         # 🛒 5. LEITURA DO HISTÓRICO DE VENDAS
         try:
