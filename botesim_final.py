@@ -64,11 +64,7 @@ def carregar_dados():
 
 def salvar_dados(dados):
     with open("estoque.json", "w", encoding="utf-8") as f:
-        json.dump(dados, f, indent=4, ensure_ascii=False)
-
-def salvar_dados(dados):
-    with open("estoque.json", "w", encoding="utf-8") as f:
-        json.dump(dados, f, indent=4, ensure_ascii=False)
+        json.dump(dados, f, indent=4, ensure_ascii=False),
         
 import sqlite3
 import logging
