@@ -5,21 +5,21 @@ from datetime import datetime
 
 def registrar_evento_funil(user_id, etapa):
     try:
-        conn = sqlite3.connect("database.db")
+        conn = conectar_banco()
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS funil_metricas (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER,
+                user_id TEXT,
                 etapa TEXT,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        cursor.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (?, ?)", (user_id, etapa))
+        cursor.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (?, ?)", (str(user_id), etapa))
         conn.commit()
         conn.close()
     except Exception as e:
-        print(f"Erro ao registrar métrica: {e}")
+        print(f"Erro ao registrar evento funil: {e}")
 def carregar_dados():
     if not os.path.exists("estoque.json"):
         return {
