@@ -680,7 +680,7 @@ async def obter_dados_admin(
         except Exception as e:
             print(f"Aviso ao ler tabela produtos: {e}")
 
-        # 🎁 5. LEITURA DE CUPONS / GIFT CARDS (Segura contra erros)
+        # 🎁 5. LEITURA DE CUPONS / GIFT CARDS (Blindado e Seguro)
     try:
         cur.execute("""
             CREATE TABLE IF NOT EXISTS giftcards (
