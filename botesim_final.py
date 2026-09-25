@@ -680,7 +680,7 @@ async def obter_dados_admin(
         except Exception as e:
             print(f"Aviso ao ler tabela produtos: {e}")
 
-        # 🎁 5. LEITURA DE CUPONS / GIFT CARDS (Blindado e Seguro)
+        # 🎁 5. LEITURA DE CUPONS / GIFT CARDS (Giftcards)
     try:
         cur.execute("""
             CREATE TABLE IF NOT EXISTS giftcards (
@@ -691,8 +691,7 @@ async def obter_dados_admin(
             )
         """)
         cur.execute("SELECT codigo, valor, usado, usado_por FROM giftcards ORDER BY rowid DESC")
-        rows_gc = cur.fetchall()
-        for row in rows_gc:
+        for row in cur.fetchall():
             is_usado = bool(row[2]) if row[2] is not None else False
             cupons.append({
                 "codigo": str(row[0]),
@@ -702,7 +701,7 @@ async def obter_dados_admin(
                 "usado_por": str(row[3] or "")
             })
     except Exception as e:
-        print(f"Aviso ao ler giftcards: {e}")
+        print(f"Erro ao ler giftcards: {e}")
 
     # Fallback opcional para tabela antiga 'cupons' caso exista
     try:
@@ -725,20 +724,20 @@ async def obter_dados_admin(
         print(f"Aviso ao ler tabela cupons antiga: {e}")
 
         # 🛒 6. LEITURA DO HISTÓRICO DE VENDAS (historico_vendas)
-        try:
-            cur.execute("SELECT id, user_id, plano, preco, data FROM historico_vendas ORDER BY id DESC")
-            for row in cur.fetchall():
-                vendas.append({
-                    "id": row[0],
-                    "user_id": row[1],
-                    "chat_id": row[1],
-                    "plano": row[2],
-                    "preco": float(row[3] or 0.0),
-                    "valor": float(row[3] or 0.0),
-                    "data": str(row[4])
-                })
-        except Exception as e:
-            print(f"Aviso ao ler histórico de vendas: {e}")
+    try:
+        cur.execute("SELECT id, user_id, plano, preco, data FROM historico_vendas ORDER BY id DESC")
+        for row in cur.fetchall():
+            vendas.append({
+                "id": row[0],
+                "user_id": row[1],
+                "chat_id": row[1],
+                "plano": row[2],
+                "preco": float(row[3] or 0.0),
+                "valor": float(row[3] or 0.0),
+                "data": str(row[4])
+            })
+    except Exception as e:
+        print(f"Aviso ao ler histórico de vendas: {e}")
 
     finally:
         con.close()
