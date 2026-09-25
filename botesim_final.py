@@ -1907,6 +1907,42 @@ async def debug_tabelas():
     finally:
         con.close()
 
+@app.post("/webhook/pushinpay")
+async def webhook_pushinpay(request: Request, user_id: str = None):
+    try:
+        dados = await request.json()
+        # Verifica se o gateway enviou o status de pago
+        status = dados.get("status", "").lower()
+        
+        # Se foi pago e temos a identificação do cliente na URL
+        if status in ["paid", "approved", "concluido", "pago"] and user_id:
+            valor_pago = float(dados.get("value", 0)) / 100
+            
+            con = conectar_banco()
+            cur = con.cursor()
+            try:
+                # 1. Adiciona o saldo na carteira
+                cur.execute("UPDATE carteira SET saldo = saldo + ? WHERE chat_id = ?", (valor_pago, user_id))
+                
+                # 2. Regista a conversão nas métricas
+                cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (?, 'compra_concluida')", (user_id,))
+                con.commit()
+                
+                # 3. Envia a notificação automática no Telegram para o cliente
+                url_telegram = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+                msg = f"✅ **PIX DE R$ {valor_pago:.2f} APROVADO!**\nSeu saldo já está na carteira. Volte ao MiniApp para resgatar o seu e-SIM!"
+                requests.post(url_telegram, json={"chat_id": user_id, "text": msg, "parse_mode": "Markdown"})
+                
+            except Exception as e:
+                print("Erro ao processar saldo do PIX no banco:", e)
+            finally:
+                con.close()
+                
+        return {"status": "sucesso"}
+    except Exception as e:
+        print("Erro crítico no webhook:", e)
+        return {"status": "erro"}
+
 # ------------------------------------------------------------------------------
 # 🟢 RUNNER DA APLICAÇÃO
 # ------------------------------------------------------------------------------
