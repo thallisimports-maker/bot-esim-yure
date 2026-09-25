@@ -97,13 +97,73 @@ LOGO_URL = "https://raw.githubusercontent.com/thallisimports-maker/bot-esim-yure
 
 logging.basicConfig(level=logging.INFO)
 
+import psycopg2
+
 # ------------------------------------------------------------------------------
-# 🗄️ INICIALIZAÇÃO DO BANCO DE DADOS SQLITE
+# 🗄️ INICIALIZAÇÃO DO BANCO DE DADOS POSTGRESQL (NUVEM)
 # ------------------------------------------------------------------------------
+# ⚠️ COLE AQUI O SEU LINK COM A SENHA REAL:
+DATABASE_URL = "postgresql://postgres:EwU6T4Ako0xN1JGR@db.sagiihnsvovyblhkyqlf.supabase.co:5432/postgres"
+
+class SmartRow:
+    def __init__(self, t_row, c_names):
+        self.t_row = t_row
+        self.c_names = c_names
+    def __getitem__(self, key):
+        if isinstance(key, int): return self.t_row[key]
+        if key in self.c_names: return self.t_row[self.c_names.index(key)]
+        return None
+    def __iter__(self): return iter(self.t_row)
+    def keys(self): return self.c_names
+
+class CursorWrapper:
+    def __init__(self, cursor):
+        self.cursor = cursor
+    def execute(self, query, params=None):
+        # Traduz a linguagem SQLite para PostgreSQL automaticamente
+        query = query.replace("?", "%s")
+        query = query.replace("AUTOINCREMENT", "SERIAL")
+        query = query.replace("DATETIME DEFAULT CURRENT_TIMESTAMP", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+        
+        # Resolve conflitos nativos de gravação
+        if "INSERT OR IGNORE INTO carteira" in query:
+            query = "INSERT INTO carteira (chat_id, saldo) VALUES (%s, 0.0) ON CONFLICT (chat_id) DO NOTHING"
+        elif "INSERT OR REPLACE INTO carteira" in query:
+            query = "INSERT INTO carteira (chat_id, saldo) VALUES (%s, %s) ON CONFLICT (chat_id) DO UPDATE SET saldo = EXCLUDED.saldo"
+        elif "ON CONFLICT(chat_id) DO UPDATE SET first_name" in query:
+            query = "INSERT INTO carteira (chat_id, first_name, username, saldo) VALUES (%s, %s, %s, 0.0) ON CONFLICT(chat_id) DO UPDATE SET first_name=EXCLUDED.first_name, username=EXCLUDED.username"
+            if params and len(params) == 5: params = params[:3]
+                
+        if "PRAGMA" in query: return self # O Postgres não usa PRAGMA
+        
+        try:
+            return self.cursor.execute(query, params)
+        except Exception as e:
+            self.cursor.connection.rollback()
+            raise e
+
+    def fetchone(self): 
+        row = self.cursor.fetchone()
+        if not row: return None
+        cols = [desc[0] for desc in self.cursor.description]
+        return SmartRow(row, cols)
+
+    def fetchall(self): 
+        rows = self.cursor.fetchall()
+        cols = [desc[0] for desc in self.cursor.description]
+        return [SmartRow(row, cols) for row in rows]
+
+class DBWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+    def cursor(self): return CursorWrapper(self.conn.cursor())
+    def commit(self): self.conn.commit()
+    def close(self): self.conn.close()
+    def rollback(self): self.conn.rollback()
+
 def conectar_banco():
-    con = sqlite3.connect("banco_usuarios.db")
-    con.row_factory = sqlite3.Row
-    return con
+    conn = psycopg2.connect(DATABASE_URL)
+    return DBWrapper(conn)
 
 def inicializar_banco():
     con = conectar_banco()
@@ -115,14 +175,14 @@ def inicializar_banco():
                 first_name TEXT, 
                 username TEXT, 
                 saldo REAL DEFAULT 0.0,
-                data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP
+                data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         cur.execute("CREATE TABLE IF NOT EXISTS estoque (produto_id TEXT PRIMARY KEY, quantidade INTEGER DEFAULT 0)")
         
         cur.execute("""
             CREATE TABLE IF NOT EXISTS estoque_codigos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                id SERIAL PRIMARY KEY, 
                 produto_id TEXT, 
                 conteudo_esim TEXT,
                 ddd TEXT DEFAULT 'BR',
@@ -130,14 +190,13 @@ def inicializar_banco():
             )
         """)
         
-        cur.execute("PRAGMA table_info(estoque_codigos)")
-        colunas = [col["name"] for col in cur.fetchall()]
-        if "ddd" not in colunas:
-            cur.execute("ALTER TABLE estoque_codigos ADD COLUMN ddd TEXT DEFAULT 'BR'")
-        if "gb" not in colunas:
-            cur.execute("ALTER TABLE estoque_codigos ADD COLUMN gb TEXT DEFAULT 'Padrão'")
-
-        cur.execute("CREATE TABLE IF NOT EXISTS acessos_miniapp (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id TEXT, data_acesso DATETIME DEFAULT CURRENT_TIMESTAMP)")
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS acessos_miniapp (
+                id SERIAL PRIMARY KEY, 
+                chat_id TEXT, 
+                data_acesso TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         
         cur.execute("""
             CREATE TABLE IF NOT EXISTS giftcards (
@@ -148,12 +207,22 @@ def inicializar_banco():
             )
         """)
         
-        cur.execute("SELECT COUNT(*) FROM estoque")
-        if cur.fetchone()[0] == 0:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS funil_metricas (
+                id SERIAL PRIMARY KEY,
+                user_id TEXT,
+                etapa TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        cur.execute("SELECT COUNT(*) as qtd FROM estoque")
+        row = cur.fetchone()
+        if row and row['qtd'] == 0:
             cur.execute("INSERT INTO estoque (produto_id, quantidade) VALUES ('vivo_30gb', 0), ('tim_40gb', 0), ('claro_40gb', 0)")
         con.commit()
     except Exception as e:
-        logging.error(f"Erro ao inicializar banco: {e}")
+        logging.error(f"Erro ao inicializar banco Postgres: {e}")
     finally:
         con.close()
 
