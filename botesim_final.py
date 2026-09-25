@@ -1295,7 +1295,7 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
                 qr_code_url = f"data:image/png;base64,{qr_code_url}"
 
             if not pix_copia_cola:
-            return {
+                return {
                 "status": "erro",
                 "detalhe": "Não foi possível gerar a chave PIX no gateway.",
             }
