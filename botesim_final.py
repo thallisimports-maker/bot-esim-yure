@@ -766,24 +766,32 @@ def salvar_dados_no_github(dados_novos):
     return res_put.status_code == 200
 
 @app.get("/api/produtos-publico")
-async def obter_produtos_publico():
-    dados = carregar_dados()
-    produtos = dados.get("produtos", [])
+async def obter_produtos_publico(chat_id: str = None):
+    # 🛡️ TRAVA DE SEGURANÇA: Bloqueia acessos diretos de navegadores externos
+    if not chat_id or str(chat_id).strip() in ["", "undefined", "null", "None"]:
+        raise HTTPException(
+            status_code=403,
+            detail="Acesso negado. A loja é acessível exclusivamente via Telegram Mini App."
+        )
 
-    # Filtra apenas os produtos que estão com status 'disponivel'
+    dados = carregar_dados()
+    produtos = dados.get("produtos", []) if isinstance(dados, dict) else []
+
     disponiveis = [
-        p
-        for p in produtos
+        p for p in produtos
         if str(p.get("status", "")).lower().strip() == "disponivel"
     ]
-    return {"produtos": disponiveis}
-    
+
+    return {"status": "sucesso", "produtos": disponiveis}
+
+
 class NovoProduto(BaseModel):
     operadora: str
     plano: str
     descricao: str = ""
     preco: float
     imagem_qr: str
+
 
 class PayloadCompraMiniApp(BaseModel):
     chat_id: str
