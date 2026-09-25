@@ -718,7 +718,7 @@ async def obter_dados_admin(
 
         # 3.1. Estoque de Códigos
         try:
-            cur.execute("SELECT id, produto_id, conteudo_esim, ddd, gb FROM estoque_codigos ORDER BY id DESC")
+            cur.execute("SELECT id, produto_id, conteudo_esim, ddd, gb FROM estoque_codigos ORDER BY codigo DESC")
             for row in cur.fetchall():
                 p_id, prod_id, conteudo, ddd, gb = row
                 nome_plano = f"{gb}GB - DDD {ddd}" if (gb and ddd) else f"Plano {prod_id or 'e-SIM'}"
