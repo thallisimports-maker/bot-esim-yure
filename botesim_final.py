@@ -680,19 +680,49 @@ async def obter_dados_admin(
         except Exception as e:
             print(f"Aviso ao ler tabela produtos: {e}")
 
-        # 🎁 5. LEITURA DE CUPONS / GIFT CARDS (cupons)
-        try:
+        # 🎁 5. LEITURA DE CUPONS / GIFT CARDS (Segura contra erros)
+    try:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS giftcards (
+                codigo TEXT PRIMARY KEY, 
+                valor REAL, 
+                usado INTEGER DEFAULT 0,
+                usado_por TEXT
+            )
+        """)
+        cur.execute("SELECT codigo, valor, usado, usado_por FROM giftcards ORDER BY rowid DESC")
+        rows_gc = cur.fetchall()
+        for row in rows_gc:
+            is_usado = bool(row[2]) if row[2] is not None else False
+            cupons.append({
+                "codigo": str(row[0]),
+                "valor": float(row[1] or 0.0),
+                "usado": is_usado,
+                "status": "usado" if is_usado else "disponivel",
+                "usado_por": str(row[3] or "")
+            })
+    except Exception as e:
+        print(f"Aviso ao ler giftcards: {e}")
+
+    # Fallback opcional para tabela antiga 'cupons' caso exista
+    try:
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='cupons'")
+        if cur.fetchone():
             cur.execute("SELECT codigo, valor, usado, usado_por FROM cupons")
             for row in cur.fetchall():
-                cupons.append({
-                    "codigo": row[0],
-                    "valor": float(row[1] or 0.0),
-                    "usado": bool(row[2]),
-                    "status": "usado" if row[2] else "disponivel",
-                    "usado_por": row[3] or ""
-                })
-        except Exception as e:
-            print(f"Erro ao ler cupons: {e}")
+                codigo_existente = str(row[0])
+                # Evita duplicados se já veio do giftcards
+                if not any(c["codigo"] == codigo_existente for c in cupons):
+                    is_usado = bool(row[2]) if row[2] is not None else False
+                    cupons.append({
+                        "codigo": codigo_existente,
+                        "valor": float(row[1] or 0.0),
+                        "usado": is_usado,
+                        "status": "usado" if is_usado else "disponivel",
+                        "usado_por": str(row[3] or "")
+                    })
+    except Exception as e:
+        print(f"Aviso ao ler tabela cupons antiga: {e}")
 
         # 🛒 6. LEITURA DO HISTÓRICO DE VENDAS (historico_vendas)
         try:
