@@ -571,6 +571,42 @@
     // 5. ATUALIZAR TABELAS E CARDS DO PAINEL
     function atualizarPainel(dados) {
       if (!dados) return;
+      // Preencher a tabela de logs do funil com nomes e horas
+    const tbodyLogs = document.getElementById("tabela-logs-funil");
+    if (tbodyLogs && dados.logs_funil) {
+        tbodyLogs.innerHTML = ""; // Limpa a tabela antes de atualizar
+        
+        dados.logs_funil.forEach(log => {
+            const tr = document.createElement("tr");
+            tr.style.borderBottom = "1px solid #374151";
+            
+            // Formatar a data para o padrão do Brasil
+            let dataFormatada = new Date(log.data).toLocaleString('pt-BR');
+            
+            // Colocar o @username com uma cor mais clara ao lado do nome
+            let usuarioTexto = log.nome;
+            if (log.username && log.username !== "") {
+                usuarioTexto += ` <span style="color: #9ca3af; font-size: 12px;">(@${log.username})</span>`;
+            }
+            
+            // Definir as cores das "tags" dependendo da ação
+            let corEtapa = "background-color: #4b5563; color: #e5e7eb;";
+            if(log.etapa === "start") corEtapa = "background-color: rgba(147, 51, 234, 0.3); color: #c084fc;";
+            if(log.etapa === "acesso_miniapp") corEtapa = "background-color: rgba(37, 99, 235, 0.3); color: #60a5fa;";
+            if(log.etapa === "pix_gerado") corEtapa = "background-color: rgba(202, 138, 4, 0.3); color: #facc15;";
+
+            tr.innerHTML = `
+                <td style="padding: 12px; font-size: 14px; color: #d1d5db;">${dataFormatada}</td>
+                <td style="padding: 12px; font-weight: bold; color: #f3f4f6;">${usuarioTexto}</td>
+                <td style="padding: 12px;">
+                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; ${corEtapa}">
+                        ${log.etapa.replace('_', ' ').toUpperCase()}
+                    </span>
+                </td>
+            `;
+            tbodyLogs.appendChild(tr);
+        });
+    }
 
       const prods = dados.produtos || dados.estoque || [];
       const cupons = dados.cupons_detalhados || dados.cupons || dados.giftcards || [];
