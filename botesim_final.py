@@ -806,6 +806,12 @@ async def obter_produtos_publico(chat_id: str = None):
             detail="Acesso negado. A loja é acessível exclusivamente via Telegram Mini App."
         )
 
+    # 📊 Regista o acesso ao MiniApp nas métricas do painel
+    try:
+        registrar_evento_funil(str(chat_id).strip(), "acesso_miniapp")
+    except Exception as e:
+        print(f"Erro ao registrar acesso miniapp: {e}")
+
     dados = carregar_dados()
     produtos = dados.get("produtos", []) if isinstance(dados, dict) else []
 
