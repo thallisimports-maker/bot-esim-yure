@@ -625,6 +625,8 @@ async def obter_dados_admin(
     produtos = []
     cupons = []
     vendas = []
+    usuarios = []
+    logs_funil = []
 
     # 📦 2. LEITURA DO ARQUIVO estoque.json
     try:
@@ -639,12 +641,13 @@ async def obter_dados_admin(
     except Exception as e:
         print(f"Aviso ao ler estoque.json: {e}")
 
-    # 📦 3. LEITURA DE e-SIMS EM ESTOQUE NO BANCO E DEMAIS DADOS
+    # 📦 3. LEITURA DE e-SIMS E DEMAIS DADOS
     con = None
     try:
         con = conectar_banco()
         cur = con.cursor()
 
+        # 3.1. Estoque de Códigos
         try:
             cur.execute("SELECT id, produto_id, conteudo_esim, ddd, gb FROM estoque_codigos ORDER BY id DESC")
             for row in cur.fetchall():
@@ -660,10 +663,10 @@ async def obter_dados_admin(
                     "imagem_qr": conteudo or "",
                     "descricao": f"Conteúdo/QR: {conteudo}" if conteudo else ""
                 })
-        except Exception as e:
-            print(f"Erro ao ler estoque_codigos: {e}")
+        except Exception:
+            pass
 
-        # 📦 4. LEITURA DE PRODUTOS CADASTRAIS (produtos)
+        # 3.2. Produtos Cadastrais
         try:
             cur.execute("SELECT id, operadora, plano, preco, status, imagem_url, descricao FROM produtos ORDER BY id DESC")
             for row in cur.fetchall():
@@ -677,10 +680,10 @@ async def obter_dados_admin(
                     "imagem_qr": row[5] or "",
                     "descricao": row[6] or ""
                 })
-        except Exception as e:
-            print(f"Aviso ao ler tabela produtos: {e}")
+        except Exception:
+            pass
 
-        # 🎁 5. LEITURA DE CUPONS / GIFT CARDS
+        # 🎁 4. LEITURA DE CUPONS / GIFT CARDS
         try:
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS giftcards (
@@ -700,10 +703,10 @@ async def obter_dados_admin(
                     "status": "usado" if is_usado else "disponivel",
                     "usado_por": str(row[3] or "")
                 })
-        except Exception as e:
-            print(f"Erro ao ler giftcards: {e}")
+        except Exception:
+            pass
 
-        # 🛒 6. LEITURA DO HISTÓRICO DE VENDAS
+        # 🛒 5. LEITURA DO HISTÓRICO DE VENDAS
         try:
             cur.execute("SELECT id, user_id, plano, preco, data FROM historico_vendas ORDER BY id DESC")
             for row in cur.fetchall():
@@ -716,8 +719,41 @@ async def obter_dados_admin(
                     "valor": float(row[3] or 0.0),
                     "data": str(row[4])
                 })
-        except Exception as e:
-            print(f"Aviso ao ler histórico de vendas: {e}")
+        except Exception:
+            pass
+
+        # 👥 6. LEITURA DE USUÁRIOS (Nomes e Saldos da Carteira)
+        try:
+            cur.execute("SELECT chat_id, first_name, username, saldo, data_criacao FROM carteira ORDER BY data_criacao DESC")
+            for row in cur.fetchall():
+                usuarios.append({
+                    "chat_id": row[0],
+                    "nome": row[1] or "Desconhecido",
+                    "username": row[2] or "",
+                    "saldo": float(row[3] or 0.0),
+                    "data_criacao": row[4]
+                })
+        except Exception:
+            pass
+
+        # 🔍 7. LEITURA DE LOGS DO FUNIL (Ações detalhadas com Nomes e @username)
+        try:
+            cur.execute("""
+                SELECT f.user_id, f.etapa, f.timestamp, c.first_name, c.username 
+                FROM funil_metricas f 
+                LEFT JOIN carteira c ON f.user_id = c.chat_id 
+                ORDER BY f.timestamp DESC
+            """)
+            for row in cur.fetchall():
+                logs_funil.append({
+                    "user_id": row[0],
+                    "etapa": row[1],
+                    "data": row[2],
+                    "nome": row[3] or "Desconhecido",
+                    "username": row[4] or ""
+                })
+        except Exception:
+            pass
 
     except Exception as main_e:
         print(f"Erro ao conectar ou ler banco: {main_e}")
@@ -725,7 +761,11 @@ async def obter_dados_admin(
         if con:
             con.close()
 
-    # 🚀 RETURN COMPLETO
+    # 🧹 Filtra as listas específicas para o JavaScript do frontend montar as tabelas
+    lista_acessos_miniapp = [L for L in logs_funil if L["etapa"] == "acesso_miniapp"]
+    lista_pix_gerados = [L for L in logs_funil if L["etapa"] == "pix_gerado"]
+
+    # 🚀 8. RETURN COMPLETO (Com todas as listas exigidas pelo Painel Admin)
     return {
         "status": "sucesso",
         "produtos": produtos,
@@ -734,7 +774,13 @@ async def obter_dados_admin(
         "historico_vendas": vendas,
         "cupons": cupons,
         "giftcards": cupons,
-        "cupons_detalhados": cupons
+        "cupons_detalhados": cupons,
+        "usuarios": usuarios,
+        "utilizadores": usuarios,
+        "logs_funil": logs_funil,
+        "acessos_miniapp": lista_acessos_miniapp,
+        "acessos_miniapp_lista": lista_acessos_miniapp,
+        "pix_gerados_lista": lista_pix_gerados
     }
 app.add_middleware(
     CORSMiddleware,
