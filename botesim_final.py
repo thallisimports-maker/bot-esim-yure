@@ -1970,7 +1970,7 @@ async def debug_tabelas():
         
         estrutura = {}
         for t in tabelas:
-            cur.execute(f"PRAGMA table_info({t});")
+            cur.execute(f"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
             estrutura[t] = [row[1] for row in cur.fetchall()]
             
         return {"tabelas_existentes": tabelas, "colunas": estrutura}
