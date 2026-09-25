@@ -645,47 +645,7 @@ async function carregarProdutosMinisite() {
   }
 }
 
-async function carregarHistorico() {
-  const container = document.getElementById('listaHistorico');
-  if (!chatId) {
-    container.innerHTML = '<div class="sem-estoque">Abra pelo Telegram para consultar seu histórico.</div>';
-    return;
-  }
-
-  try {
-    const res = await fetch(`${URL_BACKEND}/api/historico-usuario?chat_id=${chatId}`);
-    const dados = await res.json();
-    const vendas = dados.vendas || [];
-
-    if (vendas.length === 0) {
-      container.innerHTML = '<div class="sem-estoque">Nenhuma compra encontrada no seu histórico.</div>';
-      return;
-    }
-
-    let html = '';
-    vendas.forEach(v => {
-      const codigoEsim = (v.conteudo_esim || v.imagem_qr || '').replace(/'/g, "\\'");
-      html += `
-        <div class="card-produto">
-          <div class="prod-info">
-            <h4>📲 ${v.operadora || 'e-SIM'}</h4>
-            <p>Data: ${v.data || '—'}</p>
-            <div class="prod-preco">R$ ${parseFloat(v.valor || 0).toFixed(2)}</div>
-          </div>
-          <div style="display:flex; gap:6px; flex-direction:column;">
-            <button class="btn-comprar" style="background: var(--accent-blue); color: #fff;" onclick="verQrHistorico('${v.imagem_qr || ''}')">VER QR</button>
-            ${codigoEsim ? `<button onclick="navigator.clipboard.writeText('${codigoEsim}'); alert('📋 Código do e-SIM copiado!');" style="background:var(--bg-input); color:#fff; border:1px solid var(--border-color); padding:6px 10px; border-radius:6px; font-size:10px; font-weight:600; cursor:pointer;">📋 Copiar Código</button>` : ''}
-          </div>
-        </div>
-      `;
-    });
-
-    container.innerHTML = html;
-  } catch(err) {
-    container.innerHTML = '<div class="sem-estoque">Erro ao carregar histórico.</div>';
-  }
-}
-
+carregarHistorico
     function verQrHistorico(urlQr) {
       if (!urlQr) return alert("QR Code não disponível para este pedido.");
       document.getElementById('modalInfo').innerText = "QR Code do seu e-SIM adquirido:";
