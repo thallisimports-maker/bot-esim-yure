@@ -611,7 +611,6 @@ async def obter_dados_admin(
 
     chaves_validas = [
         TOKEN_CORRETO.strip().lower(),
-        SENHA_ADMIN_MINISITE.strip().lower(),
         "yuresantos26",
         "aguia2026",
         "admin123"
@@ -627,7 +626,7 @@ async def obter_dados_admin(
     cupons = []
     vendas = []
 
-    # 📦 2. LEITURA DO ARQUIVO estoque.json (onde o Bot armazena os e-SIMs)
+    # 📦 2. LEITURA DO ARQUIVO estoque.json
     try:
         if os.path.exists("estoque.json"):
             with open("estoque.json", "r", encoding="utf-8") as f:
@@ -640,7 +639,8 @@ async def obter_dados_admin(
     except Exception as e:
         print(f"Aviso ao ler estoque.json: {e}")
 
-    # 📦 3. LEITURA DE e-SIMS EM ESTOQUE NO BANCO (estoque_codigos)
+    # 📦 3. LEITURA DE e-SIMS EM ESTOQUE NO BANCO E DEMAIS DADOS
+    con = None
     try:
         con = conectar_banco()
         cur = con.cursor()
@@ -680,69 +680,52 @@ async def obter_dados_admin(
         except Exception as e:
             print(f"Aviso ao ler tabela produtos: {e}")
 
-        # 🎁 5. LEITURA DE CUPONS / GIFT CARDS (Giftcards)
-    try:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS giftcards (
-                codigo TEXT PRIMARY KEY, 
-                valor REAL, 
-                usado INTEGER DEFAULT 0,
-                usado_por TEXT
-            )
-        """)
-        cur.execute("SELECT codigo, valor, usado, usado_por FROM giftcards ORDER BY rowid DESC")
-        for row in cur.fetchall():
-            is_usado = bool(row[2]) if row[2] is not None else False
-            cupons.append({
-                "codigo": str(row[0]),
-                "valor": float(row[1] or 0.0),
-                "usado": is_usado,
-                "status": "usado" if is_usado else "disponivel",
-                "usado_por": str(row[3] or "")
-            })
-    except Exception as e:
-        print(f"Erro ao ler giftcards: {e}")
-
-    # Fallback opcional para tabela antiga 'cupons' caso exista
-    try:
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='cupons'")
-        if cur.fetchone():
-            cur.execute("SELECT codigo, valor, usado, usado_por FROM cupons")
+        # 🎁 5. LEITURA DE CUPONS / GIFT CARDS
+        try:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS giftcards (
+                    codigo TEXT PRIMARY KEY, 
+                    valor REAL, 
+                    usado INTEGER DEFAULT 0,
+                    usado_por TEXT
+                )
+            """)
+            cur.execute("SELECT codigo, valor, usado, usado_por FROM giftcards ORDER BY rowid DESC")
             for row in cur.fetchall():
-                codigo_existente = str(row[0])
-                # Evita duplicados se já veio do giftcards
-                if not any(c["codigo"] == codigo_existente for c in cupons):
-                    is_usado = bool(row[2]) if row[2] is not None else False
-                    cupons.append({
-                        "codigo": codigo_existente,
-                        "valor": float(row[1] or 0.0),
-                        "usado": is_usado,
-                        "status": "usado" if is_usado else "disponivel",
-                        "usado_por": str(row[3] or "")
-                    })
-    except Exception as e:
-        print(f"Aviso ao ler tabela cupons antiga: {e}")
+                is_usado = bool(row[2]) if row[2] is not None else False
+                cupons.append({
+                    "codigo": str(row[0]),
+                    "valor": float(row[1] or 0.0),
+                    "usado": is_usado,
+                    "status": "usado" if is_usado else "disponivel",
+                    "usado_por": str(row[3] or "")
+                })
+        except Exception as e:
+            print(f"Erro ao ler giftcards: {e}")
 
-        # 🛒 6. LEITURA DO HISTÓRICO DE VENDAS (historico_vendas)
-    try:
-        cur.execute("SELECT id, user_id, plano, preco, data FROM historico_vendas ORDER BY id DESC")
-        for row in cur.fetchall():
-            vendas.append({
-                "id": row[0],
-                "user_id": row[1],
-                "chat_id": row[1],
-                "plano": row[2],
-                "preco": float(row[3] or 0.0),
-                "valor": float(row[3] or 0.0),
-                "data": str(row[4])
-            })
-    except Exception as e:
-        print(f"Aviso ao ler histórico de vendas: {e}")
+        # 🛒 6. LEITURA DO HISTÓRICO DE VENDAS
+        try:
+            cur.execute("SELECT id, user_id, plano, preco, data FROM historico_vendas ORDER BY id DESC")
+            for row in cur.fetchall():
+                vendas.append({
+                    "id": row[0],
+                    "user_id": row[1],
+                    "chat_id": row[1],
+                    "plano": row[2],
+                    "preco": float(row[3] or 0.0),
+                    "valor": float(row[3] or 0.0),
+                    "data": str(row[4])
+                })
+        except Exception as e:
+            print(f"Aviso ao ler histórico de vendas: {e}")
 
+    except Exception as main_e:
+        print(f"Erro ao conectar ou ler banco: {main_e}")
     finally:
-        con.close()
+        if con:
+            con.close()
 
-    # 🚀 RETURN COMPLETO (Sincronizado com todas as abas do admin.html)
+    # 🚀 RETURN COMPLETO
     return {
         "status": "sucesso",
         "produtos": produtos,
