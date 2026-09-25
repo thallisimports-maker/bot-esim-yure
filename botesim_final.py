@@ -172,6 +172,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     first_name = user.first_name or "Usuário"
     username = user.username or "sem_username"
 
+    # 📊 Regista o evento no funil de métricas do Painel Admin
+    try:
+        registrar_evento_funil(chat_id, "start")
+    except Exception as e:
+        print(f"Erro ao registrar funil start: {e}")
+
     con = conectar_banco()
     cur = con.cursor()
     try:
