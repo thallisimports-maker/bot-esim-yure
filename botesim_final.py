@@ -1965,13 +1965,13 @@ async def debug_tabelas():
     con = conectar_banco()
     cur = con.cursor()
     try:
-        SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
+        cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
         tabelas = [row[0] for row in cur.fetchall()]
         
         estrutura = {}
         for t in tabelas:
-            cur.execute(f"SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
-            estrutura[t] = [row[1] for row in cur.fetchall()]
+            cur.execute(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{t}';")
+            estrutura[t] = [row[0] for row in cur.fetchall()]
             
         return {"tabelas_existentes": tabelas, "colunas": estrutura}
     finally:
