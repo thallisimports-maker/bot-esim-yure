@@ -519,19 +519,33 @@
       }
     } catch(e) {}
 
-    function carregarPerfil() {
-      const user = tg?.initDataUnsafe?.user || {};
-      if (user.first_name) {
-        document.getElementById('userName').innerText = `${user.first_name} ${user.last_name || ''}`;
-      }
-      document.getElementById('userIdDisplay').innerText = chatId || "Identificado no Bot";
+    async function carregarPerfil() {
+  const user = tg?.initDataUnsafe?.user || {};
+  if (user.first_name) {
+    document.getElementById('userName').innerText = `${user.first_name} ${user.last_name || ''}`;
+  }
+  document.getElementById('userIdDisplay').innerText = chatId || "Identificado no Bot";
 
-      if (user.photo_url) {
-        document.getElementById('userPhoto').src = user.photo_url;
-      } else if (user.first_name) {
-        document.getElementById('userPhoto').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.first_name)}&background=d4af37&color=000`;
+  if (user.photo_url) {
+    document.getElementById('userPhoto').src = user.photo_url;
+  } else if (user.first_name) {
+    document.getElementById('userPhoto').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.first_name)}&background=d4af37&color=000`;
+  }
+
+  // Busca o saldo real do cliente para atualizar a loja e botões
+  if (chatId) {
+    try {
+      const res = await fetch(`${URL_BACKEND}/api/saldo-usuario?chat_id=${chatId}`);
+      if (res.ok) {
+        const data = await res.json();
+        saldoAtualCliente = parseFloat(data.saldo || 0);
+        document.getElementById('saldoDisplay').innerText = `R$ ${saldoAtualCliente.toFixed(2)}`;
       }
+    } catch (e) {
+      console.log("Aviso ao carregar saldo:", e);
     }
+  }
+}
 
     function mudarAba(nomeAba) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
