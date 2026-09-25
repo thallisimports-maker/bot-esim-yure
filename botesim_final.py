@@ -15,7 +15,7 @@ def registrar_evento_funil(user_id, etapa):
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        cursor.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (?, ?)", (str(user_id), etapa))
+        cursor.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, %s)", (str(user_id), etapa))
         conn.commit()
         conn.close()
     except Exception as e:
