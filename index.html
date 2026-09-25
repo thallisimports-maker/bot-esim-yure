@@ -505,330 +505,360 @@
   </div>
 
   <script>
-    const URL_BACKEND = "https://bot-esim-yure.onrender.com";
-    let tg = window.Telegram?.WebApp;
-    let chatId = "";
+  // 1. Configurações Principais e Telegram WebApp
+  const URL_BACKEND = "https://bot-esim-yure.onrender.com";
+  const tg = window.Telegram?.WebApp;
 
+  if (tg) {
     try {
-      if (tg) {
-        tg.expand();
-        tg.ready();
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-          chatId = String(tg.initDataUnsafe.user.id);
-        }
-      }
+      tg.ready();
+      tg.expand();
     } catch(e) {}
-
-    async function carregarPerfil() {
-  const user = tg?.initDataUnsafe?.user || {};
-  if (user.first_name) {
-    document.getElementById('userName').innerText = `${user.first_name} ${user.last_name || ''}`;
-  }
-  document.getElementById('userIdDisplay').innerText = chatId || "Identificado no Bot";
-
-  if (user.photo_url) {
-    document.getElementById('userPhoto').src = user.photo_url;
-  } else if (user.first_name) {
-    document.getElementById('userPhoto').src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.first_name)}&background=d4af37&color=000`;
   }
 
-  // Busca o saldo real do cliente para atualizar a loja e botões
-  if (chatId) {
-    try {
-      const res = await fetch(`${URL_BACKEND}/api/saldo-usuario?chat_id=${chatId}`);
-      if (res.ok) {
-        const data = await res.json();
-        saldoAtualCliente = parseFloat(data.saldo || 0);
-        document.getElementById('saldoDisplay').innerText = `R$ ${saldoAtualCliente.toFixed(2)}`;
-      }
-    } catch (e) {
-      console.log("Aviso ao carregar saldo:", e);
+  // Obtenção garantida e resiliente do ID do cliente
+  function obterChatId() {
+    const urlParams = new URLSearchParams(window.location.search);
+    let id = urlParams.get('chat_id') || urlParams.get('chatId');
+    if (!id && tg?.initDataUnsafe?.user) {
+      id = tg.initDataUnsafe.user.id;
+    }
+    return id ? String(id) : '';
+  }
+
+  let chatId = obterChatId();
+  let saldoAtualCliente = 0.00;
+
+  // 2. Navegação de Abas
+  function mudarAba(nomeAba) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nav-menu li, .nav-item').forEach(b => b.classList.remove('active'));
+    
+    const abaElem = document.getElementById('aba-' + nomeAba);
+    const navElem = document.getElementById('nav-' + nomeAba);
+    
+    if (abaElem) abaElem.classList.add('active');
+    if (navElem) navElem.classList.add('active');
+
+    if (nomeAba === 'pedidos' || nomeAba === 'historico') {
+      carregarHistorico();
     }
   }
-}
 
-function obterChatId() {
-  const urlParams = new URLSearchParams(window.location.search);
-  let id = urlParams.get('chat_id') || urlParams.get('chatId');
-  if (!id && window.Telegram?.WebApp?.initDataUnsafe?.user) {
-    id = window.Telegram.WebApp.initDataUnsafe.user.id;
-  }
-  return id ? String(id) : (typeof chatId !== 'undefined' ? chatId : '');
-}
-
-async function carregarProdutosMinisite() {
-  const container = document.getElementById('listaProdutos');
-  if (!container) return;
-
-  const idCliente = obterChatId();
-
-  if (!idCliente) {
-    container.innerHTML = `
-      <div class="sem-estoque" style="padding: 20px; text-align: center; color: #fff;">
-        📱 <strong>Acesso pelo Telegram Obrigatório</strong><br><br>
-        Abra a loja através do nosso Bot no Telegram para visualizar os e-SIMs.
-      </div>`;
-    return;
-  }
-
-  try {
-    const res = await fetch(`${URL_BACKEND}/api/produtos-publico?chat_id=${encodeURIComponent(idCliente)}`);
+  // 3. Carregar Perfil do Utilizador e Saldo
+  async function carregarPerfil() {
+    if (!chatId) chatId = obterChatId();
+    const user = tg?.initDataUnsafe?.user || {};
     
-    if (!res.ok) {
+    const userNameElem = document.getElementById('userName');
+    if (userNameElem) {
+      userNameElem.innerText = user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Cliente Telegram';
+    }
+    
+    const userIdElem = document.getElementById('userIdDisplay');
+    if (userIdElem) {
+      userIdElem.innerText = chatId ? chatId : "Identificado no Bot";
+    }
+
+    const userPhotoElem = document.getElementById('userPhoto');
+    if (userPhotoElem) {
+      if (user.photo_url) {
+        userPhotoElem.src = user.photo_url;
+      } else if (user.first_name) {
+        userPhotoElem.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.first_name)}&background=d4af37&color=000`;
+      }
+    }
+
+    if (chatId) {
+      try {
+        const res = await fetch(`${URL_BACKEND}/api/saldo-usuario?chat_id=${chatId}`);
+        if (res.ok) {
+          const data = await res.json();
+          saldoAtualCliente = parseFloat(data.saldo || 0);
+          const saldoDisplay = document.getElementById('saldoDisplay');
+          if (saldoDisplay) saldoDisplay.innerText = `R$ ${saldoAtualCliente.toFixed(2)}`;
+        }
+      } catch (e) {
+        console.log("Aviso ao carregar saldo:", e);
+      }
+    }
+  }
+
+  // 4. Carregar Catálogo de Produtos / e-SIMs (Com Trava de Segurança)
+  async function carregarProdutosMinisite() {
+    const container = document.getElementById('listaProdutos');
+    if (!container) return;
+
+    if (!chatId) chatId = obterChatId();
+
+    if (!chatId) {
       container.innerHTML = `
         <div class="sem-estoque" style="padding: 20px; text-align: center; color: #fff;">
-          ⚠️ <strong>Erro ao carregar catálogo (${res.status})</strong><br><br>
-          Recarregue a página ou tente novamente dentro de instantes.
+          📱 <strong>Acesso pelo Telegram Obrigatório</strong><br><br>
+          Abra a loja através do nosso Bot no Telegram para visualizar os e-SIMs.
         </div>`;
       return;
     }
 
-    const dados = await res.json();
-    const produtos = dados.produtos || [];
-    const disponiveis = produtos.filter(p => (p.status || '').toLowerCase() === 'disponivel');
-
-    if (disponiveis.length === 0) {
-      container.innerHTML = '<div class="sem-estoque">❌ Nenhum e-SIM disponível no momento.</div>';
-      return;
-    }
-
-    let html = '';
-    disponiveis.forEach((p, index) => {
-      const opClean = (p.operadora || '').toLowerCase();
-      const planoClean = (p.plano || '').toLowerCase();
-      const preco = parseFloat(p.preco || 0);
-
-      let badgeHtml = '<span class="prod-badge badge-green">⚡ Ativação Instantânea</span>';
-      if (index === 0 || planoClean.includes('35gb') || planoClean.includes('50gb')) {
-        badgeHtml = '<span class="prod-badge badge-gold">🔥 Mais Vendido</span>';
-      } else if (opClean.includes('vivo') || opClean.includes('claro')) {
-        badgeHtml = '<span class="prod-badge badge-blue">🚀 5G Liberado</span>';
+    try {
+      const res = await fetch(`${URL_BACKEND}/api/produtos-publico?chat_id=${encodeURIComponent(chatId)}`);
+      
+      if (!res.ok) {
+        container.innerHTML = `
+          <div class="sem-estoque" style="padding: 20px; text-align: center; color: #fff;">
+            ⚠️ <strong>Erro ao carregar catálogo (${res.status})</strong><br><br>
+            Recarregue a página ou tente novamente dentro de instantes.
+          </div>`;
+        return;
       }
 
-      let botaoHtml = `<button class="btn-comprar" onclick="comprarItemDirect('${p.id}')">COMPRAR</button>`;
-      if (typeof saldoAtualCliente !== 'undefined' && saldoAtualCliente < preco && idCliente) {
-        const faltam = preco - saldoAtualCliente;
-        botaoHtml = `<button class="btn-recarregar-card" onclick="irParaRecargaComValor(${faltam})">💳 Recarregar R$ ${faltam.toFixed(2)}</button>`;
+      const dados = await res.json();
+      const produtos = dados.produtos || [];
+      const disponiveis = produtos.filter(p => (p.status || '').toLowerCase() === 'disponivel');
+
+      if (disponiveis.length === 0) {
+        container.innerHTML = '<div class="sem-estoque">❌ Nenhum e-SIM disponível no momento.</div>';
+        return;
       }
 
-      html += `
-        <div class="card-produto" data-operadora="${opClean}">
-          <div class="prod-info">
-            ${badgeHtml}
-            <h4>📲 ${p.operadora}</h4>
-            <p>Plano: <strong>${p.plano}</strong></p>
-            <div class="prod-preco">R$ ${preco.toFixed(2)}</div>
-          </div>
-          ${botaoHtml}
-        </div>
-      `;
-    });
+      let html = '';
+      disponiveis.forEach((p, index) => {
+        const opClean = (p.operadora || '').toLowerCase();
+        const planoClean = (p.plano || '').toLowerCase();
+        const preco = parseFloat(p.preco || 0);
 
-    container.innerHTML = html;
-  } catch (err) {
-    console.error("Erro ao carregar produtos:", err);
-    container.innerHTML = `
-      <div class="sem-estoque" style="padding: 20px; text-align: center; color: #fff;">
-        ❌ <strong>Erro de Conexão</strong><br><br>
-        Não foi possível conectar ao servidor. Recarregue a página.
-      </div>`;
-  }
-}
-
-    function selecionarValorRecarga(valor) {
-      document.getElementById('valorRecarga').value = valor;
-      gerarPixRecargaDirect();
-    }
-
-    // FUNÇÃO DE FILTRAGEM RÁPIDA DE OPERADORAS
-    function filtrarOperadora(operadora, btn) {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-
-      const cards = document.querySelectorAll('#listaProdutos .card-produto');
-      cards.forEach(card => {
-        const opStr = (card.getAttribute('data-operadora') || card.innerText || '').toLowerCase();
-        if (operadora === 'todos' || opStr.includes(operadora.toLowerCase())) {
-          card.style.display = 'flex';
-        } else {
-          card.style.display = 'none';
+        let badgeHtml = '<span class="prod-badge badge-green">⚡ Ativação Instantânea</span>';
+        if (index === 0 || planoClean.includes('35gb') || planoClean.includes('50gb')) {
+          badgeHtml = '<span class="prod-badge badge-gold">🔥 Mais Vendido</span>';
+        } else if (opClean.includes('vivo') || opClean.includes('claro')) {
+          badgeHtml = '<span class="prod-badge badge-blue">🚀 5G Liberado</span>';
         }
+
+        let botaoHtml = `<button class="btn-comprar" onclick="comprarItemDirect('${p.id}')">COMPRAR</button>`;
+        if (saldoAtualCliente < preco && chatId) {
+          const faltam = preco - saldoAtualCliente;
+          botaoHtml = `<button class="btn-recarregar-card" onclick="irParaRecargaComValor(${faltam})">💳 Recarregar R$ ${faltam.toFixed(2)}</button>`;
+        }
+
+        html += `
+          <div class="card-produto" data-operadora="${opClean}">
+            <div class="prod-info">
+              ${badgeHtml}
+              <h4>📲 ${p.operadora}</h4>
+              <p>Plano: <strong>${p.plano}</strong></p>
+              <div class="prod-preco">R$ ${preco.toFixed(2)}</div>
+            </div>
+            ${botaoHtml}
+          </div>
+        `;
       });
+
+      container.innerHTML = html;
+    } catch (err) {
+      console.error("Erro ao carregar produtos:", err);
+      container.innerHTML = `
+        <div class="sem-estoque" style="padding: 20px; text-align: center; color: #fff;">
+          ❌ <strong>Erro de Conexão</strong><br><br>
+          Não foi possível conectar ao servidor. Recarregue a página.
+        </div>`;
     }
-
-    let saldoAtualCliente = 0.00;
-
-// Redireciona para a recarga preenchendo o valor faltante automaticamente
-function irParaRecargaComValor(valorNecessario) {
-  mudarAba('carteira');
-  const inputRecarga = document.getElementById('valorRecarga');
-  if (inputRecarga) {
-    inputRecarga.value = parseFloat(valorNecessario).toFixed(2);
-    inputRecarga.scrollIntoView({ behavior: 'smooth' });
   }
-}
 
-async function carregarProdutosMinisite() {
-  try {
-    const res = await fetch(URL_BACKEND + '/api/produtos-publico');
-    const dados = await res.json();
-    
-    const container = document.getElementById('listaProdutos');
-    const produtos = dados.produtos || [];
-    const disponiveis = produtos.filter(p => (p.status || '').toLowerCase() === 'disponivel');
+  // 5. Carregar Histórico de Compras
+  async function carregarHistorico() {
+    const container = document.getElementById('listaHistorico');
+    if (!container) return;
 
-    if (disponiveis.length === 0) {
-      container.innerHTML = '<div class="sem-estoque">❌ Nenhum e-SIM disponível no momento.</div>';
+    if (!chatId) chatId = obterChatId();
+
+    if (!chatId) {
+      container.innerHTML = '<div class="sem-estoque">Abra pelo Telegram para consultar seu histórico.</div>';
       return;
     }
 
-    let html = '';
-    disponiveis.forEach((p, index) => {
-      const opClean = (p.operadora || '').toLowerCase();
-      const planoClean = (p.plano || '').toLowerCase();
-      const preco = parseFloat(p.preco || 0);
+    try {
+      const res = await fetch(`${URL_BACKEND}/api/historico-usuario?chat_id=${chatId}`);
+      const dados = await res.json();
+      const vendas = dados.vendas || [];
 
-      // Selos de Destaque Dinâmicos
-      let badgeHtml = '<span class="prod-badge badge-green">⚡ Ativação Instantânea</span>';
-      if (index === 0 || planoClean.includes('35gb') || planoClean.includes('50gb')) {
-        badgeHtml = '<span class="prod-badge badge-gold">🔥 Mais Vendido</span>';
-      } else if (opClean.includes('vivo') || opClean.includes('claro')) {
-        badgeHtml = '<span class="prod-badge badge-blue">🚀 5G Liberado</span>';
+      if (vendas.length === 0) {
+        container.innerHTML = '<div class="sem-estoque">Nenhuma compra encontrada no seu histórico.</div>';
+        return;
       }
 
-      // Botão Dinâmico (Comprar ou Recarregar Valor Faltante)
-      let botaoHtml = `<button class="btn-comprar" onclick="comprarItemDirect('${p.id}')">COMPRAR</button>`;
-      if (saldoAtualCliente < preco && chatId) {
-        const faltam = preco - saldoAtualCliente;
-        botaoHtml = `<button class="btn-recarregar-card" onclick="irParaRecargaComValor(${faltam})">💳 Recarregar R$ ${faltam.toFixed(2)}</button>`;
-      }
+      let html = '';
+      vendas.forEach(v => {
+        const operadora = v.operadora || 'e-SIM';
+        const dataVenda = v.data || '—';
+        const valor = parseFloat(v.valor || v.preco || 0).toFixed(2);
+        
+        const qrUrl = (v.imagem_qr || v.conteudo_esim || '').replace(/'/g, "\\'").replace(/\n/g, '');
+        const temQr = Boolean(qrUrl);
 
-      html += `
-        <div class="card-produto" data-operadora="${opClean}">
-          <div class="prod-info">
-            ${badgeHtml}
-            <h4>📲 ${p.operadora}</h4>
-            <p>Plano: <strong>${p.plano}</strong></p>
-            <div class="prod-preco">R$ ${preco.toFixed(2)}</div>
+        html += `
+          <div class="card-produto">
+            <div class="prod-info">
+              <h4>📲 ${operadora}</h4>
+              <p>Data: ${dataVenda}</p>
+              <div class="prod-preco">R$ ${valor}</div>
+            </div>
+            <div style="display:flex; gap:6px; flex-direction:column;">
+              ${temQr ? `<button class="btn-comprar" style="background: var(--accent-blue); color: #fff;" onclick="verQrHistorico('${qrUrl}')">VER QR</button>` : ''}
+              ${temQr ? `<button onclick="navigator.clipboard.writeText('${qrUrl}'); alert('📋 Código copiado!');" style="background:var(--bg-input); color:#fff; border:1px solid var(--border-color); padding:6px 10px; border-radius:6px; font-size:10px; font-weight:600; cursor:pointer;">📋 Copiar Código</button>` : ''}
+            </div>
           </div>
-          ${botaoHtml}
-        </div>
-      `;
-    });
+        `;
+      });
 
-    container.innerHTML = html;
-  } catch (err) {
-    document.getElementById('listaProdutos').innerHTML = '<div class="sem-estoque">❌ Erro ao conectar ao servidor.</div>';
+      container.innerHTML = html;
+    } catch(err) {
+      container.innerHTML = '<div class="sem-estoque">Erro ao carregar histórico.</div>';
+    }
   }
-}
 
-carregarHistorico
-    function verQrHistorico(urlQr) {
-      if (!urlQr) return alert("QR Code não disponível para este pedido.");
-      document.getElementById('modalInfo').innerText = "QR Code do seu e-SIM adquirido:";
-      document.getElementById('modalQrImg').src = urlQr;
-      document.getElementById('modalQr').style.display = 'flex';
+  // 6. Funções Auxiliares e Interações da Loja
+  function selecionarValorRecarga(valor) {
+    document.getElementById('valorRecarga').value = valor;
+    gerarPixRecargaDirect();
+  }
+
+  function filtrarOperadora(operadora, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+
+    const cards = document.querySelectorAll('#listaProdutos .card-produto');
+    cards.forEach(card => {
+      const opStr = (card.getAttribute('data-operadora') || card.innerText || '').toLowerCase();
+      if (operadora === 'todos' || opStr.includes(operadora.toLowerCase())) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  function irParaRecargaComValor(valorNecessario) {
+    mudarAba('carteira');
+    const inputRecarga = document.getElementById('valorRecarga');
+    if (inputRecarga) {
+      inputRecarga.value = parseFloat(valorNecessario).toFixed(2);
+      inputRecarga.scrollIntoView({ behavior: 'smooth' });
+    }
+  }
+
+  function verQrHistorico(urlQr) {
+    if (!urlQr) return alert("QR Code não disponível para este pedido.");
+    document.getElementById('modalInfo').innerText = "QR Code do seu e-SIM adquirido:";
+    document.getElementById('modalQrImg').src = urlQr;
+    document.getElementById('modalQr').style.display = 'flex';
+  }
+
+  async function comprarItemDirect(idProduto) {
+    if (!chatId) {
+      return alert("Abra este MiniApp através do Telegram para realizar a compra!");
     }
 
-    async function comprarItemDirect(idProduto) {
-      if (!chatId) {
-        return alert("Abra este MiniApp através do Telegram para realizar a compra!");
+    if (!confirm("Deseja confirmar a compra deste e-SIM?")) return;
+
+    try {
+      const res = await fetch(URL_BACKEND + '/api/comprar-miniapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, produto_id: idProduto })
+      });
+
+      const data = await res.json();
+
+      if (data.status === 'sucesso') {
+        document.getElementById('saldoDisplay').innerText = `R$ ${parseFloat(data.novo_saldo).toFixed(2)}`;
+        document.getElementById('modalInfo').innerText = `Plano: ${data.operadora} - ${data.plano}`;
+        document.getElementById('modalQrImg').src = data.imagem_qr;
+        document.getElementById('modalQr').style.display = 'flex';
+
+        carregarProdutosMinisite();
+      } else {
+        alert("❌ " + (data.detalhe || "Erro ao efetuar compra."));
       }
+    } catch (err) {
+      alert("Erro ao conectar com o servidor.");
+    }
+  }
 
-      if (!confirm("Deseja confirmar a compra deste e-SIM?")) return;
+  function fecharModal() {
+    document.getElementById('modalQr').style.display = 'none';
+  }
 
-      try {
-        const res = await fetch(URL_BACKEND + '/api/comprar-miniapp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, produto_id: idProduto })
-        });
+  async function gerarPixRecargaDirect() {
+    const valor = parseFloat(document.getElementById('valorRecarga').value);
+    if (!valor || valor < 1) return alert("Digite um valor válido a partir de R$ 1,00!");
 
-        const data = await res.json();
+    if (!chatId) {
+      return alert("Abra este MiniApp pelo Telegram para gerar o PIX.");
+    }
 
-        if (data.status === 'sucesso') {
+    try {
+      const res = await fetch(URL_BACKEND + '/api/gerar-pix-miniapp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, valor: valor })
+      });
+
+      const data = await res.json();
+
+      if (data.status === 'sucesso') {
+        document.getElementById('areaPix').style.display = 'block';
+        document.getElementById('chavePixInput').value = data.pix_copia_cola;
+        document.getElementById('imgQrPix').src = data.qr_code_url || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.pix_copia_cola)}`;
+      } else {
+        alert("❌ " + (data.detalhe || "Erro ao gerar PIX."));
+      }
+    } catch (err) {
+      alert("Erro ao conectar ao servidor.");
+    }
+  }
+
+  function copiarChavePix() {
+    const input = document.getElementById('chavePixInput');
+    input.select();
+    document.execCommand('copy');
+    alert("📋 Chave PIX copiada!");
+  }
+
+  async function resgatarGift() {
+    const codigo = document.getElementById('codigoGift').value.trim().toUpperCase();
+    if (!codigo) return alert("Digite o código!");
+
+    try {
+      const res = await fetch(URL_BACKEND + '/api/resgatar-giftcard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, codigo: codigo })
+      });
+
+      const data = await res.json();
+      if (data.status === 'sucesso') {
+        alert(data.mensagem);
+        document.getElementById('codigoGift').value = '';
+        if (data.novo_saldo !== undefined) {
           document.getElementById('saldoDisplay').innerText = `R$ ${parseFloat(data.novo_saldo).toFixed(2)}`;
-          document.getElementById('modalInfo').innerText = `Plano: ${data.operadora} - ${data.plano}`;
-          document.getElementById('modalQrImg').src = data.imagem_qr;
-          document.getElementById('modalQr').style.display = 'flex';
-
-          carregarProdutosMinisite();
-        } else {
-          alert("❌ " + (data.detalhe || "Erro ao efetuar compra."));
         }
-      } catch (err) {
-        alert("Erro ao conectar com o servidor.");
+      } else {
+        alert("❌ " + (data.detalhe || "Erro no resgate."));
       }
+    } catch (err) {
+      alert("Erro ao conectar com o servidor.");
     }
+  }
 
-    function fecharModal() {
-      document.getElementById('modalQr').style.display = 'none';
-    }
-
-    async function gerarPixRecargaDirect() {
-      const valor = parseFloat(document.getElementById('valorRecarga').value);
-      if (!valor || valor < 1) return alert("Digite um valor válido a partir de R$ 1,00!");
-
-      if (!chatId) {
-        return alert("Abra este MiniApp pelo Telegram para gerar o PIX.");
-      }
-
-      try {
-        const res = await fetch(URL_BACKEND + '/api/gerar-pix-miniapp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, valor: valor })
-        });
-
-        const data = await res.json();
-
-        if (data.status === 'sucesso') {
-          document.getElementById('areaPix').style.display = 'block';
-          document.getElementById('chavePixInput').value = data.pix_copia_cola;
-          document.getElementById('imgQrPix').src = data.qr_code_url || `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data.pix_copia_cola)}`;
-        } else {
-          alert("❌ " + (data.detalhe || "Erro ao gerar PIX."));
-        }
-      } catch (err) {
-        alert("Erro ao conectar ao servidor.");
-      }
-    }
-
-    function copiarChavePix() {
-      const input = document.getElementById('chavePixInput');
-      input.select();
-      document.execCommand('copy');
-      alert("📋 Chave PIX copiada!");
-    }
-
-    async function resgatarGift() {
-      const codigo = document.getElementById('codigoGift').value.trim().toUpperCase();
-      if (!codigo) return alert("Digite o código!");
-
-      try {
-        const res = await fetch(URL_BACKEND + '/api/resgatar-giftcard', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, codigo: codigo })
-        });
-
-        const data = await res.json();
-        if (data.status === 'sucesso') {
-          alert(data.mensagem);
-          document.getElementById('codigoGift').value = '';
-          if (data.novo_saldo !== undefined) {
-            document.getElementById('saldoDisplay').innerText = `R$ ${parseFloat(data.novo_saldo).toFixed(2)}`;
-          }
-        } else {
-          alert("❌ " + (data.detalhe || "Erro no resgate."));
-        }
-      } catch (err) {
-        alert("Erro ao conectar com o servidor.");
-      }
-    }
-
+  // 7. Disparadores Automáticos no Carregamento
+  document.addEventListener('DOMContentLoaded', () => {
     carregarPerfil();
     carregarProdutosMinisite();
-  </script>
+  });
+
+  // Execução de garantia para WebApp Telegram
+  carregarPerfil();
+  carregarProdutosMinisite();
+</script>
 </body>
 </html>
