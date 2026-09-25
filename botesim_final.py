@@ -1613,6 +1613,20 @@ async def obter_metricas_admin(
         taxa_pix = round((pix_gerados / total_usuarios * 100), 1) if total_usuarios > 0 else 0.0
         taxa_conversao = round((pix_pagos / total_usuarios * 100), 1) if total_usuarios > 0 else 0.0
 
+    # 3.5. Acessos ao MiniApp (Visitas da Loja)
+        acessos_miniapp = 0
+        try:
+            cur.execute("SELECT COUNT(*) FROM funil_metricas WHERE etapa = 'acesso_miniapp'")
+            acessos_miniapp = cur.fetchone()[0] or 0
+        except Exception:
+            pass
+        if acessos_miniapp == 0:
+            try:
+                cur.execute("SELECT COUNT(*) FROM acessos_miniapp")
+                acessos_miniapp = cur.fetchone()[0] or 0
+            except Exception:
+                pass
+
     except Exception as e:
         print(f"Erro ao processar métricas: {e}")
     finally:
@@ -1631,6 +1645,8 @@ async def obter_metricas_admin(
         "total_usuarios_bot": total_usuarios,
         "total_usuarios": total_usuarios,
         "usuarios": total_usuarios,
+        "acessos_miniapp": acessos_miniapp,  
+        "visitas": acessos_miniapp,          
         "pix_gerados": pix_gerados,
         "pix_pagos": pix_pagos,
         "vendas_concluidas": pix_pagos,
