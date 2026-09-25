@@ -1965,7 +1965,7 @@ async def debug_tabelas():
     con = conectar_banco()
     cur = con.cursor()
     try:
-        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';
         tabelas = [row[0] for row in cur.fetchall()]
         
         estrutura = {}
