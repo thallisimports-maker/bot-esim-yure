@@ -547,15 +547,42 @@
   }
 }
 
+function obterChatId() {
+  const urlParams = new URLSearchParams(window.location.search);
+  let id = urlParams.get('chat_id') || urlParams.get('chatId');
+  if (!id && window.Telegram?.WebApp?.initDataUnsafe?.user) {
+    id = window.Telegram.WebApp.initDataUnsafe.user.id;
+  }
+  return id ? String(id) : (typeof chatId !== 'undefined' ? chatId : '');
+}
+
 async function carregarProdutosMinisite() {
   const container = document.getElementById('listaProdutos');
   if (!container) return;
 
+  const idCliente = obterChatId();
+
+  if (!idCliente) {
+    container.innerHTML = `
+      <div class="sem-estoque" style="padding: 20px; text-align: center; color: #fff;">
+        📱 <strong>Acesso pelo Telegram Obrigatório</strong><br><br>
+        Abra a loja através do nosso Bot no Telegram para visualizar os e-SIMs.
+      </div>`;
+    return;
+  }
+
   try {
-    // Requisição protegida enviando o ID do Telegram
-    const res = await fetch(`${URL_BACKEND}/api/produtos-publico?chat_id=${chatId}`);
-    if (!res.ok) throw new Error('Erro na resposta do servidor');
+    const res = await fetch(`${URL_BACKEND}/api/produtos-publico?chat_id=${encodeURIComponent(idCliente)}`);
     
+    if (!res.ok) {
+      container.innerHTML = `
+        <div class="sem-estoque" style="padding: 20px; text-align: center; color: #fff;">
+          ⚠️ <strong>Erro ao carregar catálogo (${res.status})</strong><br><br>
+          Recarregue a página ou tente novamente dentro de instantes.
+        </div>`;
+      return;
+    }
+
     const dados = await res.json();
     const produtos = dados.produtos || [];
     const disponiveis = produtos.filter(p => (p.status || '').toLowerCase() === 'disponivel');
@@ -579,7 +606,7 @@ async function carregarProdutosMinisite() {
       }
 
       let botaoHtml = `<button class="btn-comprar" onclick="comprarItemDirect('${p.id}')">COMPRAR</button>`;
-      if (typeof saldoAtualCliente !== 'undefined' && saldoAtualCliente < preco && chatId) {
+      if (typeof saldoAtualCliente !== 'undefined' && saldoAtualCliente < preco && idCliente) {
         const faltam = preco - saldoAtualCliente;
         botaoHtml = `<button class="btn-recarregar-card" onclick="irParaRecargaComValor(${faltam})">💳 Recarregar R$ ${faltam.toFixed(2)}</button>`;
       }
@@ -600,7 +627,11 @@ async function carregarProdutosMinisite() {
     container.innerHTML = html;
   } catch (err) {
     console.error("Erro ao carregar produtos:", err);
-    container.innerHTML = '<div class="sem-estoque">❌ Erro ao conectar ao servidor. Recarregue a página.</div>';
+    container.innerHTML = `
+      <div class="sem-estoque" style="padding: 20px; text-align: center; color: #fff;">
+        ❌ <strong>Erro de Conexão</strong><br><br>
+        Não foi possível conectar ao servidor. Recarregue a página.
+      </div>`;
   }
 }
 
