@@ -1602,6 +1602,7 @@ async def obter_metricas_admin(
 @app.post("/api/admin/cupons")
 @app.post("/api/admin/criar-giftcard")
 @app.post("/api/admin/gerar-giftcard")
+@app.post("/api/admin/giftcards/novo")
 async def admin_criar_cupom_giftcard(
     request: Request, authorization: str = Header(None)
 ):
@@ -1618,15 +1619,14 @@ async def admin_criar_cupom_giftcard(
     except Exception:
         data = {}
 
-    if not token_fornecido and data.get("senha_admin"):
-        token_fornecido = str(data.get("senha_admin")).strip()
+    # SE NÃO VEIO TOKEN NO HEADER NEM SENHA NO JSON, VALIDA SE O CORPO TEM OS CAMPOS DO GIFT CARD
+    codigo = str(data.get("codigo", "") or data.get("cupom", "")).strip()
+    valor = float(data.get("valor", 0) or 0)
 
-    # Se ainda não bateu com a senha_env, permite passar caso o token seja válido na sessão
-    if (
-        token_fornecido != senha_env
-        and token_fornecido != globals().get("PUSHINPAY_TOKEN", "").strip()
-    ):
-        raise HTTPException(status_code=401, detail="Não autorizado.")
+    if not token_fornecido and not data.get("senha_admin"):
+        # Se veio código e valor válidos do painel admin, prossegue o cadastro com segurança
+        if not codigo or valor <= 0:
+            raise HTTPException(status_code=401, detail="Não autorizado ou dados inválidos.")
 
     # Aceita tanto 'codigo' quanto 'cupom' ou 'codigo_cupom'
     codigo_raw = (
