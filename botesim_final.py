@@ -1296,9 +1296,9 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
 
             if not pix_copia_cola:
                 return {
-                "status": "erro",
-                "detalhe": "Não foi possível gerar a chave PIX no gateway.",
-            }
+                    "status": "erro",
+                    "detalhe": "Não foi possível gerar a chave PIX no gateway.",
+                }
 
         # 📊 REGISTRA MÉTRICA DE PIX GERADO
         try:
@@ -1311,17 +1311,7 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
             "pix_copia_cola": pix_copia_cola,
             "qr_code_url": qr_code_url,
         }
-    except Exception as e:
-        return {
-            "status": "erro",
-            "detalhe": f"Erro de conexão com o gateway PIX: {str(e)}",
-        }
-
-        return {
-                "status": "sucesso",
-                "pix_copia_cola": pix_copia_cola,
-                "qr_code_url": qr_code_url,
-            }
+        
     except Exception as e:
         return {
             "status": "erro",
