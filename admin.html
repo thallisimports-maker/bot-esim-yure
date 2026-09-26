@@ -714,29 +714,6 @@
         elTabelaGifts.innerHTML = htmlG || '<tr><td colspan="4" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum Gift Card cadastrado.</td></tr>';
       }
 
-      // 3. Tabela Histórico de Vendas
-      let htmlVendas = '';
-      vendas.forEach(v => {
-        const dataVenda = v.data ? new Date(v.data).toLocaleString('pt-BR') : '—';
-        const usuario = v.user_id || v.chat_id || '—';
-        const valor = parseFloat(v.preco || v.valor || 0).toFixed(2);
-        const nomeCliente = v.cliente || 'Desconhecido';
-        
-        htmlVendas += `
-          <tr>
-            <td>${dataVenda}</td>
-            <td><strong>${nomeCliente}</strong></td>
-            <td><code>${usuario}</code></td>
-            <td>${v.plano || v.operadora || 'e-SIM'}</td>
-            <td>R$ ${valor}</td>
-          </tr>
-        `;
-      });
-
-      const elTabelaVendas = document.getElementById('tabelaVendas');
-      if (elTabelaVendas) {
-        elTabelaVendas.innerHTML = htmlVendas || '<tr><td colspan="5" style="text-align:center; padding:12px; color:#94a3b8;">Nenhuma venda registrada até o momento.</td></tr>';
-      }
       // 4. Tabela de Clientes, Saldos e Gastos
       const usuarios = dados.usuarios || dados.utilizadores || [];
       let htmlClientes = '';
