@@ -2061,6 +2061,23 @@ async def webhook_pushinpay(request: Request, user_id: str = None, token: str = 
         print(f"Erro crítico no webhook: {e}")
         return {"status": "erro", "detalhe": str(e)}
 
+@app.post("/webhook/telegram")
+async def webhook_telegram(request: Request):
+    try:
+        dados = await request.json()
+        telegram_app = Application.builder().token(TOKEN).build()
+        # Processa a atualização recebida do Telegram
+        update = Update.de_json(dados, telegram_app.bot)
+        
+        # Aqui você pode chamar manualmente o seu handler de start ou deixar o dispatcher tratar
+        if update.message and update.message.text and update.message.text.startswith("/start"):
+            await start(update, None)
+            
+        return {"status": "sucesso"}
+    except Exception as e:
+        print(f"Erro no webhook do Telegram: {e}")
+        return {"status": "erro", "detalhe": str(e)}
+
 # ------------------------------------------------------------------------------
 # 🟢 RUNNER DA APLICAÇÃO
 # ------------------------------------------------------------------------------
