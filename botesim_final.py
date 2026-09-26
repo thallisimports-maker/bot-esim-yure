@@ -423,10 +423,17 @@ async def comando_esims(
 
 async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
+    
+    # 🔍 Regista nos logs do Render o que o botão enviou
+    print(f"📥 Botão clicado no Telegram! Dados recebidos: {query.data if query else 'Nenhum'}")
+    
+    if not query:
+        return
+        
     await query.answer()
-
     user_id = str(query.from_user.id)
     nome_usuario = query.from_user.first_name
+    # ... resto do código da função
 
     dados = carregar_dados()
 
