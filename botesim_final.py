@@ -191,6 +191,13 @@ def inicializar_banco():
             )
         """)
         cur.execute("""
+        CREATE TABLE IF NOT EXISTS pix_mensagens (
+            transaction_id TEXT PRIMARY KEY,
+            chat_id TEXT,
+            message_id BIGINT
+            )
+        """)
+        cur.execute("""
             CREATE TABLE IF NOT EXISTS historico_vendas (
                 id SERIAL PRIMARY KEY,
                 user_id TEXT,
@@ -1648,7 +1655,6 @@ async def comando_pix(
             "Accept": "application/json"
         }
 
-        # ID único de transação para o bot do Telegram
         transaction_id = f"yure_bot_{user_id}_{int(datetime.now().timestamp())}"
 
         body = {
@@ -1663,20 +1669,14 @@ async def comando_pix(
             resp = await client.post(url_mistic, json=body, headers=headers, timeout=15.0)
             resposta_completa = resp.json()
             
-            print(f"🔍 [DEBUG MISTICPAY]: {resposta_completa}")
-
-            # Extrai o subobjeto 'data' retornado pela API da MisticPay
             dados_transacao = resposta_completa.get("data", {})
 
-            # Captura o Pix Copia e Cola e o Base64 do QR Code nas chaves corretas
             pix_copia_cola = (
                 dados_transacao.get("copyPaste") or 
                 dados_transacao.get("pixCopiaECola") or 
                 dados_transacao.get("qrCode") or 
                 dados_transacao.get("emv")
             )
-            
-            qr_code_url = dados_transacao.get("qrCodeBase64", "")
 
             if not pix_copia_cola:
                 await msg_aguarde.edit_text(
@@ -1684,39 +1684,43 @@ async def comando_pix(
                 )
                 return
 
-            if not pix_copia_cola:
-                await msg_aguarde.edit_text(
-                    "❌ Erro ao gerar PIX na MisticPay. Tente novamente mais tarde."
-                )
-                return
+        qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={pix_copia_cola}"
 
-            # Gera a imagem do QR Code via URL pública
-            qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={pix_copia_cola}"
+        texto_resposta = (
+            f"⚡ *COBRANÇA PIX GERADA COM SUCESSO* ⚡\n\n"
+            f"💳 *Valor da Recarga:* `R$ {valor:.2f}`\n\n"
+            f"👇 *Chave Pix Copia e Cola:*\n"
+            f"`{pix_copia_cola}`\n\n"
+            f"📋 _Toque no código acima para o copiar automaticamente e pague no aplicativo do seu banco._\n\n"
+            f"⏳ *Assim que efetuar o pagamento, o saldo será creditado automaticamente na sua conta.*"
+        )
 
-    texto_resposta = (
-        f"⚡ *COBRANÇA PIX GERADA COM SUCESSO* ⚡\n\n"
-        f"💳 *Valor da Recarga:* `R$ {valor:.2f}`\n\n"
-        f"👇 *Chave Pix Copia e Cola:*\n"
-        f"`{pix_copia_cola}`\n\n"
-        f"📋 _Toque no código acima para o copiar automaticamente e pague no aplicativo do seu banco._\n\n"
-        f"⏳ *Assim que efetuar o pagamento, o saldo será creditado automaticamente na sua conta.*"
-    )
+        await msg_aguarde.delete()
 
-            await msg_aguarde.delete()
+        # Envia a foto e guarda a referência da mensagem para poder apagá-la após o pagamento
+        sent_msg = await context.bot.send_photo(
+            chat_id=user_id,
+            photo=qr_code_url,
+            caption=texto_resposta,
+            parse_mode="Markdown",
+        )
 
-            # Envia a foto com o QR Code gerado via URL
-            await context.bot.send_photo(
-                chat_id=user_id,
-                photo=qr_code_url,
-                caption=texto_resposta,
-                parse_mode="Markdown",
+        try:
+            con_db = conectar_banco()
+            cur_db = con_db.cursor()
+            cur_db.execute(
+                "INSERT INTO pix_mensagens (transaction_id, chat_id, message_id) VALUES (%s, %s, %s)",
+                (transaction_id, user_id, sent_msg.message_id)
             )
+            con_db.commit()
+            con_db.close()
+        except Exception as e:
+            print(f"Erro ao salvar message_id do pix: {e}")
 
-            # 📊 REGISTRA MÉTRICA DE PIX GERADO NO BOT
-            try:
-                registrar_evento_funil(user_id, "pix_gerado")
-            except Exception:
-                pass
+        try:
+            registrar_evento_funil(user_id, "pix_gerado")
+        except Exception:
+            pass
 
     except ValueError:
         await update.message.reply_text(
@@ -1725,7 +1729,7 @@ async def comando_pix(
         )
     except Exception as e:
         await update.message.reply_text(f"❌ Falha ao processar PIX: {str(e)}")
-
+        
 @app.post("/api/admin/gerar-pix-site")
 async def gerar_pix_site(payload: GerarPixPayload):
     try:
