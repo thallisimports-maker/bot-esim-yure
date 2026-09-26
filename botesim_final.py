@@ -189,7 +189,15 @@ def inicializar_banco():
                 gb TEXT DEFAULT 'Padrão'
             )
         """)
-        
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS historico_vendas (
+                id SERIAL PRIMARY KEY,
+                user_id TEXT,
+                plano TEXT,
+                preco REAL,
+                data TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         cur.execute("""
             CREATE TABLE IF NOT EXISTS acessos_miniapp (
                 id SERIAL PRIMARY KEY, 
