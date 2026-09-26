@@ -809,18 +809,18 @@ async def obter_dados_admin(
             print(f"Erro vendas sql: {e}")
 
         # 👥 6. LEITURA DE USUÁRIOS E SALDOS DA CARTEIRA
-    try:
-        cur.execute("SELECT chat_id, first_name, username, saldo, data_criacao FROM carteira ORDER BY data_criacao DESC")
-        for row in cur.fetchall():
-            usuarios.append({
-                "chat_id": str(row[0]),
-                "nome": str(row[1] or "Desconhecido"),
-                "username": str(row[2] or ""),
-                "saldo": float(row[3] or 0.0),
-                "data_criacao": str(row[4]) # 👈 A data convertida para string corrige o erro do painel
-            })
-    except Exception as e:
-        print(f"Erro carteira sql: {e}")
+        try:
+            cur.execute("SELECT chat_id, first_name, username, saldo, data_criacao FROM carteira ORDER BY data_criacao DESC")
+            for row in cur.fetchall():
+                usuarios.append({
+                    "chat_id": str(row[0]),
+                    "nome": str(row[1] or "Desconhecido"),
+                    "username": str(row[2] or ""),
+                    "saldo": float(row[3] or 0.0),
+                    "data_criacao": str(row[4])
+                })
+        except Exception as e:
+            print(f"Erro carteira sql: {e}")
 
         # 🔍 7. LEITURA DE LOGS DO FUNIL (Ações detalhadas com Nomes e @username)
         try:
