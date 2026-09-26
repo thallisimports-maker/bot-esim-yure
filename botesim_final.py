@@ -83,15 +83,15 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 # ------------------------------------------------------------------------------
 # 🔒 CREDENCIAIS E CONSTANTES DE PRODUÇÃO
 # ------------------------------------------------------------------------------
-TOKEN = "8826676433:AAEjicVbEpow_dbalsja15hFYCghRwAq0D0"
-PUSHINPAY_TOKEN = "71078|M1MASBFV155gtnKBttSvkE6u8bD8kSBFjAMLwOXa70ca5a25"
+TOKEN = os.environ.get("TOKEN", "")
+PUSHINPAY_TOKEN = os.environ.get("PUSHINPAY_TOKEN", "")
 URL_BACKEND = "https://bot-esim-yure.onrender.com"
 MODO_MANUTENCAO = True  # Mude para True quando for mexer no código
 
 # 🛡️ CREDENCIAIS DE SEGURANÇA DO PAINEL ADMIN
-USUARIO_ADMIN_MINISITE = "aguia2026"
-SENHA_ADMIN_MINISITE = "yuresantos26"
-telegram_app = None
+USUARIO_ADMIN_MINISITE = os.environ.get("USUARIO_ADMIN_MINISITE", "aguia2026")
+SENHA_ADMIN_SEGURA = os.environ.get("SENHA_ADMIN_SEGURA", "yuresantos26")
+SENHA_ADMIN_MINISITE = SENHA_ADMIN_SEGURA
 
 # LINK DIRETO DA SUA LOGO NO GITHUB
 LOGO_URL = "https://raw.githubusercontent.com/thallisimports-maker/bot-esim-yure/main/logo.png"
