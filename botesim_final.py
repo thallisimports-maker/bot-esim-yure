@@ -1545,24 +1545,28 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(url_mistic, json=body, headers=headers, timeout=15.0)
-            data = resp.json()
+            resposta_completa = resp.json()
             
-            # 🔍 Imprime no painel do Render a resposta exata da MisticPay
-            print(f"🔍 [DEBUG MISTICPAY RESPOSTA]: {data}")
+            print(f"🔍 [DEBUG MISTICPAY]: {resposta_completa}")
 
-            # Captura os dados de Pix Copia e Cola em várias chaves possíveis
+            # Extrai o subobjeto 'data' retornado pela API da MisticPay
+            dados_transacao = resposta_completa.get("data", {})
+
+            # Captura o Pix Copia e Cola e o Base64 do QR Code nas chaves corretas
             pix_copia_cola = (
-                data.get("pixCopiaECola") or 
-                data.get("qrCode") or 
-                data.get("emv") or 
-                data.get("pix_copia_cola") or
-                data.get("code") or
-                data.get("pix") or
-                data.get("payload") or
-                data.get("copyPaste") or
-                (data.get("data") and (data.get("data").get("pixCopiaECola") or data.get("data").get("qrCode"))) or
-                (data.get("response") and (data.get("response").get("pixCopiaECola") or data.get("response").get("qrCode")))
+                dados_transacao.get("copyPaste") or 
+                dados_transacao.get("pixCopiaECola") or 
+                dados_transacao.get("qrCode") or 
+                dados_transacao.get("emv")
             )
+            
+            qr_code_url = dados_transacao.get("qrCodeBase64", "")
+
+            if not pix_copia_cola:
+                await msg_aguarde.edit_text(
+                    "❌ Erro: Chave Pix não encontrada na resposta da MisticPay."
+                )
+                return
             
             qr_code_url = (
                 data.get("qrCodeBase64") or 
@@ -1657,24 +1661,28 @@ async def comando_pix(
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(url_mistic, json=body, headers=headers, timeout=15.0)
-            data = resp.json()
+            resposta_completa = resp.json()
             
-            # 🔍 Imprime no painel do Render a resposta exata da MisticPay
-            print(f"🔍 [DEBUG MISTICPAY RESPOSTA]: {data}")
+            print(f"🔍 [DEBUG MISTICPAY]: {resposta_completa}")
 
-            # Captura os dados de Pix Copia e Cola em várias chaves possíveis
+            # Extrai o subobjeto 'data' retornado pela API da MisticPay
+            dados_transacao = resposta_completa.get("data", {})
+
+            # Captura o Pix Copia e Cola e o Base64 do QR Code nas chaves corretas
             pix_copia_cola = (
-                data.get("pixCopiaECola") or 
-                data.get("qrCode") or 
-                data.get("emv") or 
-                data.get("pix_copia_cola") or
-                data.get("code") or
-                data.get("pix") or
-                data.get("payload") or
-                data.get("copyPaste") or
-                (data.get("data") and (data.get("data").get("pixCopiaECola") or data.get("data").get("qrCode"))) or
-                (data.get("response") and (data.get("response").get("pixCopiaECola") or data.get("response").get("qrCode")))
+                dados_transacao.get("copyPaste") or 
+                dados_transacao.get("pixCopiaECola") or 
+                dados_transacao.get("qrCode") or 
+                dados_transacao.get("emv")
             )
+            
+            qr_code_url = dados_transacao.get("qrCodeBase64", "")
+
+            if not pix_copia_cola:
+                await msg_aguarde.edit_text(
+                    "❌ Erro: Chave Pix não encontrada na resposta da MisticPay."
+                )
+                return
 
             if not pix_copia_cola:
                 await msg_aguarde.edit_text(
