@@ -794,7 +794,12 @@ async def obter_dados_admin(
 
         # 🛒 5. LEITURA DO HISTÓRICO DE VENDAS DO BANCO
         try:
-            cur.execute("SELECT id, user_id, plano, preco, data FROM historico_vendas ORDER BY id DESC")
+            cur.execute("""
+                SELECT h.id, h.user_id, h.plano, h.preco, h.data, c.first_name 
+                FROM historico_vendas h
+                LEFT JOIN carteira c ON h.user_id = c.chat_id
+                ORDER BY h.id DESC
+            """)
             for row in cur.fetchall():
                 vendas.append({
                     "id": row[0],
@@ -803,7 +808,8 @@ async def obter_dados_admin(
                     "plano": str(row[2]),
                     "preco": float(row[3] or 0.0),
                     "valor": float(row[3] or 0.0),
-                    "data": str(row[4])
+                    "data": str(row[4]),
+                    "cliente": str(row[5] or "Desconhecido")
                 })
         except Exception as e:
             print(f"Erro vendas sql: {e}")
