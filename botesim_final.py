@@ -1693,13 +1693,14 @@ async def comando_pix(
             # Gera a imagem do QR Code via URL pública
             qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={pix_copia_cola}"
 
-            texto_resposta = (
-                f"✅ **PIX GERADO COM SUCESSO!**\n\n"
-                f"💰 **Valor:** R$ {valor:.2f}\n\n"
-                f"👇 **Chave PIX Copia e Cola:**\n"
-                f"`{pix_copia_cola}`\n\n"
-                f"*(Copie o código acima e pague no seu aplicativo do banco)*"
-            )
+    texto_resposta = (
+        f"⚡ *COBRANÇA PIX GERADA COM SUCESSO* ⚡\n\n"
+        f"💳 *Valor da Recarga:* `R$ {valor:.2f}`\n\n"
+        f"👇 *Chave Pix Copia e Cola:*\n"
+        f"`{pix_copia_cola}`\n\n"
+        f"📋 _Toque no código acima para o copiar automaticamente e pague no aplicativo do seu banco._\n\n"
+        f"⏳ *Assim que efetuar o pagamento, o saldo será creditado automaticamente na sua conta.*"
+    )
 
             await msg_aguarde.delete()
 
