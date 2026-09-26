@@ -1408,7 +1408,7 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
 
         body = {
             "value": int(round(valor * 100)),  # Valor em centavos
-            "webhook_url": f"{URL_BACKEND}/webhook/pushinpay?user_id={user_id}"
+            "webhook_url": f"{URL_BACKEND}/webhook/pushinpay?user_id={user_id}&token=YurePixSeguro2026*"
         }
 
         async with httpx.AsyncClient() as client:
