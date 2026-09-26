@@ -1507,7 +1507,6 @@ class PayloadRecargaMiniApp(BaseModel):
     chat_id: str
     valor: float
 
-
 @app.post("/api/gerar-pix-miniapp")
 async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
     user_id = str(payload.chat_id).strip()
@@ -1519,41 +1518,62 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
         )
 
     try:
-        token_pushin = globals().get("PUSHINPAY_TOKEN", "")
+        url_mistic = "https://api.misticpay.com/api/transactions/create"
+        
+        # Obtém as credenciais de forma segura pelas Variáveis de Ambiente do Render
+        client_id = os.environ.get("MISTICPAY_CI", "")
+        client_secret = os.environ.get("MISTICPAY_CS", "")
 
         headers = {
-            "Authorization": f"Bearer {token_pushin}",
+            "ci": client_id,
+            "cs": client_secret,
             "Content-Type": "application/json",
-            "Accept": "application/json",
+            "Accept": "application/json"
         }
 
+        # ID único de transação para rastreamento interno
+        transaction_id = f"yure_{user_id}_{int(datetime.now().timestamp())}"
+
         body = {
-            "value": int(round(valor * 100)),  # Valor em centavos
-            "webhook_url": f"{URL_BACKEND}/webhook/pushinpay?user_id={user_id}&token=YurePixSeguro2026*"
+            "amount": valor,
+            "payerName": f"Cliente Telegram {user_id}",
+            "payerDocument": "00000000000",  # CPF padrão caso não seja recolhido no MiniApp
+            "transactionId": transaction_id,
+            "description": f"Recarga Yure eSIMS - R$ {valor:.2f}"
         }
 
         async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                "https://api.pushinpay.com.br/api/pix/cashIn",
-                json=body,
-                headers=headers,
-                timeout=10.0,
-            )
+            resp = await client.post(url_mistic, json=body, headers=headers, timeout=15.0)
             data = resp.json()
 
-            pix_copia_cola = data.get("qr_code") or data.get("pix_copia_cola")
-            qr_code_url = data.get("qr_code_base64") or ""
+            # Captura os dados de Pix Copia e Cola e QR Code do retorno da MisticPay
+            # (Ajuste as chaves abaixo caso a documentação oficial retorne nomes específicos)
+            pix_copia_cola = (
+                data.get("pixCopiaECola") or 
+                data.get("qrCode") or 
+                data.get("emv") or 
+                data.get("pix_copia_cola") or
+                data.get("code")
+            )
+            
+            qr_code_url = (
+                data.get("qrCodeBase64") or 
+                data.get("qr_code_base64") or 
+                data.get("encodedImage") or
+                ""
+            )
 
             if qr_code_url and not qr_code_url.startswith("data:image"):
                 qr_code_url = f"data:image/png;base64,{qr_code_url}"
 
             if not pix_copia_cola:
+                print(f"⚠️ Resposta da MisticPay: {data}")
                 return {
                     "status": "erro",
-                    "detalhe": "Não foi possível gerar a chave PIX no gateway.",
+                    "detalhe": "Não foi possível gerar a chave PIX na MisticPay.",
                 }
 
-        # 📊 REGISTRA MÉTRICA DE PIX GERADO
+        # 📊 REGISTRA MÉTRICA DE PIX GERADO NO FUNIL
         try:
             registrar_evento_funil(user_id, "pix_gerado")
         except Exception:
@@ -1568,9 +1588,8 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
     except Exception as e:
         return {
             "status": "erro",
-            "detalhe": f"Erro de conexão com o gateway PIX: {str(e)}",
+            "detalhe": f"Erro de conexão com a MisticPay: {str(e)}",
         }
-
 
 # 2. COMANDO /pix DE VOLTA PARA O BOT TELEGRAM
 async def comando_pix(
