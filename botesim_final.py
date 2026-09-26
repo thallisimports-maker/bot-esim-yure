@@ -610,7 +610,8 @@ async def receber_dados_webapp(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global telegram_app = Application.builder().token(TOKEN).build()
+    global telegram_app
+    telegram_app = Application.builder().token(TOKEN).build()
 
     telegram_app.add_handler(CommandHandler("start", start))
     telegram_app.add_handler(CommandHandler("saldo", comando_saldo))
