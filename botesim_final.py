@@ -657,7 +657,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-SENHA_ADMIN_SEGURA = "Yuresantos26*"
+SENHA_ADMIN_SEGURA = "yuresantos26"
 
 # 1. ROTA DE LOGIN DO ADMIN
 class AdminLoginPayload(BaseModel):
