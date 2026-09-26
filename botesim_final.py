@@ -473,7 +473,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             "produto_id": produto.get("id"),
             "operadora": produto.get("operadora"),
             "valor": preco,
-            "data": "2026-09-20"
+            "data": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
         dados.setdefault("vendas", []).append(registro_venda)
 
