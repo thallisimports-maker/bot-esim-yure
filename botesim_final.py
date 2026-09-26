@@ -1005,6 +1005,14 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
         "UPDATE carteira SET saldo = ? WHERE chat_id = ?",
         (novo_saldo, user_id),
     )
+    
+    # 🛒 Regista a venda oficialmente no histórico do banco para o Painel Admin
+    try:
+        nome_plano = f"{produto.get('operadora', '')} {produto.get('plano', '')}"
+        cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (?, ?, ?)", (user_id, nome_plano, preco))
+    except Exception as e:
+        print(f"Erro ao registrar histórico no banco: {e}")
+
     con.commit()
     con.close()
 
@@ -1023,13 +1031,47 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
     salvar_dados(dados)
     salvar_dados_no_github(dados)
 
+    # 🚀 ENVIO AUTOMÁTICO DO QR CODE NO TELEGRAM DO CLIENTE
+    imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
+    descricao_extra = produto.get("descricao", "")
+    
+    try:
+        url_telegram_photo = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+        caption_text = (
+            f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
+            f"📱 **Operadora:** {produto.get('operadora')}\n"
+            f"📦 **Plano:** {produto.get('plano')}\n"
+            f"💰 **Valor:** R$ {preco:.2f}\n\n"
+            f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se abaixo:'}"
+        )
+
+        if imagem_qr and imagem_qr.startswith("http"):
+            payload_photo = {
+                "chat_id": user_id,
+                "photo": imagem_qr,
+                "caption": caption_text,
+                "parse_mode": "Markdown"
+            }
+            async with httpx.AsyncClient() as client:
+                await client.post(url_telegram_photo, json=payload_photo, timeout=10.0)
+        else:
+            url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+            async with httpx.AsyncClient() as client:
+                await client.post(url_telegram_msg, json={
+                    "chat_id": user_id,
+                    "text": caption_text + "\n\n*(QR Code em processamento)*",
+                    "parse_mode": "Markdown"
+                }, timeout=10.0)
+    except Exception as err_tg:
+        logging.error(f"Erro ao enviar foto no Telegram via miniapp: {err_tg}")
+
     return {
         "status": "sucesso",
         "mensagem": "Compra realizada com sucesso!",
         "operadora": produto.get("operadora"),
         "plano": produto.get("plano"),
         "preco": preco,
-        "imagem_qr": produto.get("imagem_qr", ""),
+        "imagem_qr": imagem_qr,
         "novo_saldo": novo_saldo,
     }
 
