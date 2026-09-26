@@ -523,21 +523,21 @@ async def receber_dados_webapp(
             salvar_dados_no_github(dados)
 
             imagem_qr = produto.get("imagem_qr", "")
-            legenda = (
-                f"✅ **COMPRA REALIZADA COM SUCESSO VIA MINIAPP!**\n\n"
-                f"📱 **Operadora:** {produto.get('operadora')}\n"
-                f"📦 **Plano:** {produto.get('plano')}\n"
-                f"💰 **Valor:** R$ {preco:.2f}\n\n"
-                f"Seu QR Code de ativação encontra-se abaixo:"
-            )
+        legenda = (
+            f"✅ **COMPRA REALIZADA COM SUCESSO VIA MINIAPP!**\n\n"
+            f"📱 **Operadora:** {produto.get('operadora')}\n"
+            f"📋 **Plano:** {produto.get('plano')}\n"
+            f"💰 **Valor:** R$ {preco:.2f}\n\n"
+            f"👆 *Seu QR Code de ativação encontra-se acima (na imagem).* Basta apontar a câmara para ele!"
+        )
 
-            if imagem_qr and imagem_qr.startswith("http"):
-                await context.bot.send_photo(
-                    chat_id=user_id,
-                    photo=imagem_qr,
-                    caption=legenda,
-                    parse_mode="Markdown",
-                )
+        if imagem_qr and imagem_qr.startswith("http"):
+            await context.bot.send_photo(
+                chat_id=user_id,
+                photo=imagem_qr,
+                caption=legenda,
+                parse_mode="Markdown",
+            )
             else:
                 await context.bot.send_message(
                     chat_id=user_id,
