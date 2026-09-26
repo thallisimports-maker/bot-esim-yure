@@ -679,12 +679,17 @@ async def lifespan(app: FastAPI):
     telegram_app.add_handler(CommandHandler("esims", comando_esims))
     telegram_app.add_handler(CallbackQueryHandler(responder_botoes))
     telegram_app.add_handler(CommandHandler("pix", comando_pix))
-    
-    # 👇 A LINHA MÁGICA QUE ATIVA AS COMPRAS DO MINIAPP 👇
     telegram_app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, receber_dados_webapp))
 
     await telegram_app.initialize()
     await telegram_app.start()
+
+    # 🚨 FORÇA O TELEGRAM A ENTREGAR OS CLIQUES DOS BOTÕES
+    print("🔧 Configurando permissões do Webhook...")
+    await telegram_app.bot.set_webhook(
+        url=f"{URL_BACKEND}/webhook/telegram",
+        allowed_updates=["message", "callback_query"]
+    )
 
     comandos_menu = [
             BotCommand("start", "👑 Menu Principal e Loja"),
@@ -697,7 +702,6 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Removido o updater.stop() que causava o erro vermelho no Render
     await telegram_app.stop()
 
 # ------------------------------------------------------------------------------
