@@ -1494,7 +1494,7 @@ async def comando_pix(
 
         body = {
             "value": int(round(valor * 100)),
-            "webhook_url": "https://bot-esim-yure.onrender.com/webhook/pushinpay",
+            "webhook_url": f"https://bot-esim-yure.onrender.com/webhook/pushinpay?user_id={user_id}&token=YurePixSeguro2026*",
         }
 
         async with httpx.AsyncClient() as client:
