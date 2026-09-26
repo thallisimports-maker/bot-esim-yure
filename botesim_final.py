@@ -1560,7 +1560,7 @@ async def gerar_pix_site(payload: GerarPixPayload):
         }
         body = {
             "value": int(payload.valor * 100),
-            "webhook_url": "https://bot-esim-yure.onrender.com/webhook/pushinpay"
+            "webhook_url": "https://bot-esim-yure.onrender.com/webhook/pushinpay?token=YurePixSeguro2026*"
         }
         res = requests.post(url_pushin, json=body, headers=headers, timeout=15)
         dados = res.json()
