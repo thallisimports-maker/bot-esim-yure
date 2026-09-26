@@ -2138,86 +2138,39 @@ async def webhook_misticpay(request: Request, token: str = None):
             con = conectar_banco()
             cur = con.cursor()
             try:
-                # Insere o utilizador se não existir, ou atualiza o saldo se já existir
+                # 1. Insere o utilizador se não existir, ou atualiza o saldo se já existir
                 cur.execute(
                     "INSERT INTO carteira (chat_id, saldo) VALUES (%s, %s) ON CONFLICT (chat_id) DO UPDATE SET saldo = carteira.saldo + %s",
                     (str(user_id), valor_pago, valor_pago)
                 )
                 
-                # Regista no funil de métricas
-                cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, 'compra_concluida')", (str(user_id),))
+                # 2. Regista no funil de métricas
+                cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (?, 'compra_concluida')", (str(user_id),))
                 con.commit()
                 
-                # Envia notificação automática no Telegram para o utilizador
-                url_telegram = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-                msg = f"✅ **PIX DE R$ {valor_pago:.2f} APROVADO!**\nO seu saldo já foi creditado na carteira. Volte ao MiniApp para resgatar o seu e-SIM!"
+                # 🗑️ 3. Apaga a mensagem antiga do Pix gerado no chat do Telegram
+                try:
+                    cur.execute("SELECT message_id FROM pix_mensagens WHERE chat_id = %s ORDER BY transaction_id DESC LIMIT 1", (str(user_id),))
+                    row_msg = cur.fetchone()
+                    if row_msg and row_msg["message_id"]:
+                        async with httpx.AsyncClient() as client:
+                            await client.post(
+                                f"https://api.telegram.org/bot{TOKEN}/deleteMessage",
+                                json={"chat_id": str(user_id), "message_id": row_msg["message_id"]},
+                                timeout=5.0
+                            )
+                        cur.execute("DELETE FROM pix_mensagens WHERE chat_id = %s", (str(user_id),))
+                        con.commit()
+                except Exception as err_del:
+                    print(f"Aviso ao apagar mensagem antiga do Pix: {err_del}")
                 
-                async with httpx.AsyncClient() as client:
-                    await client.post(url_telegram, json={"chat_id": str(user_id), "text": msg, "parse_mode": "Markdown"}, timeout=10.0)
-                    
-                print(f"✅ Sucesso absoluto: Crédito de R$ {valor_pago:.2f} aplicado ao utilizador {user_id} via MisticPay")
-            except Exception as e:
-                print(f"Erro ao processar saldo do webhook MisticPay no banco: {e}")
-            finally:
-                con.close()
-
-    return {"status": "sucesso"}
-    
-@app.post("/webhook/misticpay")
-async def webhook_misticpay(request: Request, token: str = None):
-    try:
-        dados = await request.json()
-        print(f"📥 [WEBHOOK MISTICPAY RECEBIDO]: {dados}")
-    except Exception as e:
-        print(f"Erro ao ler JSON do webhook MisticPay: {e}")
-        return {"status": "erro", "detalhe": str(e)}
-
-    # A MisticPay pode enviar os dados na raiz ou encapsulados num objeto 'data'
-    payload_dados = dados.get("data") if isinstance(dados.get("data"), dict) else dados
-
-    # Extrai o status, o id da transação e o valor
-    status = str(payload_dados.get("status") or payload_dados.get("state") or "").lower()
-    transaction_id = str(payload_dados.get("transactionId") or payload_dados.get("external_reference") or payload_dados.get("id") or "")
-    valor_raw = payload_dados.get("amount") or payload_dados.get("value") or 0
-
-    print(f"🔍 [DEBUG WEBHOOK] Status detetado: '{status}' | Transação: {transaction_id} | Valor: {valor_raw}")
-
-    if status in ["paid", "approved", "concluido", "pago", "completed", "success", "confirmed", "completo"]:
-        user_id = ""
-        if "yure_" in transaction_id:
-            partes = transaction_id.split("_")
-            if len(partes) >= 3 and partes[1] == "bot":
-                user_id = partes[2]
-            elif len(partes) >= 2:
-                user_id = partes[1]
-
-        if not user_id:
-            user_id = str(payload_dados.get("user_id") or payload_dados.get("chatId") or "")
-
-        try:
-            valor_pago = float(valor_raw)
-            if valor_pago > 100:  # Salvaguarda caso venha em cêntimos
-                valor_pago = valor_pago / 100.0
-        except Exception:
-            valor_pago = 0.0
-
-        if user_id and valor_pago > 0:
-            con = conectar_banco()
-            cur = con.cursor()
-            try:
-                # 💡 SOLUÇÃO: Insere o utilizador se não existir, ou atualiza o saldo se já existir
-                cur.execute(
-                    "INSERT INTO carteira (chat_id, saldo) VALUES (%s, %s) ON CONFLICT (chat_id) DO UPDATE SET saldo = carteira.saldo + %s",
-                    (str(user_id), valor_pago, valor_pago)
+                # 4. Envia a nova notificação elegante de pagamento aprovado
+                url_telegram = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+                msg = (
+                    f"✨ *PAGAMENTO APROVADO COM SUCESSO!* ✨\n\n"
+                    f"💳 *Valor Creditado:* `R$ {valor_pago:.2f}`\n\n"
+                    f"🚀 O seu saldo já está disponível na carteira! Pode resgatar o seu e-SIM comodamente através do **MiniApp** ou diretamente aqui pelo **chat do bot**."
                 )
-                
-                # Regista no funil de métricas
-                cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, 'compra_concluida')", (str(user_id),))
-                con.commit()
-                
-                # Envia notificação automática no Telegram para o utilizador
-                url_telegram = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-                msg = f"✅ **PIX DE R$ {valor_pago:.2f} APROVADO!**\nO seu saldo já foi creditado na carteira. Volte ao MiniApp para resgatar o seu e-SIM!"
                 
                 async with httpx.AsyncClient() as client:
                     await client.post(url_telegram, json={"chat_id": str(user_id), "text": msg, "parse_mode": "Markdown"}, timeout=10.0)
