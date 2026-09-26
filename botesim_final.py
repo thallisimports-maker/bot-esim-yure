@@ -710,11 +710,20 @@ async def obter_dados_admin(
         if os.path.exists("estoque.json"):
             with open("estoque.json", "r", encoding="utf-8") as f:
                 dados_json = json.load(f)
-                if isinstance(dados_json, list):
-                    produtos.extend(dados_json)
-                elif isinstance(dados_json, dict):
-                    itens = dados_json.get("produtos") or dados_json.get("estoque") or []
-                    produtos.extend(itens)
+                if isinstance(dados_json, dict):
+                    produtos.extend(dados_json.get("produtos", []))
+                    # 👇 AGORA ELE LÊ AS VENDAS SALVAS NO ARQUIVO 👇
+                    for v in dados_json.get("vendas", []):
+                        vendas.append({
+                            "id": v.get("id", "json"),
+                            "user_id": v.get("user_id"),
+                            "chat_id": v.get("user_id"),
+                            "cliente": v.get("cliente", "Cliente"),
+                            "plano": f"{v.get('operadora', '')} {v.get('plano', '')}",
+                            "preco": float(v.get("valor", 0)),
+                            "valor": float(v.get("valor", 0)),
+                            "data": str(v.get("data", ""))
+                        })
     except Exception as e:
         print(f"Aviso ao ler estoque.json: {e}")
 
@@ -783,35 +792,35 @@ async def obter_dados_admin(
         except Exception as e:
             print(f"Erro ao ler giftcards: {e}")
 
-        # 🛒 5. LEITURA DO HISTÓRICO DE VENDAS
-        try:
-            cur.execute("SELECT id, user_id, plano, preco, data FROM historico_vendas ORDER BY id DESC")
-            for row in cur.fetchall():
-                vendas.append({
-                    "id": row[0],
-                    "user_id": row[1],
-                    "chat_id": row[1],
-                    "plano": row[2],
-                    "preco": float(row[3] or 0.0),
-                    "valor": float(row[3] or 0.0),
-                    "data": str(row[4])
-                })
-        except Exception:
-            pass
+        # 🛒 5. LEITURA DO HISTÓRICO DE VENDAS DO BANCO
+    try:
+        cur.execute("SELECT id, user_id, plano, preco, data FROM historico_vendas ORDER BY id DESC")
+        for row in cur.fetchall():
+            vendas.append({
+                "id": row[0],
+                "user_id": str(row[1]),
+                "chat_id": str(row[1]),
+                "plano": str(row[2]),
+                "preco": float(row[3] or 0.0),
+                "valor": float(row[3] or 0.0),
+                "data": str(row[4])
+            })
+    except Exception as e:
+        print(f"Erro vendas sql: {e}")
 
-        # 👥 6. LEITURA DE USUÁRIOS (Nomes e Saldos da Carteira)
-        try:
-            cur.execute("SELECT chat_id, first_name, username, saldo, data_criacao FROM carteira ORDER BY data_criacao DESC")
-            for row in cur.fetchall():
-                usuarios.append({
-                    "chat_id": row[0],
-                    "nome": row[1] or "Desconhecido",
-                    "username": row[2] or "",
-                    "saldo": float(row[3] or 0.0),
-                    "data_criacao": row[4]
-                })
-        except Exception:
-            pass
+        # 👥 6. LEITURA DE USUÁRIOS E SALDOS DA CARTEIRA
+    try:
+        cur.execute("SELECT chat_id, first_name, username, saldo, data_criacao FROM carteira ORDER BY data_criacao DESC")
+        for row in cur.fetchall():
+            usuarios.append({
+                "chat_id": str(row[0]),
+                "nome": str(row[1] or "Desconhecido"),
+                "username": str(row[2] or ""),
+                "saldo": float(row[3] or 0.0),
+                "data_criacao": str(row[4]) # 👈 A data convertida para string corrige o erro do painel
+            })
+    except Exception as e:
+        print(f"Erro carteira sql: {e}")
 
         # 🔍 7. LEITURA DE LOGS DO FUNIL (Ações detalhadas com Nomes e @username)
         try:
