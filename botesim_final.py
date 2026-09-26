@@ -86,7 +86,7 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 TOKEN = os.environ.get("TOKEN", "")
 PUSHINPAY_TOKEN = os.environ.get("PUSHINPAY_TOKEN", "")
 URL_BACKEND = "https://bot-esim-yure.onrender.com"
-MODO_MANUTENCAO = True  # Mude para True quando for mexer no código
+MODO_MANUTENCAO = False  # Mude para True quando for mexer no código
 
 # 🛡️ CREDENCIAIS DE SEGURANÇA DO PAINEL ADMIN
 USUARIO_ADMIN_MINISITE = os.environ.get("USUARIO_ADMIN_MINISITE", "aguia2026")
@@ -104,8 +104,7 @@ import psycopg2
 # 🗄️ INICIALIZAÇÃO DO BANCO DE DADOS POSTGRESQL (NUVEM)
 # ------------------------------------------------------------------------------
 # ⚠️ COLE AQUI O SEU LINK COM A SENHA REAL:
-DATABASE_URL = "postgresql://postgres.sagiihnsvovyblhkyqlf:EwU6T4Ako0xN1JGR@aws-0-ca-central-1.pooler.supabase.com:5432/postgres"
-
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 class SmartRow:
     def __init__(self, t_row, c_names):
         self.t_row = t_row
