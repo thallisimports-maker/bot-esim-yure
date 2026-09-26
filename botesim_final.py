@@ -793,7 +793,7 @@ async def obter_dados_admin(
             print(f"Erro ao ler giftcards: {e}")
 
         # 🛒 5. LEITURA DO HISTÓRICO DE VENDAS DO BANCO
-    try:
+        try:
         cur.execute("SELECT id, user_id, plano, preco, data FROM historico_vendas ORDER BY id DESC")
         for row in cur.fetchall():
             vendas.append({
@@ -1995,24 +1995,29 @@ async def debug_tabelas():
         con.close()
 
 @app.post("/webhook/pushinpay")
-async def webhook_pushinpay(request: Request, user_id: str = None):
+async def webhook_pushinpay(request: Request, user_id: str = None, token: str = None):
+    # 🔒 TRAVA DE SEGURANÇA: Rejeita se o token for inválido
+    TOKEN_SECRETO = "YurePixSeguro2026*"
+    if token != TOKEN_SECRETO:
+        print("⚠️ TENTATIVA DE INVASÃO BLOQUEADA! IP não autorizado tentou injetar saldo.")
+        raise HTTPException(status_code=403, detail="Acesso negado.")
+
     try:
         dados = await request.json()
-        print(f"Webhook recebido da PushinPay: {dados} | User ID na URL: {user_id}")
-        
-        # O status pode vir como 'paid', 'approved', 'concluido' ou 'pago'
+        # Verifica se o gateway enviou o status de pago
         status = str(dados.get("status", "")).lower()
         
-        # Se não veio o user_id na query string, tenta procurar dentro do payload (caso o gateway suporte custom_fields)
+        # Se não veio o user_id na query string, tenta procurar dentro do payload
         if not user_id:
             user_id = dados.get("external_reference") or dados.get("user_id")
 
+        # Se foi pago e temos a identificação do cliente
         if status in ["paid", "approved", "concluido", "pago"] and user_id:
-            # O valor costuma vir em centavos ou direto em reais dependendo da notificação
+            # O valor costuma vir em centavos
             valor_raw = dados.get("value") or dados.get("amount") or 0
             try:
                 valor_pago = float(valor_raw)
-                if valor_pago > 100:  # Se vier em centavos (ex: 2000 para R$ 20,00)
+                if valor_pago > 100:  
                     valor_pago = valor_pago / 100.0
             except Exception:
                 valor_pago = 0.0
@@ -2021,27 +2026,22 @@ async def webhook_pushinpay(request: Request, user_id: str = None):
                 con = conectar_banco()
                 cur = con.cursor()
                 try:
-                    # 1. Adiciona o saldo na carteira do usuário no Postgres/Supabase
-                    cur.execute(
-                        "UPDATE carteira SET saldo = saldo + %s WHERE chat_id = %s", 
-                        (valor_pago, str(user_id))
-                    )
+                    # 1. Adiciona o saldo na carteira
+                    cur.execute("UPDATE carteira SET saldo = saldo + ? WHERE chat_id = ?", (valor_pago, str(user_id)))
                     
-                    # 2. Registra a conversão nas métricas do funil
-                    cur.execute(
-                        "INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, 'compra_concluida')", 
-                        (str(user_id),)
-                    )
+                    # 2. Regista a conversão nas métricas
+                    cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (?, 'compra_concluida')", (str(user_id),))
                     con.commit()
                     
-                    # 3. Envia a notificação automática no Telegram para o cliente
+                    # 3. Envia a notificação automática no Telegram para o cliente (Mensagem Original Restaurada)
                     url_telegram = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-                    msg = f"✅ **PIX DE R$ {valor_pago:.2f} APROVADO!**\nO seu saldo já foi creditado na carteira. Volte ao MiniApp para resgatar o seu e-SIM!"
+                    msg = f"✅ **PIX DE R$ {valor_pago:.2f} APROVADO!**\nSeu saldo já está na carteira. Volte ao MiniApp para resgatar o seu e-SIM!"
                     
+                    # Envio assíncrono para não travar o bot
                     async with httpx.AsyncClient() as client:
                         await client.post(url_telegram, json={"chat_id": str(user_id), "text": msg, "parse_mode": "Markdown"}, timeout=10.0)
                         
-                    print(f"Sucesso: Crédito de R$ {valor_pago:.2f} aplicado ao usuário {user_id}")
+                    print(f"Sucesso: Crédito de R$ {valor_pago:.2f} aplicado ao utilizador {user_id}")
                 except Exception as e:
                     print(f"Erro ao processar saldo do PIX no banco: {e}")
                 finally:
