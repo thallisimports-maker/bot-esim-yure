@@ -588,16 +588,39 @@
 
     // 5. ATUALIZAR TABELAS E CARDS DO PAINEL
     function atualizarPainel(dados) {
-      if (!dados) return;
-      // Preencher a tabela de logs do funil com nomes e horas
+    if (!dados) return;
+
+    // --- 1. ATUALIZAR TABELA DE HISTÓRICO DE VENDAS ---
+    const tabelaVendas = document.getElementById("tabelaVendas");
+    if (tabelaVendas && dados.vendas) {
+        tabelaVendas.innerHTML = ""; // Limpa os dados estáticos
+        
+        if (dados.vendas.length === 0) {
+            tabelaVendas.innerHTML = `<tr><td colspan="5" style="text-align:center;">Nenhuma venda registrada até o momento.</td></tr>`;
+        } else {
+            dados.vendas.forEach(v => {
+                const linha = document.createElement("tr");
+                linha.innerHTML = `
+                    <td style="padding: 12px; font-size: 14px; color: #d1d5db;">${v.data}</td>
+                    <td style="padding: 12px; font-weight: bold; color: #f3f4f6;">${v.cliente || 'Cliente'}</td>
+                    <td style="padding: 12px;">${v.user_id}</td>
+                    <td style="padding: 12px;"><span style="background: #ffc107; color: #000; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">${v.plano}</span></td>
+                    <td style="padding: 12px; color: #28a745; font-weight: bold;">R$ ${parseFloat(v.valor).toFixed(2)}</td>
+                `;
+                tabelaVendas.appendChild(linha);
+            });
+        }
+    }
+
+    // --- 2. RESTAURAÇÃO DA TABELA DE LOGS DO FUNIL ---
     const tbodyLogs = document.getElementById("tabela-logs-funil");
     if (tbodyLogs && dados.logs_funil) {
         tbodyLogs.innerHTML = ""; // Limpa a tabela antes de atualizar
-        
+
         dados.logs_funil.forEach(log => {
             const tr = document.createElement("tr");
             tr.style.borderBottom = "1px solid #374151";
-            
+
             // Formatar a data para o padrão do Brasil
             let dataFormatada = new Date(log.data).toLocaleString('pt-BR');
             
