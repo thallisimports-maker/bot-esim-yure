@@ -1935,6 +1935,10 @@ async def webhook_pushinpay(request: Request, user_id: str = None, token: str = 
         raise HTTPException(status_code=403, detail="Acesso negado.")
 
     try:
+        corpo = await request.body()
+        if not corpo:
+            return {"status": "sucesso", "detalhe": "Ping recebido"}
+            
         dados = await request.json()
         # Verifica se o gateway enviou o status de pago
         status = str(dados.get("status", "")).lower()
