@@ -83,7 +83,7 @@
       "descricao": "",
       "imagem_qr": "https://i.imgur.com/I7K38d5.jpeg",
       "imagem_url": "https://i.imgur.com/I7K38d5.jpeg",
-      "status": "disponivel"
+      "status": "vendido"
     },
     {
       "id": "esim_10",
@@ -161,6 +161,14 @@
       "operadora": "Claro",
       "valor": 25.0,
       "data": "2026-09-26 17:14:18"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "esim_9",
+      "operadora": "Tim",
+      "valor": 25.0,
+      "data": "2026-09-26 19:10:24"
     }
   ],
   "cupons": {
