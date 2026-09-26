@@ -1546,15 +1546,22 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
         async with httpx.AsyncClient() as client:
             resp = await client.post(url_mistic, json=body, headers=headers, timeout=15.0)
             data = resp.json()
+            
+            # 🔍 Imprime no painel do Render a resposta exata da MisticPay
+            print(f"🔍 [DEBUG MISTICPAY RESPOSTA]: {data}")
 
-            # Captura os dados de Pix Copia e Cola e QR Code do retorno da MisticPay
-            # (Ajuste as chaves abaixo caso a documentação oficial retorne nomes específicos)
+            # Captura os dados de Pix Copia e Cola em várias chaves possíveis
             pix_copia_cola = (
                 data.get("pixCopiaECola") or 
                 data.get("qrCode") or 
                 data.get("emv") or 
                 data.get("pix_copia_cola") or
-                data.get("code")
+                data.get("code") or
+                data.get("pix") or
+                data.get("payload") or
+                data.get("copyPaste") or
+                (data.get("data") and (data.get("data").get("pixCopiaECola") or data.get("data").get("qrCode"))) or
+                (data.get("response") and (data.get("response").get("pixCopiaECola") or data.get("response").get("qrCode")))
             )
             
             qr_code_url = (
@@ -1651,13 +1658,22 @@ async def comando_pix(
         async with httpx.AsyncClient() as client:
             resp = await client.post(url_mistic, json=body, headers=headers, timeout=15.0)
             data = resp.json()
+            
+            # 🔍 Imprime no painel do Render a resposta exata da MisticPay
+            print(f"🔍 [DEBUG MISTICPAY RESPOSTA]: {data}")
 
+            # Captura os dados de Pix Copia e Cola em várias chaves possíveis
             pix_copia_cola = (
                 data.get("pixCopiaECola") or 
                 data.get("qrCode") or 
                 data.get("emv") or 
                 data.get("pix_copia_cola") or
-                data.get("code")
+                data.get("code") or
+                data.get("pix") or
+                data.get("payload") or
+                data.get("copyPaste") or
+                (data.get("data") and (data.get("data").get("pixCopiaECola") or data.get("data").get("qrCode"))) or
+                (data.get("response") and (data.get("response").get("pixCopiaECola") or data.get("response").get("qrCode")))
             )
 
             if not pix_copia_cola:
