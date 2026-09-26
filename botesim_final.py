@@ -2065,13 +2065,11 @@ async def webhook_pushinpay(request: Request, user_id: str = None, token: str = 
 async def webhook_telegram(request: Request):
     try:
         dados = await request.json()
-        telegram_app = Application.builder().token(TOKEN).build()
-        # Processa a atualização recebida do Telegram
+        # Usa a instância global 'telegram_app' que já inicializa no arranque do FastAPI
         update = Update.de_json(dados, telegram_app.bot)
         
-        # Aqui você pode chamar manualmente o seu handler de start ou deixar o dispatcher tratar
-        if update.message and update.message.text and update.message.text.startswith("/start"):
-            await start(update, None)
+        # Processa o comando /start ou outras mensagens usando o dispatcher global
+        await telegram_app.process_update(update)
             
         return {"status": "sucesso"}
     except Exception as e:
