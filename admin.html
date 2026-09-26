@@ -714,6 +714,37 @@
       if (elTabelaVendas) {
         elTabelaVendas.innerHTML = htmlVendas || '<tr><td colspan="5" style="text-align:center; padding:12px; color:#94a3b8;">Nenhuma venda registrada até o momento.</td></tr>';
       }
+      // 4. Tabela de Clientes, Saldos e Gastos
+      const usuarios = dados.usuarios || dados.utilizadores || [];
+      let htmlClientes = '';
+      
+      usuarios.forEach(u => {
+        // Formata a data de entrada
+        const dataCriacao = u.data_criacao ? new Date(u.data_criacao).toLocaleDateString('pt-BR') : '—';
+        const nome = u.nome || 'Desconhecido';
+        const userAt = u.username ? ` (@${u.username})` : '';
+        const saldoAtual = parseFloat(u.saldo || 0).toFixed(2);
+        
+        // Calcula a soma de todas as compras que este cliente fez cruzando com o histórico
+        const totalGasto = vendas
+          .filter(v => String(v.user_id) === String(u.chat_id) || String(v.chat_id) === String(u.chat_id))
+          .reduce((soma, v) => soma + parseFloat(v.preco || v.valor || 0), 0);
+        
+        htmlClientes += `
+          <tr>
+            <td><strong>${nome}</strong><span style="color: #9ca3af; font-size: 12px;">${userAt}</span></td>
+            <td><code>${u.chat_id}</code></td>
+            <td style="color: #10b981; font-weight: bold;">R$ ${saldoAtual}</td>
+            <td style="color: #facc15; font-weight: bold;">R$ ${totalGasto.toFixed(2)}</td>
+            <td>${dataCriacao}</td>
+          </tr>
+        `;
+      });
+      
+      const elTabelaClientes = document.getElementById('tabelaClientesSaldos');
+      if (elTabelaClientes) {
+        elTabelaClientes.innerHTML = htmlClientes || '<tr><td colspan="5" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum cliente registado.</td></tr>';
+      }
     }
 
     // 6. FUNÇÕES DE EDIÇÃO E EXCLUSÃO (SENHA INVISÍVEL)
