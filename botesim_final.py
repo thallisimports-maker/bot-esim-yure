@@ -1623,39 +1623,50 @@ async def comando_pix(
             return
 
         msg_aguarde = await update.message.reply_text(
-            "⏳ Gerando cobrança PIX..."
+            "⏳ Gerando cobrança PIX via MisticPay..."
         )
 
-        token_pushin = globals().get("PUSHINPAY_TOKEN", "")
+        url_mistic = "https://api.misticpay.com/api/transactions/create"
+        client_id = os.environ.get("MISTICPAY_CI", "")
+        client_secret = os.environ.get("MISTICPAY_CS", "")
+
         headers = {
-            "Authorization": f"Bearer {token_pushin}",
+            "ci": client_id,
+            "cs": client_secret,
             "Content-Type": "application/json",
-            "Accept": "application/json",
+            "Accept": "application/json"
         }
 
+        # ID único de transação para o bot do Telegram
+        transaction_id = f"yure_bot_{user_id}_{int(datetime.now().timestamp())}"
+
         body = {
-            "value": int(round(valor * 100)),
-            "webhook_url": f"https://bot-esim-yure.onrender.com/webhook/pushinpay?user_id={user_id}&token=YurePixSeguro2026*",
+            "amount": valor,
+            "payerName": f"Cliente Telegram {user_id}",
+            "payerDocument": "00000000000",
+            "transactionId": transaction_id,
+            "description": f"Recarga Bot Telegram - R$ {valor:.2f}"
         }
 
         async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                "https://api.pushinpay.com.br/api/pix/cashIn",
-                json=body,
-                headers=headers,
-                timeout=10.0,
-            )
+            resp = await client.post(url_mistic, json=body, headers=headers, timeout=15.0)
             data = resp.json()
 
-            pix_copia_cola = data.get("qr_code") or data.get("pix_copia_cola")
+            pix_copia_cola = (
+                data.get("pixCopiaECola") or 
+                data.get("qrCode") or 
+                data.get("emv") or 
+                data.get("pix_copia_cola") or
+                data.get("code")
+            )
 
             if not pix_copia_cola:
                 await msg_aguarde.edit_text(
-                    "❌ Erro ao gerar PIX. Tente novamente mais tarde."
+                    "❌ Erro ao gerar PIX na MisticPay. Tente novamente mais tarde."
                 )
                 return
 
-            # Gera a imagem do QR Code via URL pública aceita nativamente pelo Telegram
+            # Gera a imagem do QR Code via URL pública
             qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={pix_copia_cola}"
 
             texto_resposta = (
