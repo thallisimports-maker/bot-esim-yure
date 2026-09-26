@@ -1981,37 +1981,59 @@ async def debug_tabelas():
 async def webhook_pushinpay(request: Request, user_id: str = None):
     try:
         dados = await request.json()
-        # Verifica se o gateway enviou o status de pago
-        status = dados.get("status", "").lower()
+        print(f"Webhook recebido da PushinPay: {dados} | User ID na URL: {user_id}")
         
-        # Se foi pago e temos a identificação do cliente na URL
+        # O status pode vir como 'paid', 'approved', 'concluido' ou 'pago'
+        status = str(dados.get("status", "")).lower()
+        
+        # Se não veio o user_id na query string, tenta procurar dentro do payload (caso o gateway suporte custom_fields)
+        if not user_id:
+            user_id = dados.get("external_reference") or dados.get("user_id")
+
         if status in ["paid", "approved", "concluido", "pago"] and user_id:
-            valor_pago = float(dados.get("value", 0)) / 100
-            
-            con = conectar_banco()
-            cur = con.cursor()
+            # O valor costuma vir em centavos ou direto em reais dependendo da notificação
+            valor_raw = dados.get("value") or dados.get("amount") or 0
             try:
-                # 1. Adiciona o saldo na carteira
-                cur.execute("UPDATE carteira SET saldo = saldo + ? WHERE chat_id = ?", (valor_pago, user_id))
-                
-                # 2. Regista a conversão nas métricas
-                cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (?, 'compra_concluida')", (user_id,))
-                con.commit()
-                
-                # 3. Envia a notificação automática no Telegram para o cliente
-                url_telegram = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-                msg = f"✅ **PIX DE R$ {valor_pago:.2f} APROVADO!**\nSeu saldo já está na carteira. Volte ao MiniApp para resgatar o seu e-SIM!"
-                requests.post(url_telegram, json={"chat_id": user_id, "text": msg, "parse_mode": "Markdown"})
-                
-            except Exception as e:
-                print("Erro ao processar saldo do PIX no banco:", e)
-            finally:
-                con.close()
+                valor_pago = float(valor_raw)
+                if valor_pago > 100:  # Se vier em centavos (ex: 2000 para R$ 20,00)
+                    valor_pago = valor_pago / 100.0
+            except Exception:
+                valor_pago = 0.0
+
+            if valor_pago > 0:
+                con = conectar_banco()
+                cur = con.cursor()
+                try:
+                    # 1. Adiciona o saldo na carteira do usuário no Postgres/Supabase
+                    cur.execute(
+                        "UPDATE carteira SET saldo = saldo + %s WHERE chat_id = %s", 
+                        (valor_pago, str(user_id))
+                    )
+                    
+                    # 2. Registra a conversão nas métricas do funil
+                    cur.execute(
+                        "INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, 'compra_concluida')", 
+                        (str(user_id),)
+                    )
+                    con.commit()
+                    
+                    # 3. Envia a notificação automática no Telegram para o cliente
+                    url_telegram = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+                    msg = f"✅ **PIX DE R$ {valor_pago:.2f} APROVADO!**\nO seu saldo já foi creditado na carteira. Volte ao MiniApp para resgatar o seu e-SIM!"
+                    
+                    async with httpx.AsyncClient() as client:
+                        await client.post(url_telegram, json={"chat_id": str(user_id), "text": msg, "parse_mode": "Markdown"}, timeout=10.0)
+                        
+                    print(f"Sucesso: Crédito de R$ {valor_pago:.2f} aplicado ao usuário {user_id}")
+                except Exception as e:
+                    print(f"Erro ao processar saldo do PIX no banco: {e}")
+                finally:
+                    con.close()
                 
         return {"status": "sucesso"}
     except Exception as e:
-        print("Erro crítico no webhook:", e)
-        return {"status": "erro"}
+        print(f"Erro crítico no webhook: {e}")
+        return {"status": "erro", "detalhe": str(e)}
 
 # ------------------------------------------------------------------------------
 # 🟢 RUNNER DA APLICAÇÃO
