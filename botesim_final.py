@@ -432,69 +432,84 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
     # 1. Processa a compra enviada pelo botão buy_
     if query.data.startswith("buy_"):
-        prod_id = query.data.replace("buy_", "")
-        produtos = dados.get("produtos", [])
+        try:
+            prod_id = query.data.replace("buy_", "")
+            produtos = dados.get("produtos", [])
 
-        # Procura o produto específico cadastrado no Painel pelo ID
-        produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
+            # Procura o produto específico cadastrado no Painel pelo ID
+            produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
 
-        if not produto or str(produto.get("status", "")).lower().strip() != "disponivel":
-            await query.message.reply_text("❌ Este e-SIM já não se encontra disponível!")
-            return
+            if not produto or str(produto.get("status", "")).lower().strip() != "disponivel":
+                await query.message.reply_text("❌ Este e-SIM já não se encontra disponível!")
+                return
 
-        preco = float(produto.get("preco", 0))
+            preco = float(produto.get("preco", 0))
 
-        # Consulta o saldo na carteira SQLite
-        con = conectar_banco()
-        cur = con.cursor()
-        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (user_id,))
-        res_saldo = cur.fetchone()
-        saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
+            # Consulta o saldo na carteira PostgreSQL
+            con = conectar_banco()
+            cur = con.cursor()
+            cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (user_id,))
+            res_saldo = cur.fetchone()
+            saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
 
-        if saldo_atual < preco:
-            await query.message.reply_text(
-                f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você tem **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para comprar.",
-                parse_mode="Markdown"
-            )
+            if saldo_atual < preco:
+                await query.message.reply_text(
+                    f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você tem **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para comprar.",
+                    parse_mode="Markdown"
+                )
+                con.close()
+                return
+
+            # Desconta do saldo e marca produto como vendido
+            novo_saldo = saldo_atual - preco
+            cur.execute("UPDATE carteira SET saldo = ? WHERE chat_id = ?", (novo_saldo, user_id))
+            
+            # 🛒 Regista a venda oficialmente no histórico do banco para aparecer no Painel
+            try:
+                nome_plano = f"{produto.get('operadora', '')} {produto.get('plano', '')}"
+                cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (?, ?, ?)", (user_id, nome_plano, preco))
+            except Exception as e:
+                print(f"Erro ao registrar histórico no bot: {e}")
+
+            con.commit()
             con.close()
-            return
 
-        # Desconta do saldo e marca produto como vendido
-        novo_saldo = saldo_atual - preco
-        cur.execute("UPDATE carteira SET saldo = ? WHERE chat_id = ?", (novo_saldo, user_id))
-        con.commit()
-        con.close()
+            produto["status"] = "vendido"
+            
+            registro_venda = {
+                "user_id": user_id,
+                "cliente": nome_usuario,
+                "produto_id": produto.get("id"),
+                "operadora": produto.get("operadora"),
+                "valor": preco,
+                "data": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            dados.setdefault("vendas", []).append(registro_venda)
 
-        produto["status"] = "vendido"
-        
-        # Registra a venda para o relatório do painel
-        registro_venda = {
-            "user_id": user_id,
-            "cliente": nome_usuario,
-            "produto_id": produto.get("id"),
-            "operadora": produto.get("operadora"),
-            "valor": preco,
-            "data": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-        dados.setdefault("vendas", []).append(registro_venda)
+            salvar_dados(dados)
+            try:
+                salvar_dados_no_github(dados)
+            except Exception as e:
+                print(f"Aviso sync github: {e}")
 
-        salvar_dados(dados)
-        salvar_dados_no_github(dados)
+            imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
+            legenda = (
+                f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
+                f"📱 **Operadora:** {produto.get('operadora')}\n"
+                f"📦 **Plano:** {produto.get('plano')}\n"
+                f"💰 **Valor:** R$ {preco:.2f}\n\n"
+                f"Seu QR Code de ativação encontra-se abaixo:"
+            )
 
-        imagem_qr = produto.get("imagem_qr", "")
-        legenda = (
-            f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
-            f"📱 **Operadora:** {produto.get('operadora')}\n"
-            f"📦 **Plano:** {produto.get('plano')}\n"
-            f"💰 **Valor:** R$ {preco:.2f}\n\n"
-            f"Seu QR Code de ativação encontra-se abaixo:"
-        )
+            # Envia a foto do QR Code ao cliente com segurança
+            if imagem_qr and imagem_qr.startswith("http"):
+                await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
+            else:
+                await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code em processamento)*", parse_mode="Markdown")
 
-        # Envia a foto do QR Code ao cliente
-        if imagem_qr and imagem_qr.startswith("http"):
-            await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
-        else:
-            await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code em processamento)*", parse_mode="Markdown")
+        except Exception as err:
+            logging.error(f"Erro crítico ao processar botão de compra no Telegram: {err}")
+            await query.message.reply_text("❌ Ocorreu um erro ao processar a compra. Tente realizar o pedido diretamente pelo MiniApp.")
 
 async def receber_dados_webapp(
     update: Update, context: ContextTypes.DEFAULT_TYPE
