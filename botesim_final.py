@@ -553,37 +553,38 @@ async def receber_dados_webapp(
 # ⚙️ GESTOR DE LIFESPAN (REGISTRO DO MENU DE COMANDOS NATIVO)
 # ------------------------------------------------------------------
 async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    print("🟢 [DEBUG] Função responder_botoes ACIONADA!")
+    
     query = update.callback_query
     if not query:
+        print("❌ [DEBUG] Nenhuma query encontrada.")
         return
 
-    # 🚀 Liberta a interface do Telegram imediatamente para não ficar a rodar
+    print(f"🟢 [DEBUG] Botão Clicado: {query.data}")
+
+    # 🚀 Liberta o carregamento do botão no Telegram IMEDIATAMENTE
     try:
         await query.answer()
-    except Exception:
-        pass
+        print("🟢 [DEBUG] Loading do botão parado com sucesso!")
+    except Exception as e:
+        print(f"⚠️ [DEBUG] Erro ao parar o loading: {e}")
 
     user_id = str(query.from_user.id)
     nome_usuario = query.from_user.first_name
-
     dados = carregar_dados()
 
-    # 1. Processa a compra enviada pelo botão buy_
     if query.data.startswith("buy_"):
         try:
             prod_id = query.data.replace("buy_", "")
             produtos = dados.get("produtos", [])
-
-            # Procura o produto
             produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
 
             if not produto or str(produto.get("status", "")).lower().strip() != "disponivel":
-                await query.message.reply_text("❌ Este e-SIM já não se encontra disponível!")
+                await context.bot.send_message(chat_id=user_id, text="❌ Este e-SIM já não se encontra disponível!")
                 return
 
             preco = float(produto.get("preco", 0))
 
-            # 🛡️ TRAVA DE SEGURANÇA NO BANCO DE DADOS
             con = conectar_banco()
             try:
                 cur = con.cursor()
@@ -592,28 +593,26 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
 
                 if saldo_atual < preco:
-                    await query.message.reply_text(
-                        f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você tem **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para comprar.",
+                    await context.bot.send_message(
+                        chat_id=user_id,
+                        text=f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você tem **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para comprar.",
                         parse_mode="Markdown"
                     )
-                    return # O finally garante que o banco fecha mesmo ao sair aqui
+                    return 
 
-                # Desconta do saldo e marca produto como vendido
                 novo_saldo = saldo_atual - preco
                 cur.execute("UPDATE carteira SET saldo = ? WHERE chat_id = ?", (novo_saldo, user_id))
                 
-                # Regista a venda
                 try:
                     nome_plano = f"{produto.get('operadora', '')} {produto.get('plano', '')}"
                     cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (?, ?, ?)", (user_id, nome_plano, preco))
                 except Exception as e:
                     print(f"Erro ao registrar histórico: {e}")
-
                 con.commit()
             finally:
-                con.close() # GARANTE QUE A CONEXÃO É FECHADA E O SERVIDOR NÃO TRAVA
+                con.close()
 
-            # Continua o processo local
+            # Atualiza JSON
             produto["status"] = "vendido"
             registro_venda = {
                 "user_id": user_id,
@@ -624,48 +623,50 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 "data": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             dados.setdefault("vendas", []).append(registro_venda)
-
             salvar_dados(dados)
-            salvar_dados_no_github(dados)
+            
+            try:
+                salvar_dados_no_github(dados)
+            except Exception as e:
+                print(f"Aviso sync github: {e}")
 
             imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
+            descricao_extra = produto.get("descricao", "")
             legenda = (
                 f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
                 f"📱 **Operadora:** {produto.get('operadora')}\n"
                 f"📦 **Plano:** {produto.get('plano')}\n"
                 f"💰 **Valor:** R$ {preco:.2f}\n\n"
-                f"Seu QR Code de ativação encontra-se abaixo:"
+                f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se abaixo:'}"
             )
 
-            # Envia a foto
+            # Envia a Foto
+            print("🟢 [DEBUG] Iniciando envio da foto do QR Code...")
             if imagem_qr:
-                async with httpx.AsyncClient() as client:
-                    if imagem_qr.startswith("data:image"):
-                        try:
-                            header, encoded = imagem_qr.split(",", 1)
-                            image_data = base64.b64decode(encoded)
-                            files = {'photo': ('esim_qrcode.png', BytesIO(image_data), 'image/png')}
-                            data = {'chat_id': user_id, 'caption': legenda, 'parse_mode': 'Markdown'}
-                            await client.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto", data=data, files=files, timeout=15)
-                        except Exception as e:
-                            print(f"Erro ao enviar Base64 no Telegram: {e}")
-                            await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem do QR Code)*", parse_mode="Markdown")
-                    elif imagem_qr.startswith("http"):
-                        payload_photo = {
-                            "chat_id": user_id,
-                            "photo": imagem_qr,
-                            "caption": legenda,
-                            "parse_mode": "Markdown"
-                        }
-                        await client.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto", json=payload_photo, timeout=15)
-                    else:
-                        await context.bot.send_message(chat_id=user_id, text=legenda + f"\n\n{imagem_qr}", parse_mode="Markdown")
+                if imagem_qr.startswith("data:image"):
+                    try:
+                        header, encoded = imagem_qr.split(",", 1)
+                        image_data = base64.b64decode(encoded)
+                        await context.bot.send_photo(chat_id=user_id, photo=image_data, caption=legenda, parse_mode="Markdown")
+                        print("✅ [DEBUG] Foto Base64 enviada!")
+                    except Exception as e:
+                        print(f"Erro ao enviar Base64: {e}")
+                        await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem)*", parse_mode="Markdown")
+                elif imagem_qr.startswith("http"):
+                    try:
+                        await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
+                        print("✅ [DEBUG] Foto URL enviada!")
+                    except Exception as e:
+                        print(f"Erro ao enviar URL: {e}")
+                        await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem via URL)*", parse_mode="Markdown")
+                else:
+                    await context.bot.send_message(chat_id=user_id, text=legenda + f"\n\n{imagem_qr}", parse_mode="Markdown")
             else:
                 await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code não disponível)*", parse_mode="Markdown")
 
         except Exception as err:
-            logging.error(f"Erro crítico ao processar botão de compra no Telegram: {err}")
-            await query.message.reply_text("❌ Ocorreu um erro ao processar a compra.")
+            logging.error(f"Erro crítico no botão de compra: {err}")
+            await context.bot.send_message(chat_id=user_id, text="❌ Ocorreu um erro ao processar a compra.")
             
 @asynccontextmanager
 async def lifespan(app: FastAPI):
