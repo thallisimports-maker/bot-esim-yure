@@ -91,6 +91,7 @@ MODO_MANUTENCAO = True  # Mude para True quando for mexer no código
 # 🛡️ CREDENCIAIS DE SEGURANÇA DO PAINEL ADMIN
 USUARIO_ADMIN_MINISITE = "aguia2026"
 SENHA_ADMIN_MINISITE = "yuresantos26"
+telegram_app = None
 
 # LINK DIRETO DA SUA LOGO NO GITHUB
 LOGO_URL = "https://raw.githubusercontent.com/thallisimports-maker/bot-esim-yure/main/logo.png"
