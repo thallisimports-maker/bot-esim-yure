@@ -1347,6 +1347,11 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
         cur.execute("UPDATE carteira SET saldo = saldo - ? WHERE chat_id = ?", (preco_item, payload.chat_id))
         cur.execute("DELETE FROM estoque_codigos WHERE id = ?", (chip_id,))
         cur.execute("UPDATE estoque SET quantidade = quantidade - 1 WHERE produto_id = ?", (payload.produto_id,))
+        
+        # 🛒 Regista a venda oficialmente no histórico para aparecer no Painel
+        nome_plano = f"{payload.produto_id.split('_')[0].upper()} {esim_gb}"
+        cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (?, ?, ?)", (payload.chat_id, nome_plano, preco_item))
+        
         con.commit()
 
         partes = conteudo_bruto.split('||')
