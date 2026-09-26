@@ -556,8 +556,8 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     query = update.callback_query
     if not query:
         return
-    
-    # 🚀 Para o carregamento do botão no Telegram imediatamente
+
+    # 🚀 Liberta a interface do Telegram imediatamente para não ficar a rodar
     try:
         await query.answer()
     except Exception:
@@ -574,7 +574,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             prod_id = query.data.replace("buy_", "")
             produtos = dados.get("produtos", [])
 
-            # Procura o produto específico cadastrado no Painel pelo ID
+            # Procura o produto
             produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
 
             if not produto or str(produto.get("status", "")).lower().strip() != "disponivel":
@@ -583,37 +583,38 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
             preco = float(produto.get("preco", 0))
 
-            # Consulta o saldo na carteira PostgreSQL
+            # 🛡️ TRAVA DE SEGURANÇA NO BANCO DE DADOS
             con = conectar_banco()
-            cur = con.cursor()
-            cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (user_id,))
-            res_saldo = cur.fetchone()
-            saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
-
-            if saldo_atual < preco:
-                await query.message.reply_text(
-                    f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você tem **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para comprar.",
-                    parse_mode="Markdown"
-                )
-                con.close()
-                return
-
-            # Desconta do saldo e marca produto como vendido
-            novo_saldo = saldo_atual - preco
-            cur.execute("UPDATE carteira SET saldo = ? WHERE chat_id = ?", (novo_saldo, user_id))
-            
-            # 🛒 Regista a venda oficialmente no histórico do banco para o Painel Admin
             try:
-                nome_plano = f"{produto.get('operadora', '')} {produto.get('plano', '')}"
-                cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (?, ?, ?)", (user_id, nome_plano, preco))
-            except Exception as e:
-                print(f"Erro ao registrar histórico no bot: {e}")
+                cur = con.cursor()
+                cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (user_id,))
+                res_saldo = cur.fetchone()
+                saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
 
-            con.commit()
-            con.close()
+                if saldo_atual < preco:
+                    await query.message.reply_text(
+                        f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você tem **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para comprar.",
+                        parse_mode="Markdown"
+                    )
+                    return # O finally garante que o banco fecha mesmo ao sair aqui
 
+                # Desconta do saldo e marca produto como vendido
+                novo_saldo = saldo_atual - preco
+                cur.execute("UPDATE carteira SET saldo = ? WHERE chat_id = ?", (novo_saldo, user_id))
+                
+                # Regista a venda
+                try:
+                    nome_plano = f"{produto.get('operadora', '')} {produto.get('plano', '')}"
+                    cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (?, ?, ?)", (user_id, nome_plano, preco))
+                except Exception as e:
+                    print(f"Erro ao registrar histórico: {e}")
+
+                con.commit()
+            finally:
+                con.close() # GARANTE QUE A CONEXÃO É FECHADA E O SERVIDOR NÃO TRAVA
+
+            # Continua o processo local
             produto["status"] = "vendido"
-            
             registro_venda = {
                 "user_id": user_id,
                 "cliente": nome_usuario,
@@ -625,10 +626,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             dados.setdefault("vendas", []).append(registro_venda)
 
             salvar_dados(dados)
-            try:
-                salvar_dados_no_github(dados)
-            except Exception as e:
-                print(f"Aviso sync github: {e}")
+            salvar_dados_no_github(dados)
 
             imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
             legenda = (
@@ -639,7 +637,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 f"Seu QR Code de ativação encontra-se abaixo:"
             )
 
-            # Envia a foto do QR Code ao cliente com auditoria do retorno da API
+            # Envia a foto
             if imagem_qr:
                 async with httpx.AsyncClient() as client:
                     if imagem_qr.startswith("data:image"):
@@ -648,8 +646,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                             image_data = base64.b64decode(encoded)
                             files = {'photo': ('esim_qrcode.png', BytesIO(image_data), 'image/png')}
                             data = {'chat_id': user_id, 'caption': legenda, 'parse_mode': 'Markdown'}
-                            resp = await client.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto", data=data, files=files, timeout=15)
-                            print(f"📥 Retorno Telegram (Base64): {resp.text}")
+                            await client.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto", data=data, files=files, timeout=15)
                         except Exception as e:
                             print(f"Erro ao enviar Base64 no Telegram: {e}")
                             await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem do QR Code)*", parse_mode="Markdown")
@@ -660,8 +657,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                             "caption": legenda,
                             "parse_mode": "Markdown"
                         }
-                        resp = await client.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto", json=payload_photo, timeout=15)
-                        print(f"📥 Retorno Telegram (URL): {resp.text}")
+                        await client.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto", json=payload_photo, timeout=15)
                     else:
                         await context.bot.send_message(chat_id=user_id, text=legenda + f"\n\n{imagem_qr}", parse_mode="Markdown")
             else:
@@ -669,7 +665,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
         except Exception as err:
             logging.error(f"Erro crítico ao processar botão de compra no Telegram: {err}")
-            await query.message.reply_text("❌ Ocorreu um erro ao processar a compra. Tente realizar o pedido diretamente pelo MiniApp.")
+            await query.message.reply_text("❌ Ocorreu um erro ao processar a compra.")
             
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -959,29 +955,31 @@ def salvar_dados_no_github(dados_novos):
         "Accept": "application/vnd.github.v3+json",
     }
 
-    # 1. Buscar o SHA atual do arquivo
-    res_get = requests.get(url, headers=headers)
-    if res_get.status_code != 200:
-        print("Erro ao buscar SHA do GitHub:", res_get.json())
+    try:
+        # 1. Adicionado timeout=10 para impedir que o servidor congele
+        res_get = requests.get(url, headers=headers, timeout=10)
+        if res_get.status_code != 200:
+            print("Erro ao buscar SHA do GitHub:", res_get.json())
+            return False
+
+        sha = res_get.json()["sha"]
+
+        # 2. Converter JSON para Base64
+        conteudo_json = json.dumps(dados_novos, indent=2, ensure_ascii=False)
+        conteudo_base64 = base64.b64encode(conteudo_json.encode("utf-8")).decode("utf-8")
+
+        # 3. Commit no GitHub com timeout
+        payload = {
+            "message": "📦 Atualização do estoque via Painel Admin",
+            "content": conteudo_base64,
+            "sha": sha,
+        }
+
+        res_put = requests.put(url, headers=headers, json=payload, timeout=10)
+        return res_put.status_code == 200
+    except Exception as e:
+        print(f"Erro crítico na sincronização do GitHub (evitou travamento): {e}")
         return False
-
-    sha = res_get.json()["sha"]
-
-    # 2. Converter JSON para Base64
-    conteudo_json = json.dumps(dados_novos, indent=2, ensure_ascii=False)
-    conteudo_base64 = base64.b64encode(conteudo_json.encode("utf-8")).decode(
-        "utf-8"
-    )
-
-    # 3. Commit no GitHub
-    payload = {
-        "message": "📦 Atualização do estoque via Painel Admin",
-        "content": conteudo_base64,
-        "sha": sha,
-    }
-
-    res_put = requests.put(url, headers=headers, json=payload)
-    return res_put.status_code == 200
 
 @app.get("/api/produtos-publico")
 async def obter_produtos_publico(chat_id: str = None):
