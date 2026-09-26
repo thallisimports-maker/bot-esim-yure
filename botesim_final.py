@@ -2110,7 +2110,6 @@ async def webhook_misticpay(request: Request, token: str = None):
 
     print(f"🔍 [DEBUG WEBHOOK] Status detetado: '{status}' | Transação: {transaction_id} | Valor: {valor_raw}")
 
-    # Adicionamos "completo" à lista de aprovação para corresponder ao retorno da MisticPay
     if status in ["paid", "approved", "concluido", "pago", "completed", "success", "confirmed", "completo"]:
         user_id = ""
         if "yure_" in transaction_id:
@@ -2125,8 +2124,7 @@ async def webhook_misticpay(request: Request, token: str = None):
 
         try:
             valor_pago = float(valor_raw)
-            # Na MisticPay o valor vem diretamente em reais (ex: 1 para R$ 1,00)
-            if valor_pago > 100:  # Salvaguarda caso venha em cêntimos por lapso
+            if valor_pago > 100:  # Salvaguarda caso venha em cêntimos
                 valor_pago = valor_pago / 100.0
         except Exception:
             valor_pago = 0.0
@@ -2135,14 +2133,17 @@ async def webhook_misticpay(request: Request, token: str = None):
             con = conectar_banco()
             cur = con.cursor()
             try:
-                # 1. Credita o saldo na carteira do utilizador
-                cur.execute("UPDATE carteira SET saldo = saldo + ? WHERE chat_id = ?", (valor_pago, str(user_id)))
+                # Insere o utilizador se não existir, ou atualiza o saldo se já existir
+                cur.execute(
+                    "INSERT INTO carteira (chat_id, saldo) VALUES (%s, %s) ON CONFLICT (chat_id) DO UPDATE SET saldo = carteira.saldo + %s",
+                    (str(user_id), valor_pago, valor_pago)
+                )
                 
-                # 2. Regista no funil de métricas
-                cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (?, 'compra_concluida')", (str(user_id),))
-                cur.commit()
+                # Regista no funil de métricas
+                cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, 'compra_concluida')", (str(user_id),))
+                con.commit()
                 
-                # 3. Envia notificação automática no Telegram para o utilizador
+                # Envia notificação automática no Telegram para o utilizador
                 url_telegram = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
                 msg = f"✅ **PIX DE R$ {valor_pago:.2f} APROVADO!**\nO seu saldo já foi creditado na carteira. Volte ao MiniApp para resgatar o seu e-SIM!"
                 
@@ -2150,6 +2151,13 @@ async def webhook_misticpay(request: Request, token: str = None):
                     await client.post(url_telegram, json={"chat_id": str(user_id), "text": msg, "parse_mode": "Markdown"}, timeout=10.0)
                     
                 print(f"✅ Sucesso absoluto: Crédito de R$ {valor_pago:.2f} aplicado ao utilizador {user_id} via MisticPay")
+            except Exception as e:
+                print(f"Erro ao processar saldo do webhook MisticPay no banco: {e}")
+            finally:
+                con.close()
+
+    return {"status": "sucesso"}
+    
 @app.post("/webhook/misticpay")
 async def webhook_misticpay(request: Request, token: str = None):
     try:
