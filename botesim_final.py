@@ -794,8 +794,8 @@ async def obter_dados_admin(
 
         # 🛒 5. LEITURA DO HISTÓRICO DE VENDAS DO BANCO
         try:
-        cur.execute("SELECT id, user_id, plano, preco, data FROM historico_vendas ORDER BY id DESC")
-        for row in cur.fetchall():
+           cur.execute("SELECT id, user_id, plano, preco, data FROM historico_vendas ORDER BY id DESC")
+           for row in cur.fetchall():
             vendas.append({
                 "id": row[0],
                 "user_id": str(row[1]),
