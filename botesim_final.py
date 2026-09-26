@@ -630,8 +630,6 @@ async def lifespan(app: FastAPI):
         ]
     await telegram_app.bot.set_my_commands(comandos_menu)
 
-    await telegram_app.updater.start_polling(drop_pending_updates=True)
-
     yield
 
     await telegram_app.updater.stop()
