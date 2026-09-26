@@ -53,7 +53,7 @@
       "descricao": "",
       "imagem_qr": "https://i.imgur.com/rZTZ0qo.jpeg",
       "imagem_url": "https://i.imgur.com/rZTZ0qo.jpeg",
-      "status": "disponivel"
+      "status": "vendido"
     },
     {
       "id": "esim_7",
@@ -135,6 +135,14 @@
       "operadora": "Vivo",
       "valor": 25.0,
       "data": "2026-09-20"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Cliente (1890506390)",
+      "produto_id": "esim_6",
+      "operadora": "Tim",
+      "valor": 25.0,
+      "data": "2026-09-26 16:59:53"
     }
   ],
   "cupons": {
