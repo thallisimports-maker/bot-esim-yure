@@ -610,7 +610,7 @@ async def receber_dados_webapp(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    telegram_app = Application.builder().token(TOKEN).build()
+    global telegram_app = Application.builder().token(TOKEN).build()
 
     telegram_app.add_handler(CommandHandler("start", start))
     telegram_app.add_handler(CommandHandler("saldo", comando_saldo))
@@ -1922,85 +1922,6 @@ async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
             "status": "erro",
             "detalhe": f"Erro ao processar resgate: {str(e)}",
         }
-    finally:
-        con.close()
-
-class NovoCupom(BaseModel):
-    codigo: str
-    valor: float
-
-
-@app.post("/api/admin/cupons")
-async def adicionar_cupom(
-    cupom: NovoCupom, authorization: str = Header(None)
-):
-    if authorization != f"Bearer {PUSHINPAY_TOKEN}":
-        raise HTTPException(
-            status_code=401, detail="Acesso negado! Nao autorizado."
-        )
-
-    codigo_limpo = cupom.codigo.strip().upper()
-    valor_float = float(cupom.valor)
-
-    con = conectar_banco()
-    cur = con.cursor()
-    try:
-        # Garante que a tabela giftcards existe
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS giftcards (
-                codigo TEXT PRIMARY KEY,
-                valor REAL,
-                usado INTEGER DEFAULT 0,
-                usado_por TEXT
-            )
-        """
-        )
-
-        # Insere ou atualiza o valor do Gift Card no banco
-        cur.execute(
-            """
-            INSERT INTO giftcards (codigo, valor, usado)
-            VALUES (?, ?, 0)
-            ON CONFLICT(codigo) DO UPDATE SET valor = excluded.valor, usado = 0
-        """,
-            (codigo_limpo, valor_float),
-        )
-
-        con.commit()
-    except Exception as e:
-        con.rollback()
-        con.close()
-        raise HTTPException(
-            status_code=500, detail=f"Erro no banco de dados: {str(e)}"
-        )
-    finally:
-        con.close()
-
-    # Também salva no JSON para backup
-    dados = carregar_dados()
-    if "cupons" not in dados or not isinstance(dados["cupons"], dict):
-        dados["cupons"] = {}
-    dados["cupons"][codigo_limpo] = valor_float
-    salvar_dados(dados)
-    salvar_dados_no_github(dados)
-
-    return {"sucesso": True, "codigo": codigo_limpo, "valor": valor_float}
-
-@app.get("/api/admin/debug-tabelas")
-async def debug_tabelas():
-    con = conectar_banco()
-    cur = con.cursor()
-    try:
-        cur.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';")
-        tabelas = [row[0] for row in cur.fetchall()]
-        
-        estrutura = {}
-        for t in tabelas:
-            cur.execute(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{t}';")
-            estrutura[t] = [row[0] for row in cur.fetchall()]
-            
-        return {"tabelas_existentes": tabelas, "colunas": estrutura}
     finally:
         con.close()
 
