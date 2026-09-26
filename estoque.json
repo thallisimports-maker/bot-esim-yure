@@ -73,7 +73,7 @@
       "descricao": "",
       "imagem_qr": "https://i.imgur.com/JfTYphM.jpeg",
       "imagem_url": "https://i.imgur.com/JfTYphM.jpeg",
-      "status": "disponivel"
+      "status": "vendido"
     },
     {
       "id": "esim_9",
@@ -153,6 +153,14 @@
       "operadora": "Tim",
       "valor": 25.0,
       "data": "2026-09-26 16:59:53"
+    },
+    {
+      "user_id": "5228825596",
+      "cliente": "Cliente (5228825596)",
+      "produto_id": "esim_8",
+      "operadora": "Claro",
+      "valor": 25.0,
+      "data": "2026-09-26 17:14:18"
     }
   ],
   "cupons": {
