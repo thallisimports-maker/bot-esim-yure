@@ -644,7 +644,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 f"📱 **Operadora:** {produto.get('operadora')}\n"
                 f"📦 **Plano:** {produto.get('plano')}\n"
                 f"💰 **Valor:** R$ {preco:.2f}\n\n"
-                f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se abaixo:'}"
+                f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima (na imagem):'}"
             )
 
             # Envia a Foto
