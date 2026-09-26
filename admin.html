@@ -679,11 +679,12 @@
         const dataVenda = v.data ? new Date(v.data).toLocaleString('pt-BR') : '—';
         const usuario = v.user_id || v.chat_id || '—';
         const valor = parseFloat(v.preco || v.valor || 0).toFixed(2);
+        const nomeCliente = v.cliente || 'Desconhecido';
         
         htmlVendas += `
           <tr>
             <td>${dataVenda}</td>
-            <td>Cliente</td>
+            <td><strong>${nomeCliente}</strong></td>
             <td><code>${usuario}</code></td>
             <td>${v.plano || v.operadora || 'e-SIM'}</td>
             <td>R$ ${valor}</td>
