@@ -1306,7 +1306,7 @@ async def consultar_estoque_publico():
     finally:
         con.close()
 
-@app.get("/api/usuario/{chat_id}")
+@app.get("/api/saldo-usuario")
 async def obter_dados_usuario(chat_id: str):
     con = conectar_banco()
     cur = con.cursor()
