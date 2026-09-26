@@ -78,7 +78,7 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, BotCommand
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 
 # ------------------------------------------------------------------------------
 # 🔒 CREDENCIAIS E CONSTANTES DE PRODUÇÃO
@@ -619,6 +619,9 @@ async def lifespan(app: FastAPI):
     telegram_app.add_handler(CommandHandler("esims", comando_esims))
     telegram_app.add_handler(CallbackQueryHandler(responder_botoes))
     telegram_app.add_handler(CommandHandler("pix", comando_pix))
+    
+    # 👇 A LINHA MÁGICA QUE ATIVA AS COMPRAS DO MINIAPP 👇
+    telegram_app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, receber_dados_webapp))
 
     await telegram_app.initialize()
     await telegram_app.start()
@@ -634,7 +637,7 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    await telegram_app.updater.stop()
+    # Removido o updater.stop() que causava o erro vermelho no Render
     await telegram_app.stop()
 
 # ------------------------------------------------------------------------------
