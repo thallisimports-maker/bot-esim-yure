@@ -1107,30 +1107,30 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
 
         try:
             if "infoproduto" in categoria:
-            mensagem_entrega = montar_mensagem_infoproduto(produto, user_id)
-            url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+                mensagem_entrega = montar_mensagem_infoproduto(produto, user_id)
+                url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-            async with httpx.AsyncClient() as client:
-                await client.post(
-                    url_telegram_msg,
-                    json={
-                        "chat_id": user_id,
-                        "text": mensagem_entrega,
-                        "parse_mode": "HTML",
-                    },
-                    timeout=10.0,
+                async with httpx.AsyncClient() as client:
+                    await client.post(
+                        url_telegram_msg,
+                        json={
+                            "chat_id": user_id,
+                            "text": mensagem_entrega,
+                            "parse_mode": "HTML",
+                        },
+                        timeout=10.0,
+                    )
+            else:
+                imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
+                descricao_extra = produto.get("descricao", "")
+
+                caption_text = (
+                    f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
+                    f"📱 **Operadora:** {produto.get('operadora')}\n"
+                    f"📲 **Plano:** {produto.get('plano')}\n"
+                    f"💰 **Valor:** R$ {preco:.2f}\n\n"
+                    f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima (na imagem):'}"
                 )
-        else:
-            imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
-            descricao_extra = produto.get("descricao", "")
-
-            caption_text = (
-                f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
-                f"📱 **Operadora:** {produto.get('operadora')}\n"
-                f"📲 **Plano:** {produto.get('plano')}\n"
-                f"💰 **Valor:** R$ {preco:.2f}\n\n"
-                f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima (na imagem):'}"
-            )
 
             url_telegram_photo = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
 
