@@ -423,31 +423,35 @@
     <button class="btn-topup" onclick="mudarAba('carteira')">➕ Recarregar</button>
   </div>
 
-  <!-- ABA 1: LOJA DE eSIMs -->
+  <!-- ABA 1: LOJA DE PRODUTOS -->
   <div id="aba-loja" class="tab-content active">
-    <div class="banner">
+    
+    <!-- 1. SELEÇÃO DE CATEGORIAS PRINCIPAIS -->
+    <div class="categorias-tabs">
+      <button class="tab-btn active" id="btn-cat-esim" onclick="alternarCategoriaPrincipal('esim')">📱 eSIMs</button>
+      <button class="tab-btn" id="btn-cat-infoproduto" onclick="alternarCategoriaPrincipal('infoproduto')">📦 Info Produtos</button>
+    </div>
+
+    <!-- BANNER ESPECÍFICO DE ESIMS -->
+    <div class="banner" id="bannerEsim">
       <h3>⚡ Ativação Instantânea via QR Code</h3>
       <p>O QR Code para ativação é gerado na tela imediatamente após a confirmação da compra.</p>
     </div>
-  <!-- ABAS DE NAVEGAÇÃO DE CATEGORIAS -->
-    <div class="categorias-tabs">
-      <button class="tab-btn active" onclick="filtrarCategoria('todas', this)">✨ Todos</button>
-      <button class="tab-btn" onclick="filtrarCategoria('esim', this)">📱 e-SIMs</button>
-      <button class="tab-btn" onclick="filtrarCategoria('infoproduto', this)">📦 Info Produtos</button>
-    </div>
-    <!-- BARRINHA DE FILTROS RÁPIDOS -->
-    <div class="filter-container">
+
+    <!-- FILTROS DE OPERADORAS (Apenas para eSIMs) -->
+    <div class="filter-container" id="filtrosOperadoras">
       <button class="filter-btn active" onclick="filtrarOperadora('todos', this)">📱 Todos</button>
       <button class="filter-btn" onclick="filtrarOperadora('vivo', this)">🟣 Vivo</button>
       <button class="filter-btn" onclick="filtrarOperadora('claro', this)">🔴 Claro</button>
       <button class="filter-btn" onclick="filtrarOperadora('tim', this)">🔵 TIM</button>
     </div>
 
+    <!-- LISTA DE PRODUTOS -->
     <div class="grid-produtos" id="listaProdutos">
-  <div class="skeleton-card"></div>
-  <div class="skeleton-card"></div>
-  <div class="skeleton-card"></div>
-</div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+      <div class="skeleton-card"></div>
+    </div>
   </div>
 
   <!-- ABA 2: RECARGA PIX -->
