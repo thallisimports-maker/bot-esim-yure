@@ -147,7 +147,7 @@
       "conteudo_copia_cola": "CPF: 27546730910",
       "imagem_qr": "",
       "imagem_url": "",
-      "status": "disponivel"
+      "status": "vendido"
     }
   ],
   "utilizadores": {},
@@ -247,6 +247,14 @@
       "operadora": "Tim",
       "valor": 25.0,
       "data": "2026-09-27 17:29:25"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "prod_15",
+      "operadora": "Claro",
+      "valor": 13.0,
+      "data": "2026-09-27 21:35:41"
     }
   ],
   "cupons": {
