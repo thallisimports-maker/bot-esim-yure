@@ -1427,30 +1427,26 @@ import random
 
 import random
 
-def montar_mensagem_infoproduto(produto: dict, user_id: str) -> str:
-    id_compra = random.randint(2000000, 9999999)
-    data_str = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+def montar_mensagem_infoproduto(produto: dict, user_id: str = "") -> str:
+    import html
 
-    dados_principais = produto.get("dados_principais") or produto.get("dados") or produto.get("plano") or "Dados liberados após confirmação"
-    info_adicionais = produto.get("informacoes_adicionais") or produto.get("info_extra") or "Garantia e suporte inclusos"
-    copia_cola = produto.get("conteudo_copia_cola") or produto.get("descricao") or "Sem conteúdo extra"
+    plano = html.escape(str(produto.get("plano", "Info Produto")))
+    dados = html.escape(str(produto.get("dados_principais") or produto.get("dados") or ""))
+    info = html.escape(str(produto.get("informacoes_adicionais") or produto.get("info_extra") or ""))
+    copia_cola = html.escape(str(produto.get("conteudo_copia_cola") or produto.get("descricao") or ""))
 
-    msg = (
-        f"✨ *PRODUTO COMPRADO COM SUCESSO!* ✨\n\n"
-        f"💎 *DETALHES DA TRANSAÇÃO*\n"
-        f"■ *ID da Compra:* `{id_compra}`\n"
-        f"■ *Seu ID:* `{user_id}`\n"
-        f"■ *Data:* `{data_str}`\n\n"
-        f"📋 *DADOS*\n"
-        f"{limpar_markdown(str(dados_principais))}\n\n"
-        f"ℹ️ *INFORMAÇÕES ADICIONAIS*\n"
-        f"{limpar_markdown(str(info_adicionais))}\n\n"
-        f"📦 *DADOS COMPLETOS (Copia e Cola)*\n"
-        f"```text\n"
-        f"{copia_cola}\n"
-        f"```\n\n"
-        f"✅ *Obrigado pela preferência!*"
-    )
+    msg = "<b>🎉 COMPRA REALIZADA COM SUCESSO!</b>\n\n"
+    msg += f"<b>Produto:</b> {plano}\n\n"
+
+    if dados:
+        msg += f"<b>📋 Dados Principais:</b>\n{dados}\n\n"
+
+    if info:
+        msg += f"<b>ℹ️ Informações Adicionais:</b>\n{info}\n\n"
+
+    if copia_cola:
+        msg += f"<b>👇 Clique no texto abaixo para copiar:</b>\n<code>{copia_cola}</code>"
+
     return msg
     
 class CompraMiniAppPayload(BaseModel):
