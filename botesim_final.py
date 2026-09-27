@@ -1595,7 +1595,6 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
     try:
         url_mistic = "https://api.misticpay.com/api/transactions/create"
         
-        # Obtém as credenciais de forma segura pelas Variáveis de Ambiente do Render
         client_id = os.environ.get("MISTICPAY_CI", "")
         client_secret = os.environ.get("MISTICPAY_CS", "")
 
@@ -1606,13 +1605,12 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
             "Accept": "application/json"
         }
 
-        # ID único de transação para rastreamento interno
         transaction_id = f"yure_{user_id}_{int(datetime.now().timestamp())}"
 
         body = {
             "amount": valor,
             "payerName": f"Cliente Telegram {user_id}",
-            "payerDocument": "00000000000",  # CPF padrão caso não seja recolhido no MiniApp
+            "payerDocument": "00000000000",
             "transactionId": transaction_id,
             "description": f"Recarga Yure eSIMS - R$ {valor:.2f}"
         }
@@ -1623,10 +1621,8 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
             
             print(f"🔍 [DEBUG MISTICPAY]: {resposta_completa}")
 
-            # Extrai o subobjeto 'data' retornado pela API da MisticPay
             dados_transacao = resposta_completa.get("data", {})
 
-            # Captura o Pix Copia e Cola e o Base64 do QR Code nas chaves corretas
             pix_copia_cola = (
                 dados_transacao.get("copyPaste") or 
                 dados_transacao.get("pixCopiaECola") or 
@@ -1634,18 +1630,10 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
                 dados_transacao.get("emv")
             )
             
-            qr_code_url = dados_transacao.get("qrCodeBase64", "")
-
-            if not pix_copia_cola:
-                await msg_aguarde.edit_text(
-                    "❌ Erro: Chave Pix não encontrada na resposta da MisticPay."
-                )
-                return
-            
             qr_code_url = (
-                data.get("qrCodeBase64") or 
-                data.get("qr_code_base64") or 
-                data.get("encodedImage") or
+                dados_transacao.get("qrCodeBase64") or 
+                dados_transacao.get("qr_code_base64") or 
+                dados_transacao.get("encodedImage") or
                 ""
             )
 
@@ -1653,13 +1641,12 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
                 qr_code_url = f"data:image/png;base64,{qr_code_url}"
 
             if not pix_copia_cola:
-                print(f"⚠️ Resposta da MisticPay: {data}")
+                print(f"⚠️ Resposta da MisticPay sem PIX: {resposta_completa}")
                 return {
                     "status": "erro",
                     "detalhe": "Não foi possível gerar a chave PIX na MisticPay.",
                 }
 
-        # 📊 REGISTRA MÉTRICA DE PIX GERADO NO FUNIL
         try:
             registrar_evento_funil(user_id, "pix_gerado")
         except Exception:
