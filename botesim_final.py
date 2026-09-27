@@ -937,13 +937,7 @@ async def obter_dados_admin(
         "acessos_miniapp_lista": lista_acessos_miniapp,
         "pix_gerados_lista": lista_pix_gerados
     }
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_REPO = "thallisimports-maker/bot-esim-yure"
 GITHUB_FILE_PATH = "estoque.json"
