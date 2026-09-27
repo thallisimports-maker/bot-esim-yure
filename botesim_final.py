@@ -296,12 +296,16 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         for prod in produtos:
             if str(prod.get("status", "")).lower().strip() == "disponivel":
-                op = prod.get("operadora", "eSIM")
+                op = prod.get("operadora", "Produto")
                 plano = prod.get("plano", "")
                 preco = float(prod.get("preco", 0))
                 prod_id = prod.get("id")
+                categoria = str(prod.get("categoria", "esim")).lower().strip()
 
-                texto_botao = f"📱 {op} {plano} - R$ {preco:.2f}"
+                # Define o ícone com base na categoria
+                emoji = "📦" if "infoproduto" in categoria else "📱"
+
+                texto_botao = f"{emoji} {op} {plano} - R$ {preco:.2f}"
                 callback = f"buy_{prod_id}"
 
                 botoes.append(
