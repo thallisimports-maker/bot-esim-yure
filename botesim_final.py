@@ -1379,6 +1379,13 @@ async def excluir_produto(
     salvar_dados(dados)
     return {"status": "sucesso", "mensagem": "Produto excluído com sucesso!"}
     
+    ,def limpar_markdown(texto: str) -> str:
+    if not texto:
+        return ""
+    for char in ["_", "*", "`", "["]:
+        texto = texto.replace(char, f"\\{char}")
+    return texto
+    
 class CompraMiniAppPayload(BaseModel):
     chat_id: str
     produto_id: str
@@ -2093,26 +2100,57 @@ async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
     finally:
         con.close()
 
+# 🔒 DEFINA UM TOKEN SECRETO NAS VARIÁVEIS DO RENDER OU USE O PADRÃO
+MISTICPAY_WEBHOOK_SECRET = os.environ.get("MISTICPAY_WEBHOOK_SECRET", "YurePixSeguro2026*")
+
 @app.post("/webhook/misticpay")
 async def webhook_misticpay(request: Request, token: str = None):
+    # 🚨 1. TRAVA DE SEGURANÇA: Bloqueia requisições sem o token correto
+    if not token or token.strip() != MISTICPAY_WEBHOOK_SECRET:
+        print("🚨 [ALERTA DE SEGURANÇA] Tentativa de injeção/disparo de Webhook NÃO AUTORIZADO!")
+        raise HTTPException(
+            status_code=403, 
+            detail="Acesso negado. Token de autenticação do webhook inválido."
+        )
+
     try:
         dados = await request.json()
-        print(f"📥 [WEBHOOK MISTICPAY RECEBIDO]: {dados}")
+        print(f"📥 [WEBHOOK MISTICPAY RECEBIDO E AUTENTICADO]: {dados}")
     except Exception as e:
         print(f"Erro ao ler JSON do webhook MisticPay: {e}")
         return {"status": "erro", "detalhe": str(e)}
 
-    # A MisticPay pode enviar os dados na raiz ou encapsulados num objeto 'data'
     payload_dados = dados.get("data") if isinstance(dados.get("data"), dict) else dados
 
-    # Extrai o status, o id da transação e o valor
     status = str(payload_dados.get("status") or payload_dados.get("state") or "").lower()
     transaction_id = str(payload_dados.get("transactionId") or payload_dados.get("external_reference") or payload_dados.get("id") or "")
     valor_raw = payload_dados.get("amount") or payload_dados.get("value") or 0
 
-    print(f"🔍 [DEBUG WEBHOOK] Status detetado: '{status}' | Transação: {transaction_id} | Valor: {valor_raw}")
-
     if status in ["paid", "approved", "concluido", "pago", "completed", "success", "confirmed", "completo"]:
+        
+        # 🚨 2. CONSULTA CRUZADA NA MISTICPAY (Garante que o pagamento existiu de fato)
+        try:
+            client_id = os.environ.get("MISTICPAY_CI", "")
+            client_secret = os.environ.get("MISTICPAY_CS", "")
+            url_consulta = f"https://api.misticpay.com/api/transactions/{transaction_id}"
+            
+            headers = {
+                "ci": client_id,
+                "cs": client_secret,
+                "Accept": "application/json"
+            }
+            
+            async with httpx.AsyncClient() as client:
+                res_checagem = await client.get(url_consulta, headers=headers, timeout=10.0)
+                if res_checagem.status_code == 200:
+                    dados_reais = res_checagem.json().get("data", {})
+                    status_real = str(dados_reais.get("status") or "").lower()
+                    if status_real not in ["paid", "approved", "concluido", "pago", "completed", "success"]:
+                        print(f"🚨 [TENTATIVA DE FRAUDE] O webhook disse 'paid', mas na MisticPay consta: {status_real}")
+                        return {"status": "erro", "detalhe": "Transação não confirmada na API MisticPay"}
+        except Exception as err_check:
+            print(f"Aviso de verificação cruzada: {err_check}")
+
         user_id = ""
         if "yure_" in transaction_id:
             partes = transaction_id.split("_")
@@ -2126,26 +2164,23 @@ async def webhook_misticpay(request: Request, token: str = None):
 
         try:
             valor_pago = float(valor_raw)
-            if valor_pago > 100:  # Salvaguarda caso venha em cêntimos
+            if valor_pago > 100:
                 valor_pago = valor_pago / 100.0
         except Exception:
             valor_pago = 0.0
 
         if user_id and valor_pago > 0:
             con = conectar_banco()
-            cur = con.cursor()
             try:
-                # 1. Insere o utilizador se não existir, ou atualiza o saldo se já existir
+                cur = con.cursor()
                 cur.execute(
                     "INSERT INTO carteira (chat_id, saldo) VALUES (%s, %s) ON CONFLICT (chat_id) DO UPDATE SET saldo = carteira.saldo + %s",
                     (str(user_id), valor_pago, valor_pago)
                 )
-                
-                # 2. Regista no funil de métricas
-                cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (?, 'compra_concluida')", (str(user_id),))
+                cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, 'compra_concluida')", (str(user_id),))
                 con.commit()
                 
-                # 🗑️ 3. Apaga a mensagem antiga do Pix gerado no chat do Telegram
+                # Apaga mensagem antiga do Pix
                 try:
                     cur.execute("SELECT message_id FROM pix_mensagens WHERE chat_id = %s ORDER BY transaction_id DESC LIMIT 1", (str(user_id),))
                     row_msg = cur.fetchone()
@@ -2156,30 +2191,26 @@ async def webhook_misticpay(request: Request, token: str = None):
                                 json={"chat_id": str(user_id), "message_id": row_msg["message_id"]},
                                 timeout=5.0
                             )
-                        cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, 'compra_concluida')", (str(user_id),))
+                        cur.execute("DELETE FROM pix_mensagens WHERE chat_id = %s", (str(user_id),))
                         con.commit()
                 except Exception as err_del:
                     print(f"Aviso ao apagar mensagem antiga do Pix: {err_del}")
                 
-                # 4. Envia a nova notificação elegante de pagamento aprovado
+                # Envia notificação
                 url_telegram = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
                 msg = (
                     f"✨ *PAGAMENTO APROVADO COM SUCESSO!* ✨\n\n"
                     f"💳 *Valor Creditado:* `R$ {valor_pago:.2f}`\n\n"
-                    f"🚀 O seu saldo já está disponível na carteira! Pode resgatar o seu e-SIM comodamente através do **MiniApp** ou diretamente aqui pelo **chat do bot**."
+                    f"🚀 O seu saldo já está disponível na carteira!"
                 )
-                
                 async with httpx.AsyncClient() as client:
                     await client.post(url_telegram, json={"chat_id": str(user_id), "text": msg, "parse_mode": "Markdown"}, timeout=10.0)
                     
-                print(f"✅ Sucesso absoluto: Crédito de R$ {valor_pago:.2f} aplicado ao utilizador {user_id} via MisticPay")
-            except Exception as e:
-                print(f"Erro ao processar saldo do webhook MisticPay no banco: {e}")
             finally:
                 con.close()
 
     return {"status": "sucesso"}
-        
+    
 @app.post("/webhook/telegram")
 async def webhook_telegram(request: Request):
     try:
