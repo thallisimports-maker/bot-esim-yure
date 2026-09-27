@@ -1379,7 +1379,7 @@ async def excluir_produto(
     salvar_dados(dados)
     return {"status": "sucesso", "mensagem": "Produto excluído com sucesso!"}
     
-    ,def limpar_markdown(texto: str) -> str:
+def limpar_markdown(texto: str) -> str:
     if not texto:
         return ""
     for char in ["_", "*", "`", "["]:
