@@ -566,7 +566,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         print(f"⚠️ [DEBUG] Erro ao parar o loading: {e}")
 
     user_id = str(query.from_user.id)
-    nome_usuario = query.from_user.first_name
+    nome_usuario = query.from_user.first_name or "Cliente"
     dados = carregar_dados()
 
     if query.data.startswith("buy_"):
@@ -576,7 +576,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
 
             if not produto or str(produto.get("status", "")).lower().strip() != "disponivel":
-                await context.bot.send_message(chat_id=user_id, text="❌ Este e-SIM já não se encontra disponível!")
+                await context.bot.send_message(chat_id=user_id, text="❌ Este produto já não se encontra disponível!")
                 return
 
             preco = float(produto.get("preco", 0))
@@ -584,24 +584,24 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             con = conectar_banco()
             try:
                 cur = con.cursor()
-                cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (user_id,))
+                cur.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,))
                 res_saldo = cur.fetchone()
                 saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
 
                 if saldo_atual < preco:
                     await context.bot.send_message(
                         chat_id=user_id,
-                        text=f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você tem **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para comprar.",
+                        text=f"❌ **Saldo insuficiente!**\n\nEste produto custa **R$ {preco:.2f}** e você tem **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para comprar.",
                         parse_mode="Markdown"
                     )
                     return 
 
                 novo_saldo = saldo_atual - preco
-                cur.execute("UPDATE carteira SET saldo = ? WHERE chat_id = ?", (novo_saldo, user_id))
+                cur.execute("UPDATE carteira SET saldo = %s WHERE chat_id = %s", (novo_saldo, user_id))
                 
                 try:
                     nome_plano = f"{produto.get('operadora', '')} {produto.get('plano', '')}"
-                    cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (?, ?, ?)", (user_id, nome_plano, preco))
+                    cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (%s, %s, %s)", (user_id, nome_plano, preco))
                 except Exception as e:
                     print(f"Erro ao registrar histórico: {e}")
                 con.commit()
@@ -626,39 +626,49 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             except Exception as e:
                 print(f"Aviso sync github: {e}")
 
-            imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
-            descricao_extra = produto.get("descricao", "")
-            legenda = (
-                f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
-                f"📱 **Operadora:** {produto.get('operadora')}\n"
-                f"📦 **Plano:** {produto.get('plano')}\n"
-                f"💰 **Valor:** R$ {preco:.2f}\n\n"
-                f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima (na imagem):'}"
-            )
+            # 🚀 ENTREGA INTELIGENTE (E-SIM OU INFOPRODUTO)
+            categoria = str(produto.get("categoria", "esim")).lower().strip()
 
-            # Envia a Foto
-            print("🟢 [DEBUG] Iniciando envio da foto do QR Code...")
-            if imagem_qr:
-                if imagem_qr.startswith("data:image"):
-                    try:
-                        header, encoded = imagem_qr.split(",", 1)
-                        image_data = base64.b64decode(encoded)
-                        await context.bot.send_photo(chat_id=user_id, photo=image_data, caption=legenda, parse_mode="Markdown")
-                        print("✅ [DEBUG] Foto Base64 enviada!")
-                    except Exception as e:
-                        print(f"Erro ao enviar Base64: {e}")
-                        await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem)*", parse_mode="Markdown")
-                elif imagem_qr.startswith("http"):
-                    try:
-                        await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
-                        print("✅ [DEBUG] Foto URL enviada!")
-                    except Exception as e:
-                        print(f"Erro ao enviar URL: {e}")
-                        await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem via URL)*", parse_mode="Markdown")
-                else:
-                    await context.bot.send_message(chat_id=user_id, text=legenda + f"\n\n{imagem_qr}", parse_mode="Markdown")
+            if "infoproduto" in categoria:
+                mensagem_entrega = montar_mensagem_infoproduto(produto, user_id)
+                await context.bot.send_message(
+                    chat_id=user_id,
+                    text=mensagem_entrega,
+                    parse_mode="Markdown"
+                )
             else:
-                await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code não disponível)*", parse_mode="Markdown")
+                imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
+                descricao_extra = produto.get("descricao", "")
+                legenda = (
+                    f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
+                    f"📱 **Operadora:** {produto.get('operadora')}\n"
+                    f"📦 **Plano:** {produto.get('plano')}\n"
+                    f"💰 **Valor:** R$ {preco:.2f}\n\n"
+                    f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima (na imagem):'}"
+                )
+
+                print("🟢 [DEBUG] Iniciando envio da foto do QR Code...")
+                if imagem_qr:
+                    if imagem_qr.startswith("data:image"):
+                        try:
+                            header, encoded = imagem_qr.split(",", 1)
+                            image_data = base64.b64decode(encoded)
+                            await context.bot.send_photo(chat_id=user_id, photo=image_data, caption=legenda, parse_mode="Markdown")
+                            print("✅ [DEBUG] Foto Base64 enviada!")
+                        except Exception as e:
+                            print(f"Erro ao enviar Base64: {e}")
+                            await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem)*", parse_mode="Markdown")
+                    elif imagem_qr.startswith("http"):
+                        try:
+                            await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
+                            print("✅ [DEBUG] Foto URL enviada!")
+                        except Exception as e:
+                            print(f"Erro ao enviar URL: {e}")
+                            await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem via URL)*", parse_mode="Markdown")
+                    else:
+                        await context.bot.send_message(chat_id=user_id, text=legenda + f"\n\n{imagem_qr}", parse_mode="Markdown")
+                else:
+                    await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code não disponível)*", parse_mode="Markdown")
 
         except Exception as err:
             logging.error(f"Erro crítico no botão de compra: {err}")
