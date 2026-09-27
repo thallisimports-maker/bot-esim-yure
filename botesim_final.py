@@ -1115,7 +1115,7 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
             f"📱 **Operadora:** {produto.get('operadora')}\n"
             f"📦 **Plano:** {produto.get('plano')}\n"
             f"💰 **Valor:** R$ {preco:.2f}\n\n"
-            f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se abaixo:'}"
+            f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima:'}"
         )
 
         if imagem_qr and imagem_qr.startswith("http"):
