@@ -426,27 +426,6 @@ async def comando_esims(
     await update.message.reply_text(
         texto, parse_mode="Markdown", reply_markup=reply_markup
     )
-
-
-# Envia a foto do QR Code ao cliente com suporte total a URL e Base64
-    if imagem_qr:
-        if imagem_qr.startswith("data:image"):
-            try:
-                header, encoded = imagem_qr.split(",", 1)
-                image_data = base64.b64decode(encoded)
-                files = {'photo': ('esim_qrcode.png', BytesIO(image_data), 'image/png')}
-                data = {'chat_id': user_id, 'caption': legenda, 'parse_mode': 'Markdown'}
-                async with httpx.AsyncClient() as client:
-                    await client.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto", data=data, files=files, timeout=15)
-            except Exception as e:
-                print(f"Erro ao enviar Base64 no Telegram: {e}")
-                await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem do QR Code)*", parse_mode="Markdown")
-        elif imagem_qr.startswith("http"):
-            await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
-        else:
-            await context.bot.send_message(chat_id=user_id, text=legenda + f"\n\n{imagem_qr}", parse_mode="Markdown")
-    else:
-        await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code não disponível)*", parse_mode="Markdown")
             
 async def receber_dados_webapp(
     update: Update, context: ContextTypes.DEFAULT_TYPE
