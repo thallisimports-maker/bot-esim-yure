@@ -253,15 +253,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     first_name = user.first_name or "Usuário"
     username = user.username or "sem_username"
 
-    # 📊 Regista o evento no funil de métricas do Painel Admin
     try:
         registrar_evento_funil(chat_id, "start")
     except Exception as e:
         print(f"Erro ao registrar funil start: {e}")
 
-    con = conectar_banco()
-    cur = con.cursor()
+    saldo = 0.0
     try:
+        con = conectar_banco()
+        cur = con.cursor()
         cur.execute("""
             INSERT INTO carteira (chat_id, first_name, username, saldo) 
             VALUES (?, ?, ?, 0.0)
@@ -271,22 +271,17 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
         cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
         res_saldo = cur.fetchone()
-        saldo = float(res_saldo["saldo"]) if res_saldo else 0.0
-        
-        cur.execute("SELECT produto_id, quantidade FROM estoque")
-        est = {row["produto_id"]: row["quantidade"] for row in cur.fetchall()}
-    except Exception as e:
-        logging.error(f"Erro no /start: {e}")
-        saldo = 0.0
-        est = {}
-    finally:
+        if res_saldo:
+            saldo = float(res_saldo["saldo"])
         con.close()
+    except Exception as e:
+        logging.error(f"Erro na base de dados no /start: {e}")
 
     url_miniapp = "https://baseyure.shop"
 
     texto = (
         f"👑 **YURE eSIMS — HUMILDADE, LEALDADE, DISCIPLINA E ATITUDE**\n\n"
-        f"Olá, **{first_name}**! Olá! 👋 Seja muito bem-vindo à YURE eSIMS.\n\n"
+        f"Olá, **{first_name}**! 👋 Seja muito bem-vindo à YURE eSIMS.\n\n"
         f"💰 **Saldo na Carteira:** `R$ {saldo:.2f}`\n\n"
         f"📱 **Nosso compromisso é oferecer uma experiência simples, transparente e eficiente — do pedido à ativação.**\n"
         f"Escolha uma opção abaixo para acessar a loja:"
@@ -296,30 +291,42 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         [InlineKeyboardButton("👑 ABRIR LOJA YURE eSIMS (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))]
     ]
 
-    # 1. Carrega os produtos atualizados do estoque.json
-    dados = carregar_dados()
-    produtos = dados.get("produtos", [])
-
-    # 2. Percorre os produtos e adiciona botões apenas para os e-SIMs 'disponivel'
-    for prod in produtos:
-        if str(prod.get("status", "")).lower().strip() == "disponivel":
-            op = prod.get("operadora", "eSIM")
-            plano = prod.get("plano", "")
-            preco = float(prod.get("preco", 0))
-            prod_id = prod.get("id")
-
-            # Cria o botão dinâmico com o nome, plano e preço cadastrados no Painel
-            texto_botao = f"📱 {op} {plano} - R$ {preco:.2f}"
-            callback = f"buy_{prod_id}"
-
-            botoes.append(
-                [InlineKeyboardButton(texto_botao, callback_data=callback)]
-            )
     try:
-        await context.bot.send_photo(chat_id=chat_id, photo=LOGO_URL, caption=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+        dados = carregar_dados()
+        produtos = dados.get("produtos", [])
+
+        for prod in produtos:
+            if str(prod.get("status", "")).lower().strip() == "disponivel":
+                op = prod.get("operadora", "eSIM")
+                plano = prod.get("plano", "")
+                preco = float(prod.get("preco", 0))
+                prod_id = prod.get("id")
+
+                texto_botao = f"📱 {op} {plano} - R$ {preco:.2f}"
+                callback = f"buy_{prod_id}"
+
+                botoes.append(
+                    [InlineKeyboardButton(texto_botao, callback_data=callback)]
+                )
+    except Exception as e:
+        logging.error(f"Erro ao carregar produtos no /start: {e}")
+
+    try:
+        await context.bot.send_photo(
+            chat_id=chat_id, 
+            photo=LOGO_URL, 
+            caption=texto, 
+            parse_mode="Markdown", 
+            reply_markup=InlineKeyboardMarkup(botoes)
+        )
     except Exception as err:
-        logging.error(f"Erro ao enviar photo, enviando texto: {err}")
-        await context.bot.send_message(chat_id=chat_id, text=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
+        logging.error(f"Erro ao enviar foto no /start, enviando texto: {err}")
+        await context.bot.send_message(
+            chat_id=chat_id, 
+            text=texto, 
+            parse_mode="Markdown", 
+            reply_markup=InlineKeyboardMarkup(botoes)
+        )
 
 async def comando_saldo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = str(update.effective_chat.id)
