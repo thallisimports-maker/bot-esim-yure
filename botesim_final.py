@@ -434,7 +434,7 @@ async def receber_dados_webapp(
         return
 
     user_id = str(update.message.from_user.id)
-    nome_usuario = update.message.from_user.first_name
+    nome_usuario = update.message.from_user.first_name or "Cliente"
 
     try:
         dados_recebidos = json.loads(update.message.web_app_data.data)
@@ -499,38 +499,41 @@ async def receber_dados_webapp(
             dados.setdefault("vendas", []).append(registro_venda)
 
             salvar_dados(dados)
-            salvar_dados_no_github(dados)
+            try:
+                salvar_dados_no_github(dados)
+            except Exception as e:
+                print(f"Aviso sync github: {e}")
 
             imagem_qr = produto.get("imagem_qr", "")
-        legenda = (
-            f"✅ **COMPRA REALIZADA COM SUCESSO VIA MINIAPP!**\n\n"
-            f"📱 **Operadora:** {produto.get('operadora')}\n"
-            f"📋 **Plano:** {produto.get('plano')}\n"
-            f"💰 **Valor:** R$ {preco:.2f}\n\n"
-            f"👆 *Seu QR Code de ativação encontra-se acima (na imagem).* Basta apontar a câmara para ele!"
-        )
-
-        if imagem_qr and imagem_qr.startswith("http"):
-            await context.bot.send_photo(
-                chat_id=user_id,
-                photo=imagem_qr,
-                caption=legenda,
-                parse_mode="Markdown",
-            )
-        else:
-            await context.bot.send_message(
-                chat_id=user_id,
-                text=legenda + "\n\n*(QR Code enviado com sucesso)*",
-                parse_mode="Markdown",
+            legenda = (
+                f"✅ **COMPRA REALIZADA COM SUCESSO VIA MINIAPP!**\n\n"
+                f"📱 **Operadora:** {produto.get('operadora')}\n"
+                f"📋 **Plano:** {produto.get('plano')}\n"
+                f"💰 **Valor:** R$ {preco:.2f}\n\n"
+                f"👆 *Seu QR Code de ativação encontra-se acima (na imagem).* Basta apontar a câmara para ele!"
             )
 
-    # 2. SOLICITAÇÃO DE RECARGA
-    elif acao == "recarga":
-        valor = float(dados_recebidos.get("valor", 0))
-        await update.message.reply_text(
-            f"⚡ **Solicitação de Recarga Recebida!**\n\nValor: **R$ {valor:.2f}**\nUtilize a opção de recarga do bot para gerar o PIX.",
-            parse_mode="Markdown",
-        )
+            if imagem_qr and imagem_qr.startswith("http"):
+                await context.bot.send_photo(
+                    chat_id=user_id,
+                    photo=imagem_qr,
+                    caption=legenda,
+                    parse_mode="Markdown",
+                )
+            else:
+                await context.bot.send_message(
+                    chat_id=user_id,
+                    text=legenda + "\n\n*(QR Code enviado com sucesso)*",
+                    parse_mode="Markdown",
+                )
+
+        # 2. SOLICITAÇÃO DE RECARGA
+        elif acao == "recarga":
+            valor = float(dados_recebidos.get("valor", 0))
+            await update.message.reply_text(
+                f"⚡ **Solicitação de Recarga Recebida!**\n\nValor: **R$ {valor:.2f}**\nUtilize a opção de recarga do bot para gerar o PIX.",
+                parse_mode="Markdown",
+            )
 
     except Exception as e:
         await update.message.reply_text(f"❌ Erro ao processar pedido: {str(e)}")
