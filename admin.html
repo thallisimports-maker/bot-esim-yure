@@ -30,6 +30,16 @@
     min-height: 100vh;
   }
 
+    /* Esconde todas as seções por padrão */
+.tab-content {
+  display: none !important;
+}
+
+/* Exibe apenas a seção que estiver ativa */
+.tab-content.active {
+  display: block !important;
+}
+    
   /* TELA DE LOGIN */
   .login-container, #loginBox {
     background-color: var(--bg-dark);
