@@ -161,7 +161,7 @@
       "conteudo_copia_cola": "CPF: 27546730910\nData de Nascimento: 28/06/1956",
       "imagem_qr": "",
       "imagem_url": "",
-      "status": "disponivel"
+      "status": "vendido"
     }
   ],
   "utilizadores": {},
@@ -269,6 +269,14 @@
       "operadora": "Claro",
       "valor": 13.0,
       "data": "2026-09-27 21:35:41"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "prod_16",
+      "operadora": "InfoProduto",
+      "valor": 15.0,
+      "data": "2026-09-27 23:01:18"
     }
   ],
   "cupons": {
