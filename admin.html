@@ -292,12 +292,69 @@
           </table>
         </div>
       <!-- ABA 2: ESTOQUE -->
-      <div id="sec-estoque" class="section-block">
-        <div class="header-bar">
-          <h1>📦 Gerenciar Estoque de e-SIMs</h1>
-        </div>
-        <div class="card-box">
-          <h3>Cadastrar Novo e-SIM</h3>
+     <div class="card-box">
+          <h3>Cadastrar Novo Produto (e-SIM / Info Produto)</h3>
+          <form id="formEstoque" onsubmit="event.preventDefault(); salvarNovoProduto();">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div class="form-group">
+                <label>Categoria do Produto:</label>
+                <select id="p_categoria" onchange="alternarCamposCategoria()">
+                  <option value="esim">📱 e-SIM (Entrega via QR Code / Imagem)</option>
+                  <option value="infoproduto">📦 Info Produto (Entrega via Texto / Copia e Cola)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Operadora / Tipo:</label>
+                <select id="p_operadora">
+                  <option value="Claro">Claro</option>
+                  <option value="Vivo">Vivo</option>
+                  <option value="Tim">Tim</option>
+                  <option value="InfoProduto">InfoProduto</option>
+                </select>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div class="form-group">
+                <label>Plano / Nome do Produto:</label>
+                <input type="text" id="p_plano" placeholder="Ex: 30GB ou Acesso VIP 30 Dias" required>
+              </div>
+              <div class="form-group">
+                <label>Preço (R$):</label>
+                <input type="number" step="0.01" id="p_preco" placeholder="25.00" required>
+              </div>
+            </div>
+
+            <!-- 📱 BLOCO E-SIM (Padrão) -->
+            <div id="bloco-esim">
+              <div class="form-group" style="margin-bottom: 15px;">
+                <label>Link do QR Code / Imagem (URL ou Base64):</label>
+                <input type="text" id="p_imagem" placeholder="https://... ou data:image/png;base64,...">
+              </div>
+              <div class="form-group" style="margin-bottom: 15px;">
+                <label>Aviso / Instruções de Ativação (Opcional):</label>
+                <textarea id="p_descricao" rows="2" placeholder="Escaneie o QR Code para ativar..."></textarea>
+              </div>
+            </div>
+
+            <!-- 📦 BLOCO INFO PRODUTO (Oculto até selecionar no dropdown) -->
+            <div id="bloco-infoproduto" style="display: none;">
+              <div class="form-group" style="margin-bottom: 15px;">
+                <label>📋 Dados Principais:</label>
+                <textarea id="p_dados_principais" rows="2" placeholder="Ex: ■ Conta: vip@usuario.com&#10;■ Senha: Pass123*"></textarea>
+              </div>
+              <div class="form-group" style="margin-bottom: 15px;">
+                <label>ℹ️ Informações Adicionais:</label>
+                <textarea id="p_info_adicionais" rows="2" placeholder="Ex: ■ Suporte: @suporte_telegram&#10;■ Garantia: 30 dias"></textarea>
+              </div>
+              <div class="form-group" style="margin-bottom: 15px;">
+                <label>📦 Conteúdo Completo (Caixa Copia e Cola):</label>
+                <textarea id="p_copia_cola" rows="3" placeholder="vip@usuario.com|Pass123*|2026-10-27"></textarea>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-submit" style="width: 100%; margin-top: 10px;">💾 Cadastrar Produto</button>
+          </form>
         </div>
 
         <div class="card-box">
