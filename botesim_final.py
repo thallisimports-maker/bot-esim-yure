@@ -469,29 +469,29 @@ async def receber_dados_webapp(
             preco = float(produto.get("preco", 0))
 
             con = conectar_banco()
-        try:
-            cur = con.cursor()
-            cur.execute(
-                "SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,)
-            )
-            res_saldo = cur.fetchone()
-            saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
-
-            if saldo_atual < preco:
-                await update.message.reply_text(
-                    f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você possui **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para finalizar a compra.",
-                    parse_mode="Markdown",
+            try:
+                cur = con.cursor()
+                cur.execute(
+                    "SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,)
                 )
-                return
+                res_saldo = cur.fetchone()
+                saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
 
-            novo_saldo = saldo_atual - preco
-            cur.execute(
-                "UPDATE carteira SET saldo = %s WHERE chat_id = %s",
-                (novo_saldo, user_id),
-            )
-            con.commit()
-        finally:
-            con.close(),
+                if saldo_atual < preco:
+                    await update.message.reply_text(
+                        f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você possui **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para finalizar a compra.",
+                        parse_mode="Markdown",
+                    )
+                    return
+
+                novo_saldo = saldo_atual - preco
+                cur.execute(
+                    "UPDATE carteira SET saldo = %s WHERE chat_id = %s",
+                    (novo_saldo, user_id),
+                )
+                con.commit()
+            finally:
+                con.close()
 
             produto["status"] = "vendido"
 
