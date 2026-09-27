@@ -1385,6 +1385,36 @@ def limpar_markdown(texto: str) -> str:
     for char in ["_", "*", "`", "["]:
         texto = texto.replace(char, f"\\{char}")
     return texto
+
+import random
+
+import random
+
+def montar_mensagem_infoproduto(produto: dict, user_id: str) -> str:
+    id_compra = random.randint(2000000, 9999999)
+    data_str = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    dados_principais = produto.get("dados_principais") or produto.get("dados") or produto.get("plano") or "Dados liberados após confirmação"
+    info_adicionais = produto.get("informacoes_adicionais") or produto.get("info_extra") or "Garantia e suporte inclusos"
+    copia_cola = produto.get("conteudo_copia_cola") or produto.get("descricao") or "Sem conteúdo extra"
+
+    msg = (
+        f"✨ *PRODUTO COMPRADO COM SUCESSO!* ✨\n\n"
+        f"💎 *DETALHES DA TRANSAÇÃO*\n"
+        f"■ *ID da Compra:* `{id_compra}`\n"
+        f"■ *Seu ID:* `{user_id}`\n"
+        f"■ *Data:* `{data_str}`\n\n"
+        f"📋 *DADOS*\n"
+        f"{limpar_markdown(str(dados_principais))}\n\n"
+        f"ℹ️ *INFORMAÇÕES ADICIONAIS*\n"
+        f"{limpar_markdown(str(info_adicionais))}\n\n"
+        f"📦 *DADOS COMPLETOS (Copia e Cola)*\n"
+        f"```text\n"
+        f"{copia_cola}\n"
+        f"```\n\n"
+        f"✅ *Obrigado pela preferência!*"
+    )
+    return msg
     
 class CompraMiniAppPayload(BaseModel):
     chat_id: str
