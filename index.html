@@ -619,7 +619,21 @@
       }
     }
   }
+// Filtrar produtos por categoria no MiniApp
+  function filtrarCategoria(categoria, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
 
+    const cards = document.querySelectorAll('#listaProdutos .card-produto');
+    cards.forEach(card => {
+      const catProd = (card.getAttribute('data-categoria') || 'esim').toLowerCase();
+      if (categoria === 'todas' || catProd.includes(categoria.toLowerCase())) {
+        card.style.display = 'flex';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+  }
   // 4. Carregar Catálogo de Produtos / e-SIMs (Com Trava de Segurança)
   async function carregarProdutosMinisite() {
     const container = document.getElementById('listaProdutos');
@@ -677,7 +691,7 @@
         }
 
         html += `
-          <div class="card-produto" data-operadora="${opClean}">
+          <div class="card-produto" data-operadora="${opClean}" data-categoria="${(p.categoria || 'esim').toLowerCase()}">
             <div class="prod-info">
               ${badgeHtml}
               <h4>📲 ${p.operadora}</h4>
