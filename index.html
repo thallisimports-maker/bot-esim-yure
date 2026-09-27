@@ -638,6 +638,43 @@
       }
     });
   }
+    // Alterna entre a aba de eSIMs e Info Produtos
+  function alternarCategoriaPrincipal(categoria) {
+    const btnEsim = document.getElementById('btn-cat-esim');
+    const btnInfo = document.getElementById('btn-cat-infoproduto');
+    const filtrosOperadora = document.getElementById('filtrosOperadoras');
+    const bannerEsim = document.getElementById('bannerEsim');
+    const guiaEsim = document.getElementById('guiaEsim');
+
+    if (categoria === 'infoproduto') {
+      if (btnEsim) btnEsim.classList.remove('active');
+      if (btnInfo) btnInfo.classList.add('active');
+
+      // Oculta elementos exclusivos de e-SIM
+      if (filtrosOperadora) filtrosOperadora.style.display = 'none';
+      if (bannerEsim) bannerEsim.style.display = 'none';
+      if (guiaEsim) guiaEsim.style.display = 'none';
+    } else {
+      if (btnInfo) btnInfo.classList.remove('active');
+      if (btnEsim) btnEsim.classList.add('active');
+
+      // Exibe elementos exclusivos de e-SIM
+      if (filtrosOperadora) filtrosOperadora.style.display = 'flex';
+      if (bannerEsim) bannerEsim.style.display = 'block';
+      if (guiaEsim) guiaEsim.style.display = 'block';
+    }
+
+    // Filtra os produtos visíveis na tela
+    const cards = document.querySelectorAll('#listaProdutos .card-produto');
+    cards.forEach(card => {
+      const catProd = (card.getAttribute('data-categoria') || 'esim').toLowerCase();
+      if (categoria === 'infoproduto') {
+        card.style.display = catProd.includes('infoproduto') ? 'flex' : 'none';
+      } else {
+        card.style.display = !catProd.includes('infoproduto') ? 'flex' : 'none';
+      }
+    });
+  }
   // 4. Carregar Catálogo de Produtos / e-SIMs (Com Trava de Segurança)
   async function carregarProdutosMinisite() {
     const container = document.getElementById('listaProdutos');
