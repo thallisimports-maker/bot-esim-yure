@@ -302,7 +302,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                 prod_id = prod.get("id")
                 categoria = str(prod.get("categoria", "esim")).lower().strip()
 
-                # Define o ícone com base na categoria
+                # Define o ícone dinamicamente conforme a categoria
                 emoji = "📦" if "infoproduto" in categoria else "📱"
 
                 texto_botao = f"{emoji} {op} {plano} - R$ {preco:.2f}"
