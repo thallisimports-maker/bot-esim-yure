@@ -544,6 +544,14 @@ async def receber_dados_webapp(
                 text=legenda + "\n\n*(QR Code enviado com sucesso)*",
                 parse_mode="Markdown",
             )
+
+    # 2. SOLICITAÇÃO DE RECARGA
+    elif acao == "recarga":
+        valor = float(dados_recebidos.get("valor", 0))
+        await update.message.reply_text(
+            f"⚡ **Solicitação de Recarga Recebida!**\n\nValor: **R$ {valor:.2f}**\nUtilize a opção de recarga do bot para gerar o PIX.",
+            parse_mode="Markdown",
+        )
             
         # 2. SOLICITAÇÃO DE RECARGA
         elif acao == "recarga":
