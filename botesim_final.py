@@ -1102,27 +1102,26 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
     except Exception as e:
         print(f"Aviso sync github: {e}")
 
-    # 🚀 ENVIO INTELIGENTE (E-SIM OU INFOPRODUTO)
-    categoria = str(produto.get("categoria", "esim")).lower().strip()
+    # ENVIO INTELIGENTE (E-SIM OU INFOPRODUTO)
+        categoria = str(produto.get("categoria", "esim")).lower().strip()
 
-    try:
-        if "infoproduto" in categoria:
-            mensagem_entrega = montar_mensagem_infoproduto(produto, user_id)
-            url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+        try:
+            if "infoproduto" in categoria:
+                mensagem_entrega = montar_mensagem_infoproduto(produto, user_id)
+                url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-            async with httpx.AsyncClient() as client:
-                await client.post(
-                    url_telegram_msg,
-                    json={
-                        "chat_id": user_id,
-                        "text": mensagem_entrega,
-                        "parse_mode": "HTML",
-                    },
-                    timeout=10.0,
-                )
-        else:
-            imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
-            descricao_extra = produto.get("descricao", "")
+                async with httpx.AsyncClient() as client:
+                    await client.post(
+                        url_telegram_msg,
+                        json={
+                            "chat_id": user_id,
+                            "text": mensagem_entrega,
+                            "parse_mode": "HTML",
+                        },
+                        timeout=10.0,
+                    )
+            else:
+                # Código de envio do e-SIM (imagem / QR Code)...
 
             caption_text = (
                 f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
