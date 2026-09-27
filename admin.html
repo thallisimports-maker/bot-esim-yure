@@ -441,7 +441,70 @@
   <script>
     const URL_BACKEND = "https://bot-esim-yure.onrender.com";
     let produtoEmEdicao = null;
+// 🔹 ALTERNAR EXIBIÇÃO DE CAMPOS POR CATEGORIA
+function alternarCamposCategoria() {
+    const cat = document.getElementById("p_categoria").value;
+    const blocoEsim = document.getElementById("bloco-esim");
+    const blocoInfo = document.getElementById("bloco-infoproduto");
 
+    if (cat === "infoproduto") {
+        blocoEsim.style.display = "none";
+        blocoInfo.style.display = "block";
+    } else {
+        blocoEsim.style.display = "block";
+        blocoInfo.style.display = "none";
+    }
+}
+
+// 🔹 SALVAR NOVO PRODUTO (E-SIM OU INFOPRODUTO)
+async function salvarNovoProduto() {
+    const senhaAdmin = localStorage.getItem("senha_admin") || "yuresantos26";
+    const categoria = document.getElementById("p_categoria").value;
+    const operadora = document.getElementById("p_operadora").value;
+    const plano = document.getElementById("p_plano").value.trim();
+    const preco = parseFloat(document.getElementById("p_preco").value) || 0;
+
+    if (!plano || preco <= 0) {
+        alert("Por favor, preencha o nome/plano e um preço válido!");
+        return;
+    }
+
+    const payload = {
+        senha_admin: senhaAdmin,
+        categoria: categoria,
+        operadora: operadora,
+        plano: plano,
+        preco: preco,
+        imagem_url: document.getElementById("p_imagem") ? document.getElementById("p_imagem").value.trim() : "",
+        descricao: document.getElementById("p_descricao") ? document.getElementById("p_descricao").value.trim() : "",
+        dados_principais: document.getElementById("p_dados_principais") ? document.getElementById("p_dados_principais").value.trim() : "",
+        informacoes_adicionais: document.getElementById("p_info_adicionais") ? document.getElementById("p_info_adicionais").value.trim() : "",
+        conteudo_copia_cola: document.getElementById("p_copia_cola") ? document.getElementById("p_copia_cola").value.trim() : ""
+    };
+
+    try {
+        const response = await fetch(`${URL_BACKEND}/api/admin/produtos`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${senhaAdmin}`
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const res = await response.json();
+
+        if (response.ok && res.status === "sucesso") {
+            alert("✅ Produto cadastrado com sucesso!");
+            location.reload();
+        } else {
+            alert("❌ Erro ao cadastrar: " + (res.detail || res.detalhe || "Falha na requisição"));
+        }
+    } catch (error) {
+        console.error("Erro na requisição:", error);
+        alert("❌ Erro ao conectar com o servidor!");
+    }
+}
     // 1. AUTENTICAÇÃO E LOGIN SEGURO (SENHA INVISÍVEL NO DEVTOOLS)
     async function fazerLogin() {
       const tokenInput = document.getElementById('tokenInput');
