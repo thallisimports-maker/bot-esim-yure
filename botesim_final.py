@@ -1218,7 +1218,7 @@ async def obter_produtos_admin(authorization: str = Header(None)):
     }
 
 
-# 2. ROTA POST (Usada pelo Admin para ADICIONAR novos e-SIMs)
+# 2. ROTA POST (Usada pelo Admin para ADICIONAR novos e-SIMs e Infoprodutos)
 @app.post("/api/admin/produtos")
 @app.post("/api/admin/adicionar-produto")
 async def adicionar_produto(
@@ -1250,10 +1250,10 @@ async def adicionar_produto(
         and token_fornecido != globals().get("PUSHINPAY_TOKEN", "").strip()
     ):
         raise HTTPException(
-            status_code=401, detail="Acesso negado! Nao autorizado."
+            status_code=401, detail="Acesso negado! Não autorizado."
         )
 
-    operadora = data.get("operadora") or data.get("categoria") or "Claro"
+    operadora = data.get("operadora") or data.get("categoria_nome") or "Claro"
     plano = data.get("plano") or data.get("nome") or ""
     preco_raw = data.get("preco") or data.get("valor") or 0.0
     imagem_url = (
@@ -1263,14 +1263,18 @@ async def adicionar_produto(
         or data.get("imagem_qr")
         or ""
     )
-    
-    # 🔹 NOVO: Captura a descrição opcional (ex: avisos para chips da Vivo)
     descricao = (
         data.get("descricao")
         or data.get("instrucoes")
         or data.get("texto_instrucoes")
         or ""
     )
+
+    # 🔹 CAPTURA DA CATEGORIA E CAMPOS DE INFOPRODUTO
+    categoria = str(data.get("categoria", "esim")).lower().strip()
+    dados_principais = data.get("dados_principais") or data.get("dados") or ""
+    informacoes_adicionais = data.get("informacoes_adicionais") or data.get("info_extra") or ""
+    conteudo_copia_cola = data.get("conteudo_copia_cola") or data.get("copia_cola") or ""
 
     try:
         preco_float = float(preco_raw)
@@ -1289,11 +1293,15 @@ async def adicionar_produto(
     produtos = dados["produtos"]
 
     novo_item = {
-        "id": f"esim_{len(produtos) + 1}",
+        "id": f"prod_{len(produtos) + 1}",
         "operadora": operadora,
         "plano": plano,
         "preco": preco_float,
-        "descricao": descricao,  # 👈 Salva o aviso/descrição aqui
+        "descricao": descricao,
+        "categoria": categoria,
+        "dados_principais": dados_principais,
+        "informacoes_adicionais": informacoes_adicionais,
+        "conteudo_copia_cola": conteudo_copia_cola,
         "imagem_qr": imagem_url,
         "imagem_url": imagem_url,
         "status": "disponivel",
@@ -1302,7 +1310,7 @@ async def adicionar_produto(
     produtos.append(novo_item)
     dados["produtos"] = produtos
 
-    # Salva localmente e sincroniza com o GitHub se a função existir
+    # Salva localmente e sincroniza com o GitHub
     salvar_dados(dados)
     if "salvar_dados_no_github" in globals():
         sucesso_github = salvar_dados_no_github(dados)
