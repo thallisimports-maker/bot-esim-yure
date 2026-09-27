@@ -1116,7 +1116,7 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
                     json={
                         "chat_id": user_id,
                         "text": mensagem_entrega,
-                        "parse_mode": "Markdown",
+                        "parse_mode": "HTML",
                     },
                     timeout=10.0,
                 )
