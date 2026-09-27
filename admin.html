@@ -874,54 +874,6 @@ async function salvarNovoProduto() {
       }
     }
 
-    // 7. FORMULÁRIO ESTOQUE (SENHA INVISÍVEL)
-    document.getElementById('formEstoque').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      const token = sessionStorage.getItem('token_admin');
-      
-      const payload = {
-        operadora: document.getElementById('p_operadora').value,
-        plano: document.getElementById('p_plano').value,
-        preco: parseFloat(document.getElementById('p_preco').value),
-        imagem_qr: document.getElementById('p_qr').value.trim(),
-        imagem_url: document.getElementById('p_qr').value.trim(),
-        descricao: document.getElementById('p_descricao') ? document.getElementById('p_descricao').value : ''
-      };
-
-      let url = `${URL_BACKEND}/api/admin/produtos`;
-      let method = 'POST';
-
-      if (produtoEmEdicao) {
-        url = `${URL_BACKEND}/api/admin/produtos/${produtoEmEdicao}`;
-        method = 'PUT';
-      }
-
-      const res = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        alert(produtoEmEdicao ? "✅ e-SIM atualizado com sucesso!" : "✅ e-SIM cadastrado com sucesso!");
-        document.getElementById('formEstoque').reset();
-        produtoEmEdicao = null;
-        
-        const btn = document.querySelector('#formEstoque .btn-submit');
-        if (btn) {
-          btn.innerText = '➕ Cadastrar no Estoque';
-          btn.style.background = '';
-        }
-
-        carregarDashboard();
-      } else {
-        alert("❌ Erro ao processar produto.");
-      }
-    });
-
     // 8. FORMULÁRIO GIFT CARD (SENHA INVISÍVEL)
     document.getElementById('formGiftCard').addEventListener('submit', async function(e) {
       e.preventDefault();
