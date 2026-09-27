@@ -2148,7 +2148,7 @@ async def webhook_misticpay(request: Request, token: str = None):
                                 json={"chat_id": str(user_id), "message_id": row_msg["message_id"]},
                                 timeout=5.0
                             )
-                        cur.execute("DELETE FROM pix_mensagens WHERE chat_id = %s", (str(user_id),))
+                        cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, 'compra_concluida')", (str(user_id),))
                         con.commit()
                 except Exception as err_del:
                     print(f"Aviso ao apagar mensagem antiga do Pix: {err_del}")
