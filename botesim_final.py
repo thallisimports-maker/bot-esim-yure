@@ -1048,34 +1048,35 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
 
     preco = float(produto.get("preco", 0))
 
+    # 🗄️ CONEXÃO PROTEGIDA COM TRY/FINALLY
     con = conectar_banco()
-    cur = con.cursor()
-    cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (user_id,))
-    res_saldo = cur.fetchone()
-    saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
-
-    if saldo_atual < preco:
-        con.close()
-        return {
-            "status": "erro",
-            "detalhe": f"Saldo insuficiente! O e-SIM custa R$ {preco:.2f} e você possui R$ {saldo_atual:.2f} na carteira.",
-        }
-
-    novo_saldo = saldo_atual - preco
-    cur.execute(
-        "UPDATE carteira SET saldo = ? WHERE chat_id = ?",
-        (novo_saldo, user_id),
-    )
-    
-    # 🛒 Regista a venda oficialmente no histórico do banco para o Painel Admin
     try:
-        nome_plano = f"{produto.get('operadora', '')} {produto.get('plano', '')}"
-        cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (?, ?, ?)", (user_id, nome_plano, preco))
-    except Exception as e:
-        print(f"Erro ao registrar histórico no banco: {e}")
+        cur = con.cursor()
+        cur.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,))
+        res_saldo = cur.fetchone()
+        saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
 
-    con.commit()
-    con.close()
+        if saldo_atual < preco:
+            return {
+                "status": "erro",
+                "detalhe": f"Saldo insuficiente! O e-SIM custa R$ {preco:.2f} e você possui R$ {saldo_atual:.2f} na carteira.",
+            }
+
+        novo_saldo = saldo_atual - preco
+        cur.execute(
+            "UPDATE carteira SET saldo = %s WHERE chat_id = %s",
+            (novo_saldo, user_id),
+        )
+        
+        try:
+            nome_plano = f"{produto.get('operadora', '')} {produto.get('plano', '')}"
+            cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (%s, %s, %s)", (user_id, nome_plano, preco))
+        except Exception as e:
+            print(f"Erro ao registrar histórico no banco: {e}")
+
+        con.commit()
+    finally:
+        con.close()  # 🔒 NUNCA DEIXA A CONEXÃO ABERTA
 
     produto["status"] = "vendido"
 
@@ -1090,9 +1091,11 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
     dados.setdefault("vendas", []).append(registro_venda)
 
     salvar_dados(dados)
-    salvar_dados_no_github(dados)
+    try:
+        salvar_dados_no_github(dados)
+    except Exception as e:
+        print(f"Aviso sync github: {e}")
 
-    # 🚀 ENVIO AUTOMÁTICO DO QR CODE NO TELEGRAM DO CLIENTE
     imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
     descricao_extra = produto.get("descricao", "")
     
@@ -1103,7 +1106,7 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
             f"📱 **Operadora:** {produto.get('operadora')}\n"
             f"📦 **Plano:** {produto.get('plano')}\n"
             f"💰 **Valor:** R$ {preco:.2f}\n\n"
-            f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima:'}"
+            f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima (na imagem):'}"
         )
 
         if imagem_qr and imagem_qr.startswith("http"):
