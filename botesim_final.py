@@ -1132,47 +1132,44 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
                     f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima (na imagem):'}"
                 )
 
-            url_telegram_photo = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
-
-            if imagem_qr and imagem_qr.startswith("data:image"):
-                header, encoded = imagem_qr.split(",", 1)
-                image_data = base64.b64decode(encoded)
-                files = {'photo': ('esim_qrcode.png', BytesIO(image_data), 'image/png')}
-                data_payload = {'chat_id': user_id, 'caption': caption_text, 'parse_mode': 'Markdown'}
+                url_telegram_photo = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
 
                 async with httpx.AsyncClient() as client:
-                    await client.post(url_telegram_photo, data=data_payload, files=files, timeout=15.0)
+                    if imagem_qr and imagem_qr.startswith("data:image"):
+                        import base64
+                        header, encoded = imagem_qr.split(",", 1)
+                        image_data = base64.b64decode(encoded)
+                        files = {"photo": ("qrcode.png", image_data, "image/png")}
+                        data = {"chat_id": user_id, "caption": caption_text, "parse_mode": "Markdown"}
+                        await client.post(url_telegram_photo, data=data, files=files, timeout=10.0)
+                    elif imagem_qr:
+                        json_payload = {
+                            "chat_id": user_id,
+                            "photo": imagem_qr,
+                            "caption": caption_text,
+                            "parse_mode": "Markdown",
+                        }
+                        await client.post(url_telegram_photo, json=json_payload, timeout=10.0)
+                    else:
+                        url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+                        json_payload = {
+                            "chat_id": user_id,
+                            "text": caption_text,
+                            "parse_mode": "Markdown",
+                        }
+                        await client.post(url_telegram_msg, json=json_payload, timeout=10.0)
 
-            elif imagem_qr and imagem_qr.startswith("http"):
-                payload_photo = {
-                    "chat_id": user_id,
-                    "photo": imagem_qr,
-                    "caption": caption_text,
-                    "parse_mode": "Markdown"
-                }
-                async with httpx.AsyncClient() as client:
-                    await client.post(url_telegram_photo, json=payload_photo, timeout=10.0)
+        except Exception as err_tg:
+            logging.error(f"Erro ao entregar produto no Telegram via miniapp: {err_tg}")
 
-            else:
-                url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-                async with httpx.AsyncClient() as client:
-                    await client.post(url_telegram_msg, json={
-                        "chat_id": user_id,
-                        "text": caption_text + "\n\n*(QR Code enviado com sucesso)*",
-                        "parse_mode": "Markdown"
-                    }, timeout=10.0)
-
-    except Exception as err_tg:
-        logging.error(f"Erro ao entregar produto no Telegram via miniapp: {err_tg}")
-
-    return {
-        "status": "sucesso",
-        "mensagem": "Compra realizada com sucesso!",
-        "operadora": produto.get("operadora"),
-        "plano": produto.get("plano"),
-        "preco": preco,
-        "novo_saldo": novo_saldo,
-    }
+        return {
+            "status": "sucesso",
+            "mensagem": "Compra realizada com sucesso!",
+            "operadora": produto.get("operadora"),
+            "plano": produto.get("plano"),
+            "preco": preco,
+            "novo_saldo": novo_saldo,
+        }
 
 # MODO DE MANUTENÇÃO (Troque para True se quiser pausar o bot)
 MODO_MANUTENCAO = False
