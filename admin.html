@@ -515,7 +515,7 @@ function alternarCamposCategoria() {
 
 // 🔹 SALVAR NOVO PRODUTO (E-SIM OU INFOPRODUTO)
 async function salvarNovoProduto() {
-    const senhaAdmin = localStorage.getItem("senha_admin") || "yuresantos26";
+    const token = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin') || "yuresantos26";
     const categoria = document.getElementById("p_categoria").value;
     const operadora = document.getElementById("p_operadora").value;
     const plano = document.getElementById("p_plano").value.trim();
@@ -527,7 +527,6 @@ async function salvarNovoProduto() {
     }
 
     const payload = {
-        senha_admin: senhaAdmin,
         categoria: categoria,
         operadora: operadora,
         plano: plano,
@@ -544,7 +543,7 @@ async function salvarNovoProduto() {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${senhaAdmin}`
+                "Authorization": `Bearer ${token}`
             },
             body: JSON.stringify(payload)
         });
@@ -553,7 +552,9 @@ async function salvarNovoProduto() {
 
         if (response.ok && res.status === "sucesso") {
             alert("✅ Produto cadastrado com sucesso!");
-            location.reload();
+            carregarDashboard();
+            document.getElementById("formEstoque").reset();
+            alternarCamposCategoria();
         } else {
             alert("❌ Erro ao cadastrar: " + (res.detail || res.detalhe || "Falha na requisição"));
         }
