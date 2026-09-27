@@ -538,13 +538,13 @@ async def receber_dados_webapp(
                 caption=legenda,
                 parse_mode="Markdown",
             )
-            else:
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text=legenda + "\n\n*(QR Code enviado com sucesso)*",
-                    parse_mode="Markdown",
-                )
-
+        else:
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=legenda + "\n\n*(QR Code enviado com sucesso)*",
+                parse_mode="Markdown",
+            )
+            
         # 2. SOLICITAÇÃO DE RECARGA
         elif acao == "recarga":
             valor = float(dados_recebidos.get("valor", 0))
