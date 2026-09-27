@@ -121,12 +121,11 @@ class CursorWrapper:
     def __init__(self, cursor):
         self.cursor = cursor
     def execute(self, query, params=None):
-        # Traduz a linguagem SQLite para PostgreSQL automaticamente
+        # Converte qualquer '?' remanescente em '%s' antes de enviar ao Postgres
         query = query.replace("?", "%s")
         query = query.replace("AUTOINCREMENT", "SERIAL")
         query = query.replace("DATETIME DEFAULT CURRENT_TIMESTAMP", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
         
-        # Resolve conflitos nativos de gravação
         if "INSERT OR IGNORE INTO carteira" in query:
             query = "INSERT INTO carteira (chat_id, saldo) VALUES (%s, 0.0) ON CONFLICT (chat_id) DO NOTHING"
         elif "INSERT OR REPLACE INTO carteira" in query:
@@ -135,7 +134,7 @@ class CursorWrapper:
             query = "INSERT INTO carteira (chat_id, first_name, username, saldo) VALUES (%s, %s, %s, 0.0) ON CONFLICT(chat_id) DO UPDATE SET first_name=EXCLUDED.first_name, username=EXCLUDED.username"
             if params and len(params) == 5: params = params[:3]
                 
-        if "PRAGMA" in query: return self # O Postgres não usa PRAGMA
+        if "PRAGMA" in query: return self
         
         try:
             return self.cursor.execute(query, params)
