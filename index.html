@@ -370,6 +370,37 @@
       margin-bottom: 14px;
     }
     .qr-container img { width: 190px; height: 190px; object-fit: contain; display: block; }
+    /* ESTILOS DAS ABAS DE CATEGORIAS */
+    .categorias-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .categorias-tabs::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active {
+      background: var(--accent-gold) !important;
+      color: #000 !important;
+      border-color: var(--accent-gold) !important;
+      font-weight: 700;
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    }
   </style>
 </head>
 <body>
