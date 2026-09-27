@@ -104,6 +104,16 @@
       "imagem_qr": "https://i.imgur.com/paQxHkP.jpeg",
       "imagem_url": "https://i.imgur.com/paQxHkP.jpeg",
       "status": "disponivel"
+    },
+    {
+      "id": "esim_12",
+      "operadora": "Tim",
+      "plano": "30GB 💙",
+      "preco": 25.0,
+      "descricao": "",
+      "imagem_qr": "https://i.imgur.com/bueOVda.jpeg",
+      "imagem_url": "https://i.imgur.com/bueOVda.jpeg",
+      "status": "disponivel"
     }
   ],
   "utilizadores": {},
