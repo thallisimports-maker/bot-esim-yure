@@ -1106,7 +1106,7 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
         categoria = str(produto.get("categoria", "esim")).lower().strip()
 
         try:
-        if "infoproduto" in categoria:
+            if "infoproduto" in categoria:
             mensagem_entrega = montar_mensagem_infoproduto(produto, user_id)
             url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
