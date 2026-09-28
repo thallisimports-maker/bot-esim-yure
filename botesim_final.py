@@ -630,6 +630,12 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                         f"📄 **Tipo:** {partes[1]}\n"
                         f"📱 **Tel:** {partes[2]}\n"
                     )
+                elif len(partes) == 2:
+                    # 👈 ADICIONADO PARA TRATAR APENAS 2 ITENS
+                    detalhes_extra += (
+                        f"🏦 **Banco:** {partes[0]}\n"
+                        f"📄 **Tipo:** {partes[1]}\n"
+                    )
                 else:
                     detalhes_extra += f"{dados_principais}\n"
 
