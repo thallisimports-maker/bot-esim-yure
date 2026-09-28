@@ -594,9 +594,92 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
     # ==================================
     
-    if query.data.startswith("confirm_buy_"):
+    # === TELA DE CONFIRMAÇÃO DE COMPRA ===
+    if query.data.startswith("buy_"):
         try:
-            prod_id = query.data.replace("confirm_buy_", "")
+            prod_id = query.data.replace("buy_", "")
+            produtos = dados.get("produtos", [])
+            produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
+
+            if not produto or str(produto.get("status", "")).lower().strip() != "disponivel":
+                await context.bot.send_message(chat_id=user_id, text="❌ Este produto já não se encontra disponível!")
+                return
+
+            preco = float(produto.get("preco", 0))
+            op = produto.get("operadora", "Produto")
+            plano = produto.get("plano", "")
+            categoria = str(produto.get("categoria", "esim")).lower().strip()
+            emoji = "📦" if "infoproduto" in categoria else "📱"
+
+            # 📋 PUXA A DESCRIÇÃO E OS DADOS DO PRODUTO
+            descricao = produto.get("descricao", "").strip()
+            dados_principais = produto.get("dados_principais", "").strip()
+            
+            # Junta as informações extras, se existirem
+            detalhes_extra = ""
+            if dados_principais:
+                detalhes_extra += f"{dados_principais}\n"
+            if descricao:
+                detalhes_extra += f"{descricao}\n"
+
+            # Consulta o saldo no banco de dados
+            con = conectar_banco()
+            try:
+                cur = con.cursor()
+                cur.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,))
+                res_saldo = cur.fetchone()
+                saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
+            finally:
+                con.close()
+
+            # 🎨 MONTA O VISUAL IDÊNTICO AO DA SUA IMAGEM
+            texto_conf = (
+                f"🔍 **Confirmar Compra**\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"{emoji} **Produto:** {op} {plano}\n"
+            )
+            
+            # Se houver descrição, insere aqui antes da linha de baixo
+            if detalhes_extra:
+                texto_conf += f"\n{detalhes_extra}"
+                
+            texto_conf += (
+                f"━━━━━━━━━━━━━━━━━━\n\n"
+                f"💰 **Valor:** R$ {preco:.2f}\n"
+                f"👛 **Seu saldo:** R$ {saldo_atual:.2f}\n\n"
+            )
+
+            teclado = []
+            if saldo_atual >= preco:
+                texto_conf += (
+                    f"✅ **Saldo disponível.**\n\n"
+                    f"🤖 Você está a um passo de adquirir as melhores INFOS do MERCADO!\n"
+                    f"Clique abaixo para concluir a compra."
+                )
+                teclado.append([InlineKeyboardButton("✅ Confirmar Compra", callback_data=f"confirm_buy_{prod_id}")])
+            else:
+                faltante = preco - saldo_atual
+                texto_conf += (
+                    f"❌ **Saldo insuficiente.**\n\n"
+                    f"🤖 Você está a um passo de adquirir as melhores INFOS do MERCADO!\n"
+                    f"Use `/pix {faltante:.2f}` para adicionar o valor exato que falta."
+                )
+                teclado.append([InlineKeyboardButton("⚡ Adicionar Saldo", web_app=WebAppInfo(url="https://baseyure.shop"))])
+
+            # Botão de voltar dinâmico
+            voltar_callback = "listar_infos" if "infoproduto" in categoria else "listar_esims"
+            teclado.append([InlineKeyboardButton("« Voltar", callback_data=voltar_callback)])
+
+            try:
+                await query.edit_message_text(text=texto_conf, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(teclado))
+            except Exception:
+                await context.bot.send_message(chat_id=user_id, text=texto_conf, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(teclado))
+
+            return
+        except Exception as e:
+            logging.error(f"Erro na tela de confirmação: {e}")
+            return
+    # =======================================
             produtos = dados.get("produtos", [])
             produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
 
