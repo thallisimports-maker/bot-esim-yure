@@ -615,12 +615,30 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             descricao = produto.get("descricao", "").strip()
             dados_principais = produto.get("dados_principais", "").strip()
             
-            # Junta as informações extras, se existirem
             detalhes_extra = ""
+            
+            # 🤖 SISTEMA ESTILO API: Emojis fixos e dados dinâmicos
             if dados_principais:
-                detalhes_extra += f"{dados_principais}\n"
+                # O bot tenta cortar o texto usando o separador '|'
+                partes = [p.strip() for p in dados_principais.split('|')]
+                
+                # Se encontrar 3 partes (Banco | Tipo | Tel), aplica o layout fixo
+                if len(partes) >= 3:
+                    banco = partes[0]
+                    tipo = partes[1]
+                    telefone = partes[2]
+                    
+                    detalhes_extra += (
+                        f"🏦 **Banco:** {banco}\n"
+                        f"📄 **Tipo:** {tipo}\n"
+                        f"📱 **Tel:** {telefone}\n"
+                    )
+                else:
+                    # Se você não usar o '|', ele imprime o texto normalmente como fallback
+                    detalhes_extra += f"{dados_principais}\n"
+
             if descricao:
-                detalhes_extra += f"{descricao}\n"
+                detalhes_extra += f"\n{descricao}\n"
 
             # Consulta o saldo no banco de dados
             con = conectar_banco()
