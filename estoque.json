@@ -194,11 +194,11 @@
     {
       "id": "prod_19",
       "operadora": "InfoProduto",
-      "plano": "Caixa - F - R$ 989,99 - 459383",
+      "plano": "CAIXA - R$ 989 - F",
       "preco": 80.0,
       "descricao": "",
       "categoria": "infoproduto",
-      "dados_principais": "Caixa | Consultada",
+      "dados_principais": "Caixa | Consultada | 51 99820-3682",
       "informacoes_adicionais": "🔵 CONSULTADA CAIXA\n▶️ BIN: 4593 8301 1561 1753\n⏳ Val: 05/2031\n🔐 CVV: 090\n✏️ Nome: CINANDRACECHELERO\n📃 CPF: 051.371.309-31\n💰 SALDO R$ 983,99 \n🕤 Venc Fat: 08/10",
       "conteudo_copia_cola": "4593830115611753\n05/2031\n090\nCINANDRACECHELERO\nCPF 051.371.309-31",
       "imagem_qr": "",
