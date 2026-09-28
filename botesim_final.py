@@ -1550,15 +1550,33 @@ def montar_mensagem_infoproduto(produto: dict, user_id: str = "") -> str:
     import html
 
     plano = html.escape(str(produto.get("plano", "Info Produto")))
-    dados = html.escape(str(produto.get("dados_principais") or produto.get("dados") or ""))
+    dados = str(produto.get("dados_principais") or produto.get("dados") or "").strip()
     info = html.escape(str(produto.get("informacoes_adicionais") or produto.get("info_extra") or ""))
     copia_cola = html.escape(str(produto.get("conteudo_copia_cola") or produto.get("descricao") or ""))
 
     msg = "<b>🎉 COMPRA REALIZADA COM SUCESSO!</b>\n\n"
     msg += f"<b>Produto:</b> {plano}\n\n"
 
+    # 🤖 FORMATAÇÃO ESTILO API (Trata o formato com | para não enviar tudo misturado)
     if dados:
-        msg += f"<b>📋 Dados Principais:</b>\n{dados}\n\n"
+        partes = [p.strip() for p in dados.split('|')]
+        
+        if len(partes) >= 4:
+            msg += (
+                f"🏦 <b>Banco:</b> {html.escape(partes[0])}\n"
+                f"📄 <b>Tipo:</b> {html.escape(partes[1])}\n"
+                f"📧 <b>E-mail:</b> {html.escape(partes[2])}\n"
+                f"📱 <b>Tel:</b> {html.escape(partes[3])}\n\n"
+            )
+        elif len(partes) >= 3:
+            msg += (
+                f"🏦 <b>Banco:</b> {html.escape(partes[0])}\n"
+                f"📄 <b>Tipo:</b> {html.escape(partes[1])}\n"
+                f"📱 <b>Tel:</b> {html.escape(partes[2])}\n\n"
+            )
+        else:
+            # Caso não use o |, imprime formatado de forma limpa sem duplicar blocos
+            msg += f"<b>📋 Dados:</b>\n{html.escape(dados)}\n\n"
 
     if info:
         msg += f"<b>ℹ️ Informações Adicionais:</b>\n{info}\n\n"
