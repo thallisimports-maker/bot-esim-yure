@@ -594,9 +594,9 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
     # ==================================
     
-    if query.data.startswith("buy_"):
+    if query.data.startswith("confirm_buy_"):
         try:
-            prod_id = query.data.replace("buy_", "")
+            prod_id = query.data.replace("confirm_buy_", "")
             produtos = dados.get("produtos", [])
             produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
 
