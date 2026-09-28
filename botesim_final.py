@@ -659,7 +659,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 await context.bot.send_message(
                     chat_id=user_id,
                     text=mensagem_entrega,
-                    parse_mode="Markdown"
+                    parse_mode="HTML"
                 )
             else:
                 imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
