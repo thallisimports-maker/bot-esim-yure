@@ -584,7 +584,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             
             # Se for infoproduto, ocultamos a palavra "InfoProduto" para economizar espaço e não cortar o botão
             if se_infoproduto and op.lower() == "infoproduto":
-                texto_botao = f"📦 {plano} — R$ {preco:.2f}"
+                texto_botao = f"​🔥​ {plano} — R$ {preco:.2f}"
             else:
                 texto_botao = f"📱 {op} {plano} — R$ {preco:.2f}"
             
