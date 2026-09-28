@@ -203,7 +203,7 @@
       "conteudo_copia_cola": "4593830115611753\n05/2031\n090\nCINANDRACECHELERO\nCPF 051.371.309-31",
       "imagem_qr": "",
       "imagem_url": "",
-      "status": "disponivel"
+      "status": "vendido"
     }
   ],
   "utilizadores": {},
@@ -335,6 +335,14 @@
       "operadora": "InfoProduto",
       "valor": 15.0,
       "data": "2026-09-28 01:10:35"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "prod_19",
+      "operadora": "InfoProduto",
+      "valor": 80.0,
+      "data": "2026-09-28 03:17:41"
     }
   ],
   "cupons": {
