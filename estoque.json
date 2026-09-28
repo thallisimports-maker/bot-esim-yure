@@ -123,7 +123,7 @@
       "descricao": "",
       "imagem_qr": "https://i.imgur.com/AMAAB3G.jpeg",
       "imagem_url": "https://i.imgur.com/AMAAB3G.jpeg",
-      "status": "disponivel"
+      "status": "vendido"
     },
     {
       "id": "esim_14",
@@ -387,6 +387,14 @@
       "operadora": "Tim",
       "valor": 25.0,
       "data": "2026-09-28 16:27:38"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "esim_13",
+      "operadora": "Tim",
+      "valor": 25.0,
+      "data": "2026-09-28 18:23:43"
     }
   ],
   "cupons": {
