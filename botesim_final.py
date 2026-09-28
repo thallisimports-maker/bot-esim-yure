@@ -287,32 +287,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
     
     botoes = [
-        [InlineKeyboardButton("👑 ABRIR LOJA YURE eSIMS (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))]
+        [InlineKeyboardButton("👑 ABRIR LOJA YURE eSIMS (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))],
+        [InlineKeyboardButton("📱 Ver eSIMs Disponíveis", callback_data="listar_esims")],
+        [InlineKeyboardButton("📦 Catálogo de Contas / Info Produtos", callback_data="listar_infos")]
     ]
-
-    try:
-        dados = carregar_dados()
-        produtos = dados.get("produtos", [])
-
-        for prod in produtos:
-            if str(prod.get("status", "")).lower().strip() == "disponivel":
-                op = prod.get("operadora", "Produto")
-                plano = prod.get("plano", "")
-                preco = float(prod.get("preco", 0))
-                prod_id = prod.get("id")
-                categoria = str(prod.get("categoria", "esim")).lower().strip()
-
-                # Define o ícone dinamicamente conforme a categoria
-                emoji = "📦" if "infoproduto" in categoria else "📱"
-
-                texto_botao = f"{emoji} {op} {plano} - R$ {preco:.2f}"
-                callback = f"buy_{prod_id}"
-
-                botoes.append(
-                    [InlineKeyboardButton(texto_botao, callback_data=callback)]
-                )
-    except Exception as e:
-        logging.error(f"Erro ao carregar produtos no /start: {e}")
 
     try:
         await context.bot.send_photo(
