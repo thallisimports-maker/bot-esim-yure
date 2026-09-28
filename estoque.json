@@ -176,6 +176,20 @@
       "imagem_qr": "",
       "imagem_url": "",
       "status": "vendido"
+    },
+    {
+      "id": "prod_18",
+      "operadora": "InfoProduto",
+      "plano": "Caixa - 650507",
+      "preco": 15.0,
+      "descricao": "",
+      "categoria": "infoproduto",
+      "dados_principais": "4593830115611753|05|2031|090|CINANDRACECHELERO|05137130931",
+      "informacoes_adicionais": "caixa\nclassic",
+      "conteudo_copia_cola": "4593830115611753",
+      "imagem_qr": "",
+      "imagem_url": "",
+      "status": "disponivel"
     }
   ],
   "utilizadores": {},
