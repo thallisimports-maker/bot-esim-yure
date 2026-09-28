@@ -204,6 +204,20 @@
       "imagem_qr": "",
       "imagem_url": "",
       "status": "vendido"
+    },
+    {
+      "id": "prod_20",
+      "operadora": "Tim",
+      "plano": "30GB 💙",
+      "preco": 25.0,
+      "descricao": "",
+      "categoria": "esim",
+      "dados_principais": "",
+      "informacoes_adicionais": "",
+      "conteudo_copia_cola": "",
+      "imagem_qr": "https://i.imgur.com/BVDkxE5.png",
+      "imagem_url": "https://i.imgur.com/BVDkxE5.png",
+      "status": "disponivel"
     }
   ],
   "utilizadores": {},
