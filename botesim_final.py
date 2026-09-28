@@ -573,7 +573,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             await context.bot.send_message(chat_id=user_id, text=msg_vazio)
             return
             
-        texto = "📦 **Catálogo de Info Produtos:**\nSelecione uma opção abaixo:" if se_infoproduto else "📱 **Catálogo de e-SIMs:**\nSelecione uma opção abaixo:"
+        texto = "📦 **Catálogo de Consultadas:**\nSelecione uma opção abaixo:" if se_infoproduto else "📱 **Catálogo de e-SIMs:**\nSelecione uma opção abaixo:"
         teclado = []
         
         for prod in disponiveis:
@@ -582,9 +582,11 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             preco = float(prod.get("preco", 0))
             prod_id = prod.get("id")
             
-            # Insere a operadora, o plano e o preço diretamente no botão, como na sua referência
-            emoji = "📦" if se_infoproduto else "📱"
-            texto_botao = f"{emoji} {op} {plano} — R$ {preco:.2f}"
+            # Se for infoproduto, ocultamos a palavra "InfoProduto" para economizar espaço e não cortar o botão
+            if se_infoproduto and op.lower() == "infoproduto":
+                texto_botao = f"📦 {plano} — R$ {preco:.2f}"
+            else:
+                texto_botao = f"📱 {op} {plano} — R$ {preco:.2f}"
             
             teclado.append([InlineKeyboardButton(texto_botao, callback_data=f"buy_{prod_id}")])
             
