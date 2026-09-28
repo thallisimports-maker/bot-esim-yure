@@ -631,7 +631,6 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                         f"📱 **Tel:** {partes[2]}\n"
                     )
                 elif len(partes) == 2:
-                    # 👈 ADICIONADO PARA TRATAR APENAS 2 ITENS
                     detalhes_extra += (
                         f"🏦 **Banco:** {partes[0]}\n"
                         f"📄 **Tipo:** {partes[1]}\n"
@@ -763,7 +762,42 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 mensagem_entrega = montar_mensagem_infoproduto(produto, user_id)
                 await query.edit_message_text(text=mensagem_entrega, parse_mode="HTML")
             else:
-                await query.edit_message_text(text="✅ Compra efetuada com sucesso!", parse_mode="Markdown")
+                # 📱 ENTREGA DO E-SIM (ENVIA A FOTO DO QR CODE E INSTRUÇÕES)
+                imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
+                descricao_extra = produto.get("descricao", "")
+                
+                legenda = (
+                    f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
+                    f"📱 **Operadora:** {produto.get('operadora')}\n"
+                    f"📦 **Plano:** {produto.get('plano')}\n"
+                    f"💰 **Valor:** R$ {preco:.2f}\n\n"
+                    f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima (na imagem):'}"
+                )
+
+                try:
+                    await query.message.delete()
+                except Exception:
+                    pass
+
+                if imagem_qr:
+                    if imagem_qr.startswith("data:image"):
+                        try:
+                            header, encoded = imagem_qr.split(",", 1)
+                            image_data = base64.b64decode(encoded)
+                            await context.bot.send_photo(chat_id=user_id, photo=image_data, caption=legenda, parse_mode="Markdown")
+                        except Exception as e:
+                            print(f"Erro ao enviar Base64 do eSIM: {e}")
+                            await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem)*", parse_mode="Markdown")
+                    elif imagem_qr.startswith("http"):
+                        try:
+                            await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
+                        except Exception as e:
+                            print(f"Erro ao enviar URL do eSIM: {e}")
+                            await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem via URL)*", parse_mode="Markdown")
+                    else:
+                        await context.bot.send_message(chat_id=user_id, text=legenda + f"\n\n{imagem_qr}", parse_mode="Markdown")
+                else:
+                    await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code não disponível)*", parse_mode="Markdown")
 
             return
 
