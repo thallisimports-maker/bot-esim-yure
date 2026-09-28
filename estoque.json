@@ -166,13 +166,13 @@
     {
       "id": "prod_17",
       "operadora": "InfoProduto",
-      "plano": "Caixa - 650507",
-      "preco": 15.0,
+      "plano": "Caixa - R$ 989 - F - 650507",
+      "preco": 80.0,
       "descricao": "",
       "categoria": "infoproduto",
-      "dados_principais": "CPF: 27546730910",
-      "informacoes_adicionais": "Nome Completo: PEDRO MARTINS\nNome Civil: Não informado\nNome da Mãe: EMILIA GOMES MARTINS\nNome do Pai: Não informado\nCPF: 27546730910\nData de Nascimento: 28/06/1956\nSexo: M",
-      "conteudo_copia_cola": "CPF: 27546730910",
+      "dados_principais": "4593830115611753\n05/2031\n090\nCINANDRACECHELERO\nCPF 051.371.309-31\nSALDO R$ 983,99 08/10",
+      "informacoes_adicionais": "Banco: Caixa",
+      "conteudo_copia_cola": "4593830115611753",
       "imagem_qr": "",
       "imagem_url": "",
       "status": "disponivel"
