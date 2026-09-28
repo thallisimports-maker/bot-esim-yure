@@ -551,6 +551,44 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     nome_usuario = query.from_user.first_name or "Cliente"
     dados = carregar_dados()
 
+    # === NOVOS BOTÕES DO MENU START ===
+    if query.data in ["listar_esims", "listar_infos"]:
+        dados = carregar_dados()
+        produtos = dados.get("produtos", [])
+        
+        # Identifica qual botão foi clicado
+        se_infoproduto = (query.data == "listar_infos")
+        
+        disponiveis = []
+        for p in produtos:
+            if str(p.get("status", "")).lower().strip() == "disponivel":
+                cat = str(p.get("categoria", "esim")).lower().strip()
+                if se_infoproduto and "infoproduto" in cat:
+                    disponiveis.append(p)
+                elif not se_infoproduto and "infoproduto" not in cat:
+                    disponiveis.append(p)
+        
+        if not disponiveis:
+            msg_vazio = "❌ Nenhum Info Produto disponível no momento." if se_infoproduto else "❌ Nenhum e-SIM disponível no momento."
+            await context.bot.send_message(chat_id=user_id, text=msg_vazio)
+            return
+            
+        texto = "📦 **INFO PRODUTOS DISPONÍVEIS:**\n\n" if se_infoproduto else "📱 **e-SIMs DISPONÍVEIS:**\n\n"
+        teclado = []
+        
+        for prod in disponiveis:
+            op = prod.get("operadora", "Produto")
+            plano = prod.get("plano", "")
+            preco = float(prod.get("preco", 0))
+            prod_id = prod.get("id")
+            
+            texto += f"🔹 **{op} ({plano})** — R$ {preco:.2f}\n"
+            teclado.append([InlineKeyboardButton(f"🛒 Comprar {op} {plano}", callback_data=f"buy_{prod_id}")])
+            
+        await context.bot.send_message(chat_id=user_id, text=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(teclado))
+        return
+    # ==================================
+    
     if query.data.startswith("buy_"):
         try:
             prod_id = query.data.replace("buy_", "")
