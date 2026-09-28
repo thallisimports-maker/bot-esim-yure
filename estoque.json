@@ -231,21 +231,7 @@
       "conteudo_copia_cola": "",
       "imagem_qr": "https://i.imgur.com/BVDkxE5.png",
       "imagem_url": "https://i.imgur.com/BVDkxE5.png",
-      "status": "disponivel"
-    },
-    {
-      "id": "prod_22",
-      "operadora": "Tim",
-      "plano": "30GB 💙",
-      "preco": 25.0,
-      "descricao": "",
-      "categoria": "esim",
-      "dados_principais": "",
-      "informacoes_adicionais": "",
-      "conteudo_copia_cola": "",
-      "imagem_qr": "https://i.imgur.com/BVDkxE5.png",
-      "imagem_url": "https://i.imgur.com/BVDkxE5.png",
-      "status": "disponivel"
+      "status": "vendido"
     }
   ],
   "utilizadores": {},
@@ -393,6 +379,14 @@
       "operadora": "Vivo",
       "valor": 25.0,
       "data": "2026-09-28 16:03:14"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "prod_21",
+      "operadora": "Tim",
+      "valor": 25.0,
+      "data": "2026-09-28 16:27:38"
     }
   ],
   "cupons": {
