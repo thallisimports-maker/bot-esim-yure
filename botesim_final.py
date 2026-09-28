@@ -289,7 +289,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     botoes = [
         [InlineKeyboardButton("👑 ABRIR LOJA YURE eSIMS (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))],
         [InlineKeyboardButton("📱 Ver eSIMs Disponíveis", callback_data="listar_esims")],
-        [InlineKeyboardButton("📦 Catálogo de Contas / Info Produtos", callback_data="listar_infos")]
+        [InlineKeyboardButton("🔍Consultadas / Consultaveis", callback_data="listar_infos")]
     ]
 
     try:
