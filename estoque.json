@@ -175,7 +175,7 @@
       "conteudo_copia_cola": "4593830115611753",
       "imagem_qr": "",
       "imagem_url": "",
-      "status": "disponivel"
+      "status": "vendido"
     }
   ],
   "utilizadores": {},
@@ -291,6 +291,14 @@
       "operadora": "InfoProduto",
       "valor": 15.0,
       "data": "2026-09-27 23:01:18"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "prod_17",
+      "operadora": "InfoProduto",
+      "valor": 80.0,
+      "data": "2026-09-28 01:04:08"
     }
   ],
   "cupons": {
