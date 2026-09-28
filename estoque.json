@@ -176,6 +176,20 @@
       "imagem_qr": "",
       "imagem_url": "",
       "status": "disponivel"
+    },
+    {
+      "id": "prod_18",
+      "operadora": "InfoProduto",
+      "plano": "Consultada b1",
+      "preco": 15.0,
+      "descricao": "",
+      "categoria": "infoproduto",
+      "dados_principais": "Nome Completo: PEDRO MARTINS\nNome Civil: Não informado\nNome da Mãe: EMILIA GOMES MARTINS\nNome do Pai: Não informado\nCPF: 27546730910\nData de Nascimento: 28/06/1956\nSexo: M",
+      "informacoes_adicionais": "CPF: 27546730910",
+      "conteudo_copia_cola": "CPF: 27546730910",
+      "imagem_qr": "",
+      "imagem_url": "",
+      "status": "disponivel"
     }
   ],
   "utilizadores": {},
