@@ -1524,8 +1524,6 @@ def montar_mensagem_infoproduto(produto: dict, user_id: str = "") -> str:
     plano = html.escape(str(produto.get("plano", "Info Produto")))
     dados = str(produto.get("dados_principais") or produto.get("dados") or "").strip()
     info = html.escape(str(produto.get("informacoes_adicionais") or produto.get("info_extra") or ""))
-    
-    # Pegamos estritamente o conteúdo copia e cola, isolado da descrição geral
     copia_cola = html.escape(str(produto.get("conteudo_copia_cola") or ""))
 
     msg = "<b>🎉 COMPRA REALIZADA COM SUCESSO!</b>\n\n"
@@ -1545,6 +1543,12 @@ def montar_mensagem_infoproduto(produto: dict, user_id: str = "") -> str:
                 f"🏦 <b>Banco:</b> {html.escape(partes[0])}\n"
                 f"📄 <b>Tipo:</b> {html.escape(partes[1])}\n"
                 f"📱 <b>Tel:</b> {html.escape(partes[2])}\n\n"
+            )
+        elif len(partes) == 2:
+            # 👈 ADICIONADO PARA TRATAR APENAS 2 ITENS NA ENTREGA
+            msg += (
+                f"🏦 <b>Banco:</b> {html.escape(partes[0])}\n"
+                f"📄 <b>Tipo:</b> {html.escape(partes[1])}\n\n"
             )
         else:
             msg += f"<b>📋 Dados:</b> {html.escape(dados)}\n\n"
