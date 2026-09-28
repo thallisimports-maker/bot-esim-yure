@@ -556,7 +556,6 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         dados = carregar_dados()
         produtos = dados.get("produtos", [])
         
-        # Identifica qual botão foi clicado
         se_infoproduto = (query.data == "listar_infos")
         
         disponiveis = []
@@ -582,9 +581,8 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             preco = float(prod.get("preco", 0))
             prod_id = prod.get("id")
             
-            # Se for infoproduto, ocultamos a palavra "InfoProduto" para economizar espaço e não cortar o botão
             if se_infoproduto and op.lower() == "infoproduto":
-                texto_botao = f"​🔥​ {plano} — R$ {preco:.2f}"
+                texto_botao = f"🔥 {plano} — R$ {preco:.2f}"
             else:
                 texto_botao = f"📱 {op} {plano} — R$ {preco:.2f}"
             
@@ -594,7 +592,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         return
     # ==================================
     
-    # === TELA DE CONFIRMAÇÃO DE COMPRA ===
+    # === TELA DE PRÉ-VISUALIZAÇÃO / CONFIRMAÇÃO ===
     if query.data.startswith("buy_"):
         try:
             prod_id = query.data.replace("buy_", "")
@@ -611,36 +609,33 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             categoria = str(produto.get("categoria", "esim")).lower().strip()
             emoji = "📦" if "infoproduto" in categoria else "📱"
 
-            # 📋 PUXA A DESCRIÇÃO E OS DADOS DO PRODUTO
             descricao = produto.get("descricao", "").strip()
             dados_principais = produto.get("dados_principais", "").strip()
             
             detalhes_extra = ""
             
-            # 🤖 SISTEMA ESTILO API: Emojis fixos e dados dinâmicos
             if dados_principais:
-                # O bot tenta cortar o texto usando o separador '|'
                 partes = [p.strip() for p in dados_principais.split('|')]
                 
-                # Se encontrar 3 partes (Banco | Tipo | Tel), aplica o layout fixo
-                if len(partes) >= 3:
-                    banco = partes[0]
-                    tipo = partes[1]
-                    telefone = partes[2]
-                    
+                if len(partes) >= 4:
                     detalhes_extra += (
-                        f"🏦 **Banco:** {banco}\n"
-                        f"📄 **Tipo:** {tipo}\n"
-                        f"📱 **Tel:** {telefone}\n"
+                        f"🏦 **Banco:** {partes[0]}\n"
+                        f"📄 **Tipo:** {partes[1]}\n"
+                        f"📧 **E-mail:** {partes[2]}\n"
+                        f"📱 **Tel:** {partes[3]}\n"
+                    )
+                elif len(partes) >= 3:
+                    detalhes_extra += (
+                        f"🏦 **Banco:** {partes[0]}\n"
+                        f"📄 **Tipo:** {partes[1]}\n"
+                        f"📱 **Tel:** {partes[2]}\n"
                     )
                 else:
-                    # Se você não usar o '|', ele imprime o texto normalmente como fallback
                     detalhes_extra += f"{dados_principais}\n"
 
             if descricao:
                 detalhes_extra += f"\n{descricao}\n"
 
-            # Consulta o saldo no banco de dados
             con = conectar_banco()
             try:
                 cur = con.cursor()
@@ -650,14 +645,12 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             finally:
                 con.close()
 
-            # 🎨 MONTA O VISUAL IDÊNTICO AO DA SUA IMAGEM
             texto_conf = (
                 f"🔍 **Confirmar Compra**\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
                 f"{emoji} **Produto:** {op} {plano}\n"
             )
             
-            # Se houver descrição, insere aqui antes da linha de baixo
             if detalhes_extra:
                 texto_conf += f"\n{detalhes_extra}"
                 
@@ -684,7 +677,6 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 )
                 teclado.append([InlineKeyboardButton("⚡ Adicionar Saldo", web_app=WebAppInfo(url="https://baseyure.shop"))])
 
-            # Botão de voltar dinâmico
             voltar_callback = "listar_infos" if "infoproduto" in categoria else "listar_esims"
             teclado.append([InlineKeyboardButton("« Voltar", callback_data=voltar_callback)])
 
@@ -697,12 +689,16 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         except Exception as e:
             logging.error(f"Erro na tela de confirmação: {e}")
             return
-    # =======================================
+
+    # === EFETIVAÇÃO DA COMPRA E ENTREGA (CONFIRM_BUY) ===
+    if query.data.startswith("confirm_buy_"):
+        try:
+            prod_id = query.data.replace("confirm_buy_", "")
             produtos = dados.get("produtos", [])
             produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
 
             if not produto or str(produto.get("status", "")).lower().strip() != "disponivel":
-                await context.bot.send_message(chat_id=user_id, text="❌ Este produto já não se encontra disponível!")
+                await query.edit_message_text(text="❌ Este produto já não se encontra disponível!")
                 return
 
             preco = float(produto.get("preco", 0))
@@ -712,12 +708,15 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 cur = con.cursor()
                 cur.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,))
                 res_saldo = cur.fetchone()
-                saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
+                
+                if res_saldo:
+                    saldo_atual = float(res_saldo["saldo"] if isinstance(res_saldo, dict) else res_saldo[0])
+                else:
+                    saldo_atual = 0.0
 
                 if saldo_atual < preco:
-                    await context.bot.send_message(
-                        chat_id=user_id,
-                        text=f"❌ **Saldo insuficiente!**\n\nEste produto custa **R$ {preco:.2f}** e você tem **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para comprar.",
+                    await query.edit_message_text(
+                        text=f"❌ **Saldo insuficiente!**\n\nSeu saldo atual é R$ {saldo_atual:.2f} e o produto custa R$ {preco:.2f}.",
                         parse_mode="Markdown"
                     )
                     return 
@@ -730,11 +729,11 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                     cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (%s, %s, %s)", (user_id, nome_plano, preco))
                 except Exception as e:
                     print(f"Erro ao registrar histórico: {e}")
+                
                 con.commit()
             finally:
                 con.close()
 
-            # Atualiza JSON
             produto["status"] = "vendido"
             registro_venda = {
                 "user_id": user_id,
@@ -752,53 +751,20 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             except Exception as e:
                 print(f"Aviso sync github: {e}")
 
-            # 🚀 ENTREGA INTELIGENTE (E-SIM OU INFOPRODUTO)
             categoria = str(produto.get("categoria", "esim")).lower().strip()
 
             if "infoproduto" in categoria:
                 mensagem_entrega = montar_mensagem_infoproduto(produto, user_id)
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text=mensagem_entrega,
-                    parse_mode="HTML"
-                )
+                await query.edit_message_text(text=mensagem_entrega, parse_mode="HTML")
             else:
-                imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
-                descricao_extra = produto.get("descricao", "")
-                legenda = (
-                    f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
-                    f"📱 **Operadora:** {produto.get('operadora')}\n"
-                    f"📦 **Plano:** {produto.get('plano')}\n"
-                    f"💰 **Valor:** R$ {preco:.2f}\n\n"
-                    f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima (na imagem):'}"
-                )
+                await query.edit_message_text(text="✅ Compra efetuada com sucesso!", parse_mode="Markdown")
 
-                print("🟢 [DEBUG] Iniciando envio da foto do QR Code...")
-                if imagem_qr:
-                    if imagem_qr.startswith("data:image"):
-                        try:
-                            header, encoded = imagem_qr.split(",", 1)
-                            image_data = base64.b64decode(encoded)
-                            await context.bot.send_photo(chat_id=user_id, photo=image_data, caption=legenda, parse_mode="Markdown")
-                            print("✅ [DEBUG] Foto Base64 enviada!")
-                        except Exception as e:
-                            print(f"Erro ao enviar Base64: {e}")
-                            await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem)*", parse_mode="Markdown")
-                    elif imagem_qr.startswith("http"):
-                        try:
-                            await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
-                            print("✅ [DEBUG] Foto URL enviada!")
-                        except Exception as e:
-                            print(f"Erro ao enviar URL: {e}")
-                            await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem via URL)*", parse_mode="Markdown")
-                    else:
-                        await context.bot.send_message(chat_id=user_id, text=legenda + f"\n\n{imagem_qr}", parse_mode="Markdown")
-                else:
-                    await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code não disponível)*", parse_mode="Markdown")
+            return
 
         except Exception as err:
-            logging.error(f"Erro crítico no botão de compra: {err}")
+            logging.error(f"Erro crítico no confirm_buy: {err}")
             await context.bot.send_message(chat_id=user_id, text="❌ Ocorreu um erro ao processar a compra.")
+            return
             
 @asynccontextmanager
 async def lifespan(app: FastAPI):
