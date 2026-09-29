@@ -245,7 +245,7 @@
       "conteudo_copia_cola": "",
       "imagem_qr": "https://i.imgur.com/ftpiVL4.png",
       "imagem_url": "https://i.imgur.com/ftpiVL4.png",
-      "status": "disponivel"
+      "status": "vendido"
     }
   ],
   "utilizadores": {},
@@ -409,6 +409,14 @@
       "operadora": "Tim",
       "valor": 25.0,
       "data": "2026-09-28 18:23:43"
+    },
+    {
+      "user_id": "8455540082",
+      "cliente": "Cliente (8455540082)",
+      "produto_id": "prod_22",
+      "operadora": "Vivo",
+      "valor": 25.0,
+      "data": "2026-09-29 16:23:13"
     }
   ],
   "cupons": {
