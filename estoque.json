@@ -246,6 +246,20 @@
       "imagem_qr": "https://i.imgur.com/ftpiVL4.png",
       "imagem_url": "https://i.imgur.com/ftpiVL4.png",
       "status": "vendido"
+    },
+    {
+      "id": "prod_23",
+      "operadora": "InfoProduto",
+      "plano": "474525 - F -  RENNER - R$ 302",
+      "preco": 50.0,
+      "descricao": "",
+      "categoria": "infoproduto",
+      "dados_principais": "renner | consultada | (81) 98860-9905",
+      "informacoes_adicionais": "CARTÃO:\n4745 2551 6643 6362\nVALIDADE: 06/2029\nCVV: 615\nNOME: JOYCE FREITAS\nNASCIMENTO: 1995\nCPF: 70215315405\nSENHA: 7452\nLIMITE: R$302,01 **",
+      "conteudo_copia_cola": "4745 2551 6643 6362\nVALIDADE: 06/2029\nCVV: 615",
+      "imagem_qr": "",
+      "imagem_url": "",
+      "status": "disponivel"
     }
   ],
   "utilizadores": {},
