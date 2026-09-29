@@ -217,7 +217,7 @@
       "conteudo_copia_cola": "",
       "imagem_qr": "https://i.imgur.com/BVDkxE5.png",
       "imagem_url": "https://i.imgur.com/BVDkxE5.png",
-      "status": "disponivel"
+      "status": "vendido"
     },
     {
       "id": "prod_21",
@@ -417,6 +417,14 @@
       "operadora": "Vivo",
       "valor": 25.0,
       "data": "2026-09-29 16:23:13"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "prod_20",
+      "operadora": "Tim",
+      "valor": 25.0,
+      "data": "2026-09-29 16:57:31"
     }
   ],
   "cupons": {
