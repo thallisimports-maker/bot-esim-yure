@@ -914,19 +914,8 @@ async def obter_dados_admin(
             with open("estoque.json", "r", encoding="utf-8") as f:
                 dados_json = json.load(f)
                 if isinstance(dados_json, dict):
+                    # Puxa APENAS os produtos do JSON. Vendas removidas para não duplicar!
                     produtos.extend(dados_json.get("produtos", []))
-                    # 👇 AGORA ELE LÊ AS VENDAS SALVAS NO ARQUIVO 👇
-                    for v in dados_json.get("vendas", []):
-                        vendas.append({
-                            "id": v.get("id", "json"),
-                            "user_id": v.get("user_id"),
-                            "chat_id": v.get("user_id"),
-                            "cliente": v.get("cliente", "Cliente"),
-                            "plano": f"{v.get('operadora', '')} {v.get('plano', '')}",
-                            "preco": float(v.get("valor", 0)),
-                            "valor": float(v.get("valor", 0)),
-                            "data": str(v.get("data", ""))
-                        })
     except Exception as e:
         print(f"Aviso ao ler estoque.json: {e}")
 
