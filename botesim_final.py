@@ -530,6 +530,19 @@ async def receber_dados_webapp(
 # ------------------------------------------------------------------
 # ⚙️ GESTOR DE LIFESPAN (REGISTRO DO MENU DE COMANDOS NATIVO)
 # ------------------------------------------------------------------
+async def rastrear_mensagens(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if not update.message or not update.message.text:
+        return
+    
+    user_id = str(update.message.from_user.id)
+    texto = update.message.text.strip()
+    
+    # Guarda o que o cliente digitou no banco de dados para você ver no painel
+    try:
+        registrar_evento_funil(user_id, f"Digitou: {texto}")
+    except Exception as e:
+        print(f"Erro ao registar texto digitado: {e}")
+        
 async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     print("🟢 [DEBUG] Função responder_botoes ACIONADA!")
     
