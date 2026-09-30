@@ -2423,7 +2423,51 @@ async def webhook_telegram(request: Request):
     except Exception as e:
         print(f"Erro no webhook do Telegram: {e}")
         return {"status": "erro", "detalhe": str(e)}
+class EnviarMensagemPayload(BaseModel):
+    senha_admin: str
+    chat_ids: list[str]
+    mensagem: str
 
+@app.post("/api/admin/disparo")
+async def admin_disparo_mensagens(payload: EnviarMensagemPayload):
+    senha_env = globals().get("SENHA_ADMIN_SEGURA", "admin123").strip()
+    
+    if payload.senha_admin != senha_env and payload.senha_admin != globals().get("PUSHINPAY_TOKEN", "").strip():
+        raise HTTPException(status_code=401, detail="Não autorizado")
+
+    if not payload.chat_ids or not payload.mensagem:
+        return {"status": "erro", "detalhe": "Lista de utilizadores ou mensagem vazia."}
+
+    sucesso = 0
+    falhas = 0
+    url_tg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+
+    async with httpx.AsyncClient() as client:
+        for cid in payload.chat_ids:
+            try:
+                res = await client.post(
+                    url_tg, 
+                    json={"chat_id": cid, "text": payload.mensagem, "parse_mode": "HTML"},
+                    timeout=5.0
+                )
+                if res.status_code == 200:
+                    sucesso += 1
+                else:
+                    falhas += 1
+            except Exception:
+                falhas += 1
+
+    try:
+        registrar_evento_funil("ADMIN", f"Disparo em massa: {sucesso} enviados, {falhas} falhas.")
+    except Exception:
+        pass
+
+    return {
+        "status": "sucesso", 
+        "mensagem": f"Disparo concluído! {sucesso} mensagens enviadas e {falhas} falharam.",
+        "enviados": sucesso,
+        "falhas": falhas
+    }
 # ------------------------------------------------------------------------------
 # 🟢 RUNNER DA APLICAÇÃO
 # ------------------------------------------------------------------------------
