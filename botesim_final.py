@@ -831,7 +831,8 @@ async def lifespan(app: FastAPI):
     telegram_app.add_handler(CallbackQueryHandler(responder_botoes))
     telegram_app.add_handler(CommandHandler("pix", comando_pix))
     telegram_app.add_handler(MessageHandler(filters.StatusUpdate.WEB_APP_DATA, receber_dados_webapp))
-
+    telegram_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, rastrear_mensagens))
+    
     await telegram_app.initialize()
     await telegram_app.start()
 
