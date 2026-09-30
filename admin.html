@@ -300,6 +300,31 @@
             </tbody>
           </table>
         </div>
+        <!-- SECÇÃO DE MARKETING E DISPARO DE MENSAGENS -->
+<div class="card" style="margin-top: 20px; padding: 20px; border: 1px solid #ccc; border-radius: 8px;">
+    <h2>📢 Marketing & Retenção</h2>
+    <p>Envie promoções, avisos e mensagens de recuperação de clientes.</p>
+
+    <div style="margin-bottom: 15px;">
+        <label for="filtro_publico"><strong>Público-Alvo:</strong></label><br>
+        <select id="filtro_publico" style="width: 100%; padding: 8px; margin-top: 5px;">
+            <option value="todos">🌍 Todos os Utilizadores (Toda a base do Bot)</option>
+            <option value="abandonos">🛒 Carrinhos Abandonados (Iniciaram o Bot mas nunca compraram)</option>
+            <option value="compradores">🛍️ Apenas Clientes (Já realizaram pelo menos 1 compra)</option>
+        </select>
+    </div>
+
+    <div style="margin-bottom: 15px;">
+        <label for="mensagem_disparo"><strong>Mensagem a enviar:</strong></label><br>
+        <span style="font-size: 12px; color: #555;">Pode usar tags HTML básicas: &lt;b&gt;<b>negrito</b>&lt;/b&gt; e &lt;i&gt;<i>itálico</i>&lt;/i&gt;.</span>
+        <textarea id="mensagem_disparo" rows="5" style="width: 100%; padding: 8px; margin-top: 5px;" placeholder="Olá! Temos uma promoção imperdível para si..."></textarea>
+    </div>
+
+    <button onclick="dispararMensagens()" id="btn-disparo" style="background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+        🚀 Enviar Mensagem Agora
+    </button>
+    <p id="status_disparo" style="font-weight: bold; margin-top: 15px;"></p>
+</div>
       </div>
 
       <!-- ABA 2: ESTOQUE -->
@@ -523,6 +548,99 @@ function alternarCamposCategoria() {
         blocoEsim.style.display = "block";
         blocoInfo.style.display = "none";
     }
+}
+    async function dispararMensagens() {
+    const btn = document.getElementById("btn-disparo");
+    const statusText = document.getElementById("status_disparo");
+    const mensagem = document.getElementById("mensagem_disparo").value.trim();
+    const filtro = document.getElementById("filtro_publico").value;
+    
+    // 🔒 Puxa a senha de segurança diretamente da sessão ativa do admin
+    const senhaAdmin = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
+
+    if (!senhaAdmin) {
+        alert("⚠️ Sessão não encontrada ou não autorizado. Por favor, faça login novamente.");
+        return;
+    }
+
+    if (!mensagem) {
+        alert("⚠️ Por favor, escreva uma mensagem antes de enviar.");
+        return;
+    }
+
+    // Bloqueia o botão para evitar cliques duplicados
+    btn.disabled = true;
+    btn.style.backgroundColor = "#ccc";
+    statusText.style.color = "blue";
+    statusText.innerText = "⏳ A calcular o público-alvo e a preparar o envio...";
+
+    try {
+        const urlBase = "https://bot-esim-yure.onrender.com";
+        
+        // 1. Puxa os dados da API para classificar os utilizadores
+        const responseDados = await fetch(`${urlBase}/api/admin/dados`, {
+            headers: { "Authorization": `Bearer ${senhaAdmin}` }
+        });
+        
+        const dados = await responseDados.json();
+        if (dados.status !== "sucesso") throw new Error("Erro ao carregar lista de utilizadores.");
+
+        // Separação de públicos
+        const todosUsuarios = dados.usuarios.map(u => u.chat_id);
+        const compradores = [...new Set(dados.historico_vendas.map(v => v.user_id))];
+        let chatIdsAlvo = [];
+
+        // 2. Aplica o filtro selecionado no dropdown
+        if (filtro === "todos") {
+            chatIdsAlvo = todosUsuarios;
+        } else if (filtro === "compradores") {
+            chatIdsAlvo = compradores;
+        } else if (filtro === "abandonos") {
+            // Carrinho abandonado = Está registado no bot mas NUNCA comprou
+            chatIdsAlvo = todosUsuarios.filter(id => !compradores.includes(id));
+        }
+
+        if (chatIdsAlvo.length === 0) {
+            statusText.style.color = "red";
+            statusText.innerText = "❌ Nenhum utilizador encontrado para este filtro.";
+            btn.disabled = false;
+            btn.style.backgroundColor = "#28a745";
+            return;
+        }
+
+        statusText.innerText = `🚀 A enviar mensagem para ${chatIdsAlvo.length} utilizador(es)...`;
+
+        // 3. Envia a lista para a rota de disparo no backend
+        const responseDisparo = await fetch(`${urlBase}/api/admin/disparo`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                senha_admin: senhaAdmin,
+                chat_ids: chatIdsAlvo,
+                mensagem: mensagem
+            })
+        });
+
+        const resultado = await responseDisparo.json();
+
+        // 4. Exibe o feedback do envio
+        if (resultado.status === "sucesso") {
+            statusText.style.color = "green";
+            statusText.innerText = `✅ ${resultado.mensagem}`;
+            document.getElementById("mensagem_disparo").value = ""; 
+        } else {
+            statusText.style.color = "red";
+            statusText.innerText = `❌ Erro: ${resultado.detalhe}`;
+        }
+
+    } catch (erro) {
+        statusText.style.color = "red";
+        statusText.innerText = `❌ Falha na comunicação: ${erro.message}`;
+    }
+
+    // Liberta o botão novamente
+    btn.disabled = false;
+    btn.style.backgroundColor = "#28a745";
 }
 
 // 🔹 SALVAR NOVO PRODUTO (E-SIM OU INFOPRODUTO)
