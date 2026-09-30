@@ -248,20 +248,6 @@
       "status": "vendido"
     },
     {
-      "id": "prod_23",
-      "operadora": "InfoProduto",
-      "plano": "474525 - F -  RENNER - R$ 302",
-      "preco": 50.0,
-      "descricao": "",
-      "categoria": "infoproduto",
-      "dados_principais": "renner | consultada | (81) 98860-9905",
-      "informacoes_adicionais": "CARTÃO:\n4745 2551 6643 6362\nVALIDADE: 06/2029\nCVV: 615\nNOME: JOYCE FREITAS\nNASCIMENTO: 1995\nCPF: 70215315405\nSENHA: 7452\nLIMITE: R$302,01 **",
-      "conteudo_copia_cola": "4745 2551 6643 6362\nVALIDADE: 06/2029\nCVV: 615",
-      "imagem_qr": "",
-      "imagem_url": "",
-      "status": "disponivel"
-    },
-    {
       "id": "prod_24",
       "operadora": "Vivo",
       "plano": "30GB 💜",
@@ -287,6 +273,20 @@
       "conteudo_copia_cola": "",
       "imagem_qr": "https://i.imgur.com/haXUiw2.jpeg",
       "imagem_url": "https://i.imgur.com/haXUiw2.jpeg",
+      "status": "disponivel"
+    },
+    {
+      "id": "prod_25",
+      "operadora": "Vivo",
+      "plano": "40 GB 💜",
+      "preco": 35.0,
+      "descricao": "Assim que instalar seu e-SIM chama nosso suporte @Yureconsul7 e envie o seguinte email para ativação da internet: renatosantoss998@outlook.com",
+      "categoria": "esim",
+      "dados_principais": "",
+      "informacoes_adicionais": "",
+      "conteudo_copia_cola": "",
+      "imagem_qr": "https://i.imgur.com/ndaHbpJ.jpeg",
+      "imagem_url": "https://i.imgur.com/ndaHbpJ.jpeg",
       "status": "disponivel"
     }
   ],
