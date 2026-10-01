@@ -570,47 +570,58 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         produtos = dados.get("produtos", [])
         
         se_infoproduto = (query.data == "listar_infos")
+        teclado = []
         
-        disponiveis = []
-        for p in produtos:
-            if str(p.get("status", "")).lower().strip() == "disponivel":
-                cat = str(p.get("categoria", "esim")).lower().strip()
-                if se_infoproduto and "infoproduto" in cat:
-                    disponiveis.append(p)
-                elif not se_infoproduto and "infoproduto" not in cat:
-                    disponiveis.append(p)
+        # Percorre a lista mantendo a posição exata (idx) de cada produto
+        for idx, prod in enumerate(produtos):
+            if str(prod.get("status", "")).lower().strip() == "disponivel":
+                cat = str(prod.get("categoria", "esim")).lower().strip()
+                eh_info = "infoproduto" in cat
+                
+                if (se_infoproduto and eh_info) or (not se_infoproduto and not eh_info):
+                    p_id = prod.get("id")
+                    
+                    # 💡 SE NÃO TIVER ID VÁLIDO OU FOR DUPLICADO, USA A POSIÇÃO NA LISTA (idx_N)
+                    if p_id is not None and str(p_id).strip() != "" and str(p_id) != "None":
+                        cb_id = str(p_id)
+                    else:
+                        cb_id = f"idx_{idx}"
+                    
+                    op = prod.get("operadora", "Produto")
+                    plano = prod.get("plano", "")
+                    preco = float(prod.get("preco", 0))
+                    
+                    if se_infoproduto and op.lower() == "infoproduto":
+                        texto_botao = f"🔥 {plano} — R$ {preco:.2f}"
+                    else:
+                        texto_botao = f"📱 {op} {plano} — R$ {preco:.2f}"
+                    
+                    teclado.append([InlineKeyboardButton(texto_botao, callback_data=f"buy_{cb_id}")])
         
-        if not disponiveis:
+        if not teclado:
             msg_vazio = "❌ Nenhum Info Produto disponível no momento." if se_infoproduto else "❌ Nenhum e-SIM disponível no momento."
             await context.bot.send_message(chat_id=user_id, text=msg_vazio)
             return
             
         texto = "📦 **Catálogo de Consultadas:**\nSelecione uma opção abaixo:" if se_infoproduto else "📱 **Catálogo de e-SIMs:**\nSelecione uma opção abaixo:"
-        teclado = []
-        
-        for prod in disponiveis:
-            op = prod.get("operadora", "Produto")
-            plano = prod.get("plano", "")
-            preco = float(prod.get("preco", 0))
-            prod_id = prod.get("id")
-            
-            if se_infoproduto and op.lower() == "infoproduto":
-                texto_botao = f"🔥 {plano} — R$ {preco:.2f}"
-            else:
-                texto_botao = f"📱 {op} {plano} — R$ {preco:.2f}"
-            
-            teclado.append([InlineKeyboardButton(texto_botao, callback_data=f"buy_{prod_id}")])
-            
         await context.bot.send_message(chat_id=user_id, text=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(teclado))
         return
-    # ==================================
-    
+
     # === TELA DE PRÉ-VISUALIZAÇÃO / CONFIRMAÇÃO ===
     if query.data.startswith("buy_"):
         try:
             prod_id = query.data.replace("buy_", "")
             produtos = dados.get("produtos", [])
-            produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
+            
+            # Procura pelo índice da lista (idx_) ou pelo ID oficial
+            if prod_id.startswith("idx_"):
+                try:
+                    idx_val = int(prod_id.replace("idx_", ""))
+                    produto = produtos[idx_val] if 0 <= idx_val < len(produtos) else None
+                except Exception:
+                    produto = None
+            else:
+                produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
 
             if not produto or str(produto.get("status", "")).lower().strip() != "disponivel":
                 await context.bot.send_message(chat_id=user_id, text="❌ Este produto já não se encontra disponível!")
@@ -713,7 +724,16 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         try:
             prod_id = query.data.replace("confirm_buy_", "")
             produtos = dados.get("produtos", [])
-            produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
+            
+            # Procura pelo índice da lista (idx_) ou pelo ID oficial
+            if prod_id.startswith("idx_"):
+                try:
+                    idx_val = int(prod_id.replace("idx_", ""))
+                    produto = produtos[idx_val] if 0 <= idx_val < len(produtos) else None
+                except Exception:
+                    produto = None
+            else:
+                produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
 
             if not produto or str(produto.get("status", "")).lower().strip() != "disponivel":
                 await query.edit_message_text(text="❌ Este produto já não se encontra disponível!")
