@@ -572,20 +572,15 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         se_infoproduto = (query.data == "listar_infos")
         teclado = []
         
-        # Percorre a lista mantendo a posição exata (idx) de cada produto
+        # Percorre a lista usando sempre o índice (idx) para garantir botões 100% únicos
         for idx, prod in enumerate(produtos):
             if str(prod.get("status", "")).lower().strip() == "disponivel":
                 cat = str(prod.get("categoria", "esim")).lower().strip()
                 eh_info = "infoproduto" in cat
                 
                 if (se_infoproduto and eh_info) or (not se_infoproduto and not eh_info):
-                    p_id = prod.get("id")
-                    
-                    # 💡 SE NÃO TIVER ID VÁLIDO OU FOR DUPLICADO, USA A POSIÇÃO NA LISTA (idx_N)
-                    if p_id is not None and str(p_id).strip() != "" and str(p_id) != "None":
-                        cb_id = str(p_id)
-                    else:
-                        cb_id = f"idx_{idx}"
+                    # 💡 Força o ID único pela posição na lista (idx_0, idx_1, etc)
+                    cb_id = f"idx_{idx}"
                     
                     op = prod.get("operadora", "Produto")
                     plano = prod.get("plano", "")
@@ -613,7 +608,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             prod_id = query.data.replace("buy_", "")
             produtos = dados.get("produtos", [])
             
-            # Procura pelo índice da lista (idx_) ou pelo ID oficial
+            # Procura pela posição na lista (idx_) ou fallback por ID
             if prod_id.startswith("idx_"):
                 try:
                     idx_val = int(prod_id.replace("idx_", ""))
@@ -725,7 +720,6 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             prod_id = query.data.replace("confirm_buy_", "")
             produtos = dados.get("produtos", [])
             
-            # Procura pelo índice da lista (idx_) ou pelo ID oficial
             if prod_id.startswith("idx_"):
                 try:
                     idx_val = int(prod_id.replace("idx_", ""))
