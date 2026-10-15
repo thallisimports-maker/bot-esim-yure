@@ -767,6 +767,10 @@ class PayloadRecargaMiniApp(BaseModel):
     chat_id: str
     valor: float
 
+class PayloadCompraMiniApp(BaseModel):
+    chat_id: str
+    produto_id: str
+    
 class EnviarMensagemPayload(BaseModel):
     senha_admin: str
     chat_ids: list[str]
