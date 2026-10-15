@@ -310,9 +310,9 @@
       "preco": 80.0,
       "descricao": "",
       "categoria": "infoproduto",
-      "dados_principais": "RENNER\nCARTÃO: 4745 2507 1179 0835\nDATA: 02/2035\nCVV: 774\nSENHA: 2356\nDADOS:\nNome: IDINEIA VASCONCELOS\nCPF: 02848617900\nSALDO R$ 891,00",
-      "informacoes_adicionais": "CPF: 02848617900",
-      "conteudo_copia_cola": "RENNER\nCARTÃO: 4745 2507 1179 0835\nDATA: 02/2035\nCVV: 774\nSENHA: 2356\nDADOS:\nNome: IDINEIA VASCONCELOS\nCPF: 02848617900\nSALDO R$ 891,00",
+      "dados_principais": "CONSULTADA RENNER - BIN 474525 - FEM - SALDO R$ 891,00",
+      "informacoes_adicionais": "RENNER\nCARTÃO: 4745 2507 1179 0835\nDATA: 02/2035\nCVV: 774\nSENHA: 2356\nDADOS:\nNome: IDINEIA VASCONCELOS\nCPF: 02848617900\nSALDO R$ 891,00",
+      "conteudo_copia_cola": "4745 2507 1179 0835",
       "imagem_qr": "",
       "imagem_url": "",
       "status": "disponivel"
