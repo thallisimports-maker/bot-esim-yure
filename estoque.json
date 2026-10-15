@@ -329,7 +329,7 @@
       "conteudo_copia_cola": "4745 2529 2645 4918",
       "imagem_qr": "",
       "imagem_url": "",
-      "status": "disponivel"
+      "status": "vendido"
     }
   ],
   "utilizadores": {},
@@ -541,6 +541,14 @@
       "operadora": "Tim",
       "valor": 25.0,
       "data": "2026-10-03 15:15:36"
+    },
+    {
+      "user_id": "6262333827",
+      "cliente": "Joestar",
+      "produto_id": "prod_28",
+      "operadora": "InfoProduto",
+      "valor": 100.0,
+      "data": "2026-10-15 15:22:51"
     }
   ],
   "cupons": {
