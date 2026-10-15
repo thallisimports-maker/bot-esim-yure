@@ -1,111 +1,45 @@
 import json
 import os
 import sqlite3
-from datetime import datetime
-
-def registrar_evento_funil(user_id, etapa):
-    try:
-        conn = conectar_banco()
-        cursor = conn.cursor()
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS funil_metricas (
-                id SERIAL PRIMARY KEY,
-                user_id TEXT,
-                etapa TEXT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        cursor.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, %s)", (str(user_id), etapa))
-        conn.commit()
-        conn.close()
-    except Exception as e:
-        print(f"Erro ao registrar evento funil: {e}")
-def carregar_dados():
-    if not os.path.exists("estoque.json"):
-        return {
-            "produtos": [
-                {
-                    "id": "claro_40gb_001",
-                    "operadora": "Claro",
-                    "plano": "40GB",
-                    "preco": 35.0,
-                    "status": "vendido"
-                },
-                {
-                    "id": "esim_2",
-                    "operadora": "Claro",
-                    "plano": "35GB",
-                    "preco": 35.0,
-                    "status": "vendido"
-                },
-                {
-                    "id": "esim_3",
-                    "operadora": "Claro",
-                    "plano": "35GB",
-                    "preco": 35.0,
-                    "status": "vendido"
-                },
-                {
-                    "id": "esim_4",
-                    "operadora": "Claro",
-                    "plano": "35GB",
-                    "preco": 25.0,
-                    "status": "vendido"
-                }
-            ],
-            "utilizadores": {},
-            "vendas": []
-        }
-    try:
-        with open("estoque.json", "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {"produtos": [], "utilizadores": {}, "vendas": []}
-
-def salvar_dados(dados):
-    with open("estoque.json", "w", encoding="utf-8") as f:
-        json.dump(dados, f, indent=4, ensure_ascii=False)
-        
-import sqlite3
 import logging
 import requests
 import base64
 import httpx
+import random
+import html
+import psycopg2
+from datetime import datetime
 from io import BytesIO
 from typing import Optional
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, BotCommand
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes, MessageHandler, filters
 
 # ------------------------------------------------------------------------------
-# 🔒 CREDENCIAIS E CONSTANTES DE PRODUÇÃO
+# 🔒 CREDENCIAIS E CONSTANTES DE PRODUÇÃO (MISTICPAY 100%)
 # ------------------------------------------------------------------------------
 TOKEN = os.environ.get("TOKEN", "")
 MISTICPAY_CI = os.environ.get("MISTICPAY_CI", "")
 MISTICPAY_CS = os.environ.get("MISTICPAY_CS", "")
+MISTICPAY_WEBHOOK_SECRET = os.environ.get("MISTICPAY_WEBHOOK_SECRET", "YurePixSeguro2026*")
 URL_BACKEND = "https://bot-esim-yure.onrender.com"
-MODO_MANUTENCAO = False  # Mude para True quando for mexer no código
+URL_MINIAPP_OFICIAL = "https://baseyure.shop"
+MODO_MANUTENCAO = False
 
-# 🛡️ CREDENCIAIS DE SEGURANÇA DO PAINEL ADMIN
 USUARIO_ADMIN_MINISITE = os.environ.get("USUARIO_ADMIN_MINISITE", "aguia2026")
 SENHA_ADMIN_SEGURA = os.environ.get("SENHA_ADMIN_SEGURA", "yuresantos26")
 SENHA_ADMIN_MINISITE = SENHA_ADMIN_SEGURA
 
-# LINK DIRETO DA SUA LOGO NO GITHUB
 LOGO_URL = "https://raw.githubusercontent.com/thallisimports-maker/bot-esim-yure/main/logo.png"
 
 logging.basicConfig(level=logging.INFO)
 
-import psycopg2
-
-# ------------------------------------------------------------------------------
-# 🗄️ INICIALIZAÇÃO DO BANCO DE DADOS POSTGRESQL (NUVEM)
-# ------------------------------------------------------------------------------
-# ⚠️ COLE AQUI O SEU LINK COM A SENHA REAL:
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+
 class SmartRow:
     def __init__(self, t_row, c_names):
         self.t_row = t_row
@@ -121,7 +55,6 @@ class CursorWrapper:
     def __init__(self, cursor):
         self.cursor = cursor
     def execute(self, query, params=None):
-        # Converte qualquer '?' remanescente em '%s' antes de enviar ao Postgres
         query = query.replace("?", "%s")
         query = query.replace("AUTOINCREMENT", "SERIAL")
         query = query.replace("DATETIME DEFAULT CURRENT_TIMESTAMP", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
@@ -162,11 +95,58 @@ class DBWrapper:
     def rollback(self): self.conn.rollback()
 
 def conectar_banco():
+    if not DATABASE_URL:
+        return None
     conn = psycopg2.connect(DATABASE_URL)
     return DBWrapper(conn)
 
+def registrar_evento_funil(user_id, etapa):
+    try:
+        conn = conectar_banco()
+        if not conn: return
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS funil_metricas (
+                id SERIAL PRIMARY KEY,
+                user_id TEXT,
+                etapa TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, %s)", (str(user_id), etapa))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"Erro ao registrar evento funil: {e}")
+
+def carregar_dados():
+    if not os.path.exists("estoque.json"):
+        return {
+            "produtos": [
+                {"id": "claro_40gb_001", "operadora": "Claro", "plano": "40GB", "preco": 35.0, "status": "vendido"},
+                {"id": "esim_2", "operadora": "Claro", "plano": "35GB", "preco": 35.0, "status": "vendido"},
+                {"id": "esim_3", "operadora": "Claro", "plano": "35GB", "preco": 35.0, "status": "vendido"},
+                {"id": "esim_4", "operadora": "Claro", "plano": "35GB", "preco": 25.0, "status": "vendido"}
+            ],
+            "utilizadores": {},
+            "vendas": []
+        }
+    try:
+        with open("estoque.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"produtos": [], "utilizadores": {}, "vendas": []}
+
+def salvar_dados(dados):
+    with open("estoque.json", "w", encoding="utf-8") as f:
+        json.dump(dados, f, indent=4, ensure_ascii=False)
+
 def inicializar_banco():
+    if not DATABASE_URL:
+        logging.warning("DATABASE_URL não configurada.")
+        return
     con = conectar_banco()
+    if not con: return
     cur = con.cursor()
     try:
         cur.execute("""
@@ -179,7 +159,6 @@ def inicializar_banco():
             )
         """)
         cur.execute("CREATE TABLE IF NOT EXISTS estoque (produto_id TEXT PRIMARY KEY, quantidade INTEGER DEFAULT 0)")
-        
         cur.execute("""
             CREATE TABLE IF NOT EXISTS estoque_codigos (
                 id SERIAL PRIMARY KEY, 
@@ -190,10 +169,10 @@ def inicializar_banco():
             )
         """)
         cur.execute("""
-        CREATE TABLE IF NOT EXISTS pix_mensagens (
-            transaction_id TEXT PRIMARY KEY,
-            chat_id TEXT,
-            message_id BIGINT
+            CREATE TABLE IF NOT EXISTS pix_mensagens (
+                transaction_id TEXT PRIMARY KEY,
+                chat_id TEXT,
+                message_id BIGINT
             )
         """)
         cur.execute("""
@@ -212,7 +191,6 @@ def inicializar_banco():
                 data_acesso TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
         cur.execute("""
             CREATE TABLE IF NOT EXISTS giftcards (
                 codigo TEXT PRIMARY KEY, 
@@ -221,7 +199,6 @@ def inicializar_banco():
                 usado_por TEXT
             )
         """)
-        
         cur.execute("""
             CREATE TABLE IF NOT EXISTS funil_metricas (
                 id SERIAL PRIMARY KEY,
@@ -230,7 +207,6 @@ def inicializar_banco():
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
         cur.execute("SELECT COUNT(*) as qtd FROM estoque")
         row = cur.fetchone()
         if row and row['qtd'] == 0:
@@ -241,10 +217,11 @@ def inicializar_banco():
     finally:
         con.close()
 
-inicializar_banco()
+if DATABASE_URL:
+    inicializar_banco()
 
 # ------------------------------------------------------------------------------
-# 🤖 LÓGICA DO BOT DO TELEGRAM (COMANDOS & HANDLERS)
+# 🤖 LÓGICA DO BOT DO TELEGRAM
 # ------------------------------------------------------------------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = str(update.effective_chat.id)
@@ -260,23 +237,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     saldo = 0.0
     try:
         con = conectar_banco()
-        cur = con.cursor()
-        cur.execute("""
-            INSERT INTO carteira (chat_id, first_name, username, saldo) 
-            VALUES (?, ?, ?, 0.0)
-            ON CONFLICT(chat_id) DO UPDATE SET first_name=?, username=?
-        """, (chat_id, first_name, username, first_name, username))
-        con.commit()
+        if con:
+            cur = con.cursor()
+            cur.execute("""
+                INSERT INTO carteira (chat_id, first_name, username, saldo) 
+                VALUES (?, ?, ?, 0.0)
+                ON CONFLICT(chat_id) DO UPDATE SET first_name=?, username=?
+            """, (chat_id, first_name, username, first_name, username))
+            con.commit()
 
-        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
-        res_saldo = cur.fetchone()
-        if res_saldo:
-            saldo = float(res_saldo["saldo"])
-        con.close()
+            cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
+            res_saldo = cur.fetchone()
+            if res_saldo:
+                saldo = float(res_saldo["saldo"])
+            con.close()
     except Exception as e:
         logging.error(f"Erro na base de dados no /start: {e}")
-
-    url_miniapp = "https://baseyure.shop"
 
     texto = (
         f"👑 **YURE eSIMS — HUMILDADE, LEALDADE, DISCIPLINA E ATITUDE**\n\n"
@@ -287,9 +263,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
     
     botoes = [
-        [InlineKeyboardButton("👑 ABRIR LOJA YURE eSIMS (MINIAPP)", web_app=WebAppInfo(url=url_miniapp))],
+        [InlineKeyboardButton("👑 ABRIR LOJA YURE eSIMS (MINIAPP)", web_app=WebAppInfo(url=URL_MINIAPP_OFICIAL))],
         [InlineKeyboardButton("📱 Ver eSIMs Disponíveis", callback_data="listar_esims")],
-        [InlineKeyboardButton("🔍Consultadas / Consultaveis", callback_data="listar_infos")]
+        [InlineKeyboardButton("🔍 Consultadas / Consultaveis", callback_data="listar_infos")]
     ]
 
     try:
@@ -311,18 +287,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def comando_saldo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     chat_id = str(update.effective_chat.id)
+    saldo = 0.0
     con = conectar_banco()
-    cur = con.cursor()
-    try:
-        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
-        res = cur.fetchone()
-        saldo = float(res["saldo"]) if res else 0.0
-    finally:
-        con.close()
+    if con:
+        cur = con.cursor()
+        try:
+            cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (chat_id,))
+            res = cur.fetchone()
+            saldo = float(res["saldo"]) if res else 0.0
+        finally:
+            con.close()
 
-    url_miniapp = "https://thallisimports-maker.github.io/bot-esim-yure/"
     texto = f"💳 **SUA CARTEIRA YURE eSIMS**\n\n💰 **Saldo Disponível:** `R$ {saldo:.2f}`\n\nPara recarregar via PIX ou resgatar um cupom de saldo, clique abaixo:"
-    botoes = [[InlineKeyboardButton("⚡ Adicionar Saldo / Recarregar", web_app=WebAppInfo(url=url_miniapp))]]
+    botoes = [[InlineKeyboardButton("⚡ Adicionar Saldo / Recarregar", web_app=WebAppInfo(url=URL_MINIAPP_OFICIAL))]]
     await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
 async def comando_suporte(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -333,25 +310,18 @@ async def comando_suporte(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     )
     botoes = [
         [InlineKeyboardButton("💬 Atendimento via WhatsApp", url="https://wa.me/5535997550084")],
-        [InlineKeyboardButton("✈️ Atendimento via Telegram", url="https://t.me/@Yureconsul7")] # Substitua pelo seu @username do Telegram
+        [InlineKeyboardButton("✈️ Atendimento via Telegram", url="https://t.me/@Yureconsul7")]
     ]
     await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(botoes))
 
-async def comando_esims(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
+async def comando_esims(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message:
         return
 
     dados = carregar_dados()
     produtos = dados.get("produtos", [])
 
-    # Filtra apenas os produtos com status 'disponivel'
-    disponiveis = [
-        p
-        for p in produtos
-        if str(p.get("status", "")).lower().strip() == "disponivel"
-    ]
+    disponiveis = [p for p in produtos if str(p.get("status", "")).lower().strip() == "disponivel"]
 
     if not disponiveis:
         await update.message.reply_text(
@@ -362,7 +332,6 @@ async def comando_esims(
         )
         return
 
-    # Agrupa e organiza o estoque
     resumo_estoque = {}
     for prod in disponiveis:
         operadora = str(prod.get("operadora", "Geral")).strip()
@@ -373,11 +342,7 @@ async def comando_esims(
         chave = f"{operadora} - {plano}"
         if chave not in resumo_estoque:
             resumo_estoque[chave] = {
-                "qtd": 0,
-                "preco": preco,
-                "id_exemplo": prod_id,
-                "operadora": operadora,
-                "plano": plano,
+                "qtd": 0, "preco": preco, "id_exemplo": prod_id, "operadora": operadora, "plano": plano,
             }
         resumo_estoque[chave]["qtd"] += 1
 
@@ -390,34 +355,23 @@ async def comando_esims(
             f"   📦 Estoque: **{info['qtd']} un.**\n"
             f"   💰 Valor: **R$ {info['preco']:.2f}**\n\n"
         )
-        # Utiliza exatamente o callback 'buy_ID' reconhecido pela sua função responder_botoes
-        keyboard.append(
-            [
-                InlineKeyboardButton(
-                    f"🛒 Comprar {info['operadora']} {info['plano']} - R$ {info['preco']:.2f}",
-                    callback_data=f"buy_{info['id_exemplo']}",
-                )
-            ]
-        )
-
-    # Botão para abrir o MiniApp da loja
-    keyboard.append(
-        [
+        keyboard.append([
             InlineKeyboardButton(
-                "👑 ABRIR LOJA COMPLETA (MINIAPP)",
-                web_app=WebAppInfo(url="https://bot-esim-yure.onrender.com"),
+                f"🛒 Comprar {info['operadora']} {info['plano']} - R$ {info['preco']:.2f}",
+                callback_data=f"buy_{info['id_exemplo']}",
             )
-        ]
-    )
+        ])
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text(
-        texto, parse_mode="Markdown", reply_markup=reply_markup
-    )
-            
-async def receber_dados_webapp(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
+    keyboard.append([
+        InlineKeyboardButton(
+            "👑 ABRIR LOJA COMPLETA (MINIAPP)",
+            web_app=WebAppInfo(url=URL_MINIAPP_OFICIAL),
+        )
+    ])
+
+    await update.message.reply_text(texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(keyboard))
+
+async def receber_dados_webapp(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message or not update.message.web_app_data:
         return
 
@@ -428,61 +382,44 @@ async def receber_dados_webapp(
         dados_recebidos = json.loads(update.message.web_app_data.data)
         acao = dados_recebidos.get("acao")
 
-        # 1. COMPRA DE E-SIM VIA MINIAPP
         if acao == "comprar":
             prod_id = dados_recebidos.get("id")
             dados = carregar_dados()
             produtos = dados.get("produtos", [])
 
-            produto = next(
-                (p for p in produtos if str(p.get("id")) == str(prod_id)), None
-            )
+            produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
 
-            if (
-                not produto
-                or str(produto.get("status", "")).lower().strip()
-                != "disponivel"
-            ):
-                await update.message.reply_text(
-                    "❌ Este e-SIM já não se encontra disponível!"
-                )
+            if not produto or str(produto.get("status", "")).lower().strip() != "disponivel":
+                await update.message.reply_text("❌ Este e-SIM já não se encontra disponível!")
                 return
 
             preco = float(produto.get("preco", 0))
 
             con = conectar_banco()
-            try:
-                cur = con.cursor()
-                cur.execute(
-                    "SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,)
-                )
-                res_saldo = cur.fetchone()
-                saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
+            if con:
+                try:
+                    cur = con.cursor()
+                    cur.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,))
+                    res_saldo = cur.fetchone()
+                    saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
 
-                if saldo_atual < preco:
-                    await update.message.reply_text(
-                        f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você possui **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para finalizar a compra.",
-                        parse_mode="Markdown",
-                    )
-                    return
+                    if saldo_atual < preco:
+                        await update.message.reply_text(
+                            f"❌ **Saldo insuficiente!**\n\nEste e-SIM custa **R$ {preco:.2f}** e você possui **R$ {saldo_atual:.2f}** na carteira.\nAdicione saldo no MiniApp para finalizar a compra.",
+                            parse_mode="Markdown",
+                        )
+                        return
 
-                novo_saldo = saldo_atual - preco
-                cur.execute(
-                    "UPDATE carteira SET saldo = %s WHERE chat_id = %s",
-                    (novo_saldo, user_id),
-                )
-                con.commit()
-            finally:
-                con.close()
+                    novo_saldo = saldo_atual - preco
+                    cur.execute("UPDATE carteira SET saldo = %s WHERE chat_id = %s", (novo_saldo, user_id))
+                    con.commit()
+                finally:
+                    con.close()
 
             produto["status"] = "vendido"
-
             registro_venda = {
-                "user_id": user_id,
-                "cliente": nome_usuario,
-                "produto_id": produto.get("id"),
-                "operadora": produto.get("operadora"),
-                "valor": preco,
+                "user_id": user_id, "cliente": nome_usuario, "produto_id": produto.get("id"),
+                "operadora": produto.get("operadora"), "valor": preco,
                 "data": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }
             dados.setdefault("vendas", []).append(registro_venda)
@@ -503,94 +440,61 @@ async def receber_dados_webapp(
             )
 
             if imagem_qr and imagem_qr.startswith("http"):
-                await context.bot.send_photo(
-                    chat_id=user_id,
-                    photo=imagem_qr,
-                    caption=legenda,
-                    parse_mode="Markdown",
-                )
+                await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
             else:
-                await context.bot.send_message(
-                    chat_id=user_id,
-                    text=legenda + "\n\n*(QR Code enviado com sucesso)*",
-                    parse_mode="Markdown",
-                )
+                await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code enviado com sucesso)*", parse_mode="Markdown")
 
-        # 2. SOLICITAÇÃO DE RECARGA
         elif acao == "recarga":
             valor = float(dados_recebidos.get("valor", 0))
             await update.message.reply_text(
-                f"⚡ **Solicitação de Recarga Recebida!**\n\nValor: **R$ {valor:.2f}**\nUtilize a opção de recarga do bot para gerar o PIX.",
+                f"⚡ **Solicitação de Recarga Recebida!**\n\nValor: **R$ {valor:.2f}**\nUtilize a opção `/pix {valor:.2f}` para gerar o pagamento.",
                 parse_mode="Markdown",
             )
 
     except Exception as e:
         await update.message.reply_text(f"❌ Erro ao processar pedido: {str(e)}")
 
-# ------------------------------------------------------------------
-# ⚙️ GESTOR DE LIFESPAN (REGISTRO DO MENU DE COMANDOS NATIVO)
-# ------------------------------------------------------------------
 async def rastrear_mensagens(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message or not update.message.text:
         return
-    
     user_id = str(update.message.from_user.id)
     texto = update.message.text.strip()
-    
-    # Guarda o que o cliente digitou no banco de dados para você ver no painel
     try:
         registrar_evento_funil(user_id, f"Digitou: {texto}")
     except Exception as e:
-        print(f"Erro ao registar texto digitado: {e}")
-        
+        print(f"Erro ao registrar texto digitado: {e}")
+
 async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    print("🟢 [DEBUG] Função responder_botoes ACIONADA!")
-    
     query = update.callback_query
     if not query:
-        print("❌ [DEBUG] Nenhuma query encontrada.")
         return
 
-    print(f"🟢 [DEBUG] Botão Clicado: {query.data}")
-
-    # 🚀 Liberta o carregamento do botão no Telegram IMEDIATAMENTE
     try:
         await query.answer()
-        print("🟢 [DEBUG] Loading do botão parado com sucesso!")
     except Exception as e:
-        print(f"⚠️ [DEBUG] Erro ao parar o loading: {e}")
+        print(f"⚠️ Erro ao responder callback query: {e}")
 
     user_id = str(query.from_user.id)
     nome_usuario = query.from_user.first_name or "Cliente"
     dados = carregar_dados()
 
-    # === NOVOS BOTÕES DO MENU START ===
     if query.data in ["listar_esims", "listar_infos"]:
-        dados = carregar_dados()
         produtos = dados.get("produtos", [])
-        
         se_infoproduto = (query.data == "listar_infos")
         teclado = []
         
-        # Percorre a lista usando sempre o índice (idx) para garantir botões 100% únicos
         for idx, prod in enumerate(produtos):
             if str(prod.get("status", "")).lower().strip() == "disponivel":
                 cat = str(prod.get("categoria", "esim")).lower().strip()
                 eh_info = "infoproduto" in cat
                 
                 if (se_infoproduto and eh_info) or (not se_infoproduto and not eh_info):
-                    # 💡 Força o ID único pela posição na lista (idx_0, idx_1, etc)
                     cb_id = f"idx_{idx}"
-                    
                     op = prod.get("operadora", "Produto")
                     plano = prod.get("plano", "")
                     preco = float(prod.get("preco", 0))
                     
-                    if se_infoproduto and op.lower() == "infoproduto":
-                        texto_botao = f"🔥 {plano} — R$ {preco:.2f}"
-                    else:
-                        texto_botao = f"📱 {op} {plano} — R$ {preco:.2f}"
-                    
+                    texto_botao = f"🔥 {plano} — R$ {preco:.2f}" if (se_infoproduto and op.lower() == "infoproduto") else f"📱 {op} {plano} — R$ {preco:.2f}"
                     teclado.append([InlineKeyboardButton(texto_botao, callback_data=f"buy_{cb_id}")])
         
         if not teclado:
@@ -602,13 +506,11 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await context.bot.send_message(chat_id=user_id, text=texto, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(teclado))
         return
 
-    # === TELA DE PRÉ-VISUALIZAÇÃO / CONFIRMAÇÃO ===
     if query.data.startswith("buy_"):
         try:
             prod_id = query.data.replace("buy_", "")
             produtos = dados.get("produtos", [])
             
-            # Procura pela posição na lista (idx_) ou fallback por ID
             if prod_id.startswith("idx_"):
                 try:
                     idx_val = int(prod_id.replace("idx_", ""))
@@ -630,76 +532,46 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
             descricao = produto.get("descricao", "").strip()
             dados_principais = produto.get("dados_principais", "").strip()
-            
             detalhes_extra = ""
             
             if dados_principais:
                 partes = [p.strip() for p in dados_principais.split('|')]
-                
                 if len(partes) >= 4:
-                    detalhes_extra += (
-                        f"🏦 **Banco:** {partes[0]}\n"
-                        f"📄 **Tipo:** {partes[1]}\n"
-                        f"📧 **E-mail:** {partes[2]}\n"
-                        f"📱 **Tel:** {partes[3]}\n"
-                    )
+                    detalhes_extra += f"🏦 **Banco:** {partes[0]}\n📄 **Tipo:** {partes[1]}\n📧 **E-mail:** {partes[2]}\n📱 **Tel:** {partes[3]}\n"
                 elif len(partes) >= 3:
-                    detalhes_extra += (
-                        f"🏦 **Banco:** {partes[0]}\n"
-                        f"📄 **Tipo:** {partes[1]}\n"
-                        f"📱 **Tel:** {partes[2]}\n"
-                    )
+                    detalhes_extra += f"🏦 **Banco:** {partes[0]}\n📄 **Tipo:** {partes[1]}\n📱 **Tel:** {partes[2]}\n"
                 elif len(partes) == 2:
-                    detalhes_extra += (
-                        f"🏦 **Banco:** {partes[0]}\n"
-                        f"📄 **Tipo:** {partes[1]}\n"
-                    )
+                    detalhes_extra += f"🏦 **Banco:** {partes[0]}\n📄 **Tipo:** {partes[1]}\n"
                 else:
                     detalhes_extra += f"{dados_principais}\n"
 
             if descricao:
                 detalhes_extra += f"\n{descricao}\n"
 
+            saldo_atual = 0.0
             con = conectar_banco()
-            try:
-                cur = con.cursor()
-                cur.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,))
-                res_saldo = cur.fetchone()
-                saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
-            finally:
-                con.close()
+            if con:
+                try:
+                    cur = con.cursor()
+                    cur.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,))
+                    res_saldo = cur.fetchone()
+                    saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
+                finally:
+                    con.close()
 
-            texto_conf = (
-                f"🔍 **Confirmar Compra**\n"
-                f"━━━━━━━━━━━━━━━━━━\n"
-                f"{emoji} **Produto:** {op} {plano}\n"
-            )
-            
+            texto_conf = f"🔍 **Confirmar Compra**\n━━━━━━━━━━━━━━━━━━\n{emoji} **Produto:** {op} {plano}\n"
             if detalhes_extra:
                 texto_conf += f"\n{detalhes_extra}"
-                
-            texto_conf += (
-                f"━━━━━━━━━━━━━━━━━━\n\n"
-                f"💰 **Valor:** R$ {preco:.2f}\n"
-                f"👛 **Seu saldo:** R$ {saldo_atual:.2f}\n\n"
-            )
+            texto_conf += f"━━━━━━━━━━━━━━━━━━\n\n💰 **Valor:** R$ {preco:.2f}\n👛 **Seu saldo:** R$ {saldo_atual:.2f}\n\n"
 
             teclado = []
             if saldo_atual >= preco:
-                texto_conf += (
-                    f"✅ **Saldo disponível.**\n\n"
-                    f"🤖 Você está a um passo de adquirir as melhores INFOS do MERCADO!\n"
-                    f"Clique abaixo para concluir a compra."
-                )
+                texto_conf += "✅ **Saldo disponível.**\n\nClique abaixo para concluir a compra."
                 teclado.append([InlineKeyboardButton("✅ Confirmar Compra", callback_data=f"confirm_buy_{prod_id}")])
             else:
                 faltante = preco - saldo_atual
-                texto_conf += (
-                    f"❌ **Saldo insuficiente.**\n\n"
-                    f"🤖 Você está a um passo de adquirir as melhores INFOS do MERCADO!\n"
-                    f"Use `/pix {faltante:.2f}` para adicionar o valor exato que falta."
-                )
-                teclado.append([InlineKeyboardButton("⚡ Adicionar Saldo", web_app=WebAppInfo(url="https://baseyure.shop"))])
+                texto_conf += f"❌ **Saldo insuficiente.**\n\nUse `/pix {faltante:.2f}` para adicionar o valor exato que falta."
+                teclado.append([InlineKeyboardButton("⚡ Adicionar Saldo", web_app=WebAppInfo(url=URL_MINIAPP_OFICIAL))])
 
             voltar_callback = "listar_infos" if "infoproduto" in categoria else "listar_esims"
             teclado.append([InlineKeyboardButton("« Voltar", callback_data=voltar_callback)])
@@ -708,13 +580,11 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 await query.edit_message_text(text=texto_conf, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(teclado))
             except Exception:
                 await context.bot.send_message(chat_id=user_id, text=texto_conf, parse_mode="Markdown", reply_markup=InlineKeyboardMarkup(teclado))
-
             return
         except Exception as e:
             logging.error(f"Erro na tela de confirmação: {e}")
             return
 
-    # === EFETIVAÇÃO DA COMPRA E ENTREGA (CONFIRM_BUY) ===
     if query.data.startswith("confirm_buy_"):
         try:
             prod_id = query.data.replace("confirm_buy_", "")
@@ -736,43 +606,34 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             preco = float(produto.get("preco", 0))
 
             con = conectar_banco()
-            try:
-                cur = con.cursor()
-                cur.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,))
-                res_saldo = cur.fetchone()
-                
-                if res_saldo:
-                    saldo_atual = float(res_saldo["saldo"] if isinstance(res_saldo, dict) else res_saldo[0])
-                else:
-                    saldo_atual = 0.0
-
-                if saldo_atual < preco:
-                    await query.edit_message_text(
-                        text=f"❌ **Saldo insuficiente!**\n\nSeu saldo atual é R$ {saldo_atual:.2f} e o produto custa R$ {preco:.2f}.",
-                        parse_mode="Markdown"
-                    )
-                    return 
-
-                novo_saldo = saldo_atual - preco
-                cur.execute("UPDATE carteira SET saldo = %s WHERE chat_id = %s", (novo_saldo, user_id))
-                
+            if con:
                 try:
-                    nome_plano = f"{produto.get('operadora', '')} {produto.get('plano', '')}"
-                    cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (%s, %s, %s)", (user_id, nome_plano, preco))
-                except Exception as e:
-                    print(f"Erro ao registrar histórico: {e}")
-                
-                con.commit()
-            finally:
-                con.close()
+                    cur = con.cursor()
+                    cur.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,))
+                    res_saldo = cur.fetchone()
+                    saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
+
+                    if saldo_atual < preco:
+                        await query.edit_message_text(text=f"❌ **Saldo insuficiente!**\n\nSeu saldo atual é R$ {saldo_atual:.2f} e o produto custa R$ {preco:.2f}.", parse_mode="Markdown")
+                        return 
+
+                    novo_saldo = saldo_atual - preco
+                    cur.execute("UPDATE carteira SET saldo = %s WHERE chat_id = %s", (novo_saldo, user_id))
+                    
+                    try:
+                        nome_plano = f"{produto.get('operadora', '')} {produto.get('plano', '')}"
+                        cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (%s, %s, %s)", (user_id, nome_plano, preco))
+                    except Exception as e:
+                        print(f"Erro ao registrar histórico: {e}")
+                    
+                    con.commit()
+                finally:
+                    con.close()
 
             produto["status"] = "vendido"
             registro_venda = {
-                "user_id": user_id,
-                "cliente": nome_usuario,
-                "produto_id": produto.get("id"),
-                "operadora": produto.get("operadora"),
-                "valor": preco,
+                "user_id": user_id, "cliente": nome_usuario, "produto_id": produto.get("id"),
+                "operadora": produto.get("operadora"), "valor": preco,
                 "data": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             dados.setdefault("vendas", []).append(registro_venda)
@@ -789,7 +650,6 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                 mensagem_entrega = montar_mensagem_infoproduto(produto, user_id)
                 await query.edit_message_text(text=mensagem_entrega, parse_mode="HTML")
             else:
-                # 📱 ENTREGA DO E-SIM (ENVIA A FOTO DO QR CODE E INSTRUÇÕES)
                 imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
                 descricao_extra = produto.get("descricao", "")
                 
@@ -798,7 +658,7 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                     f"📱 **Operadora:** {produto.get('operadora')}\n"
                     f"📦 **Plano:** {produto.get('plano')}\n"
                     f"💰 **Valor:** R$ {preco:.2f}\n\n"
-                    f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima (na imagem):'}"
+                    f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima:'}"
                 )
 
                 try:
@@ -813,13 +673,11 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                             image_data = base64.b64decode(encoded)
                             await context.bot.send_photo(chat_id=user_id, photo=image_data, caption=legenda, parse_mode="Markdown")
                         except Exception as e:
-                            print(f"Erro ao enviar Base64 do eSIM: {e}")
                             await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem)*", parse_mode="Markdown")
                     elif imagem_qr.startswith("http"):
                         try:
                             await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
                         except Exception as e:
-                            print(f"Erro ao enviar URL do eSIM: {e}")
                             await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem via URL)*", parse_mode="Markdown")
                     else:
                         await context.bot.send_message(chat_id=user_id, text=legenda + f"\n\n{imagem_qr}", parse_mode="Markdown")
@@ -827,12 +685,11 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                     await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code não disponível)*", parse_mode="Markdown")
 
             return
-
         except Exception as err:
             logging.error(f"Erro crítico no confirm_buy: {err}")
             await context.bot.send_message(chat_id=user_id, text="❌ Ocorreu um erro ao processar a compra.")
             return
-            
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global telegram_app
@@ -850,7 +707,6 @@ async def lifespan(app: FastAPI):
     await telegram_app.initialize()
     await telegram_app.start()
 
-    # 🚨 FORÇA O TELEGRAM A ENTREGAR OS CLIQUES DOS BOTÕES
     print("🔧 Configurando permissões do Webhook...")
     await telegram_app.bot.set_webhook(
         url=f"{URL_BACKEND}/webhook/telegram",
@@ -858,24 +714,17 @@ async def lifespan(app: FastAPI):
     )
 
     comandos_menu = [
-            BotCommand("start", "👑 Menu Principal e Loja"),
-            BotCommand("saldo", "💳 Consultar Saldo / Carteira"),
-            BotCommand("pix", "⚡ Gerar Recarga PIX"),
-            BotCommand("esims", "📱 Ver eSIMs Disponíveis"),
-            BotCommand("suporte", "📞 Suporte e Atendimento"),
-        ]
+        BotCommand("start", "👑 Menu Principal e Loja"),
+        BotCommand("saldo", "💳 Consultar Saldo / Carteira"),
+        BotCommand("pix", "⚡ Gerar Recarga PIX"),
+        BotCommand("esims", "📱 Ver eSIMs Disponíveis"),
+        BotCommand("suporte", "📞 Suporte e Atendimento"),
+    ]
     await telegram_app.bot.set_my_commands(comandos_menu)
 
     yield
 
     await telegram_app.stop()
-
-# ------------------------------------------------------------------------------
-# 🚀 APLICAÇÃO FASTAPI
-# ------------------------------------------------------------------------------
-from fastapi import Header, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 app = FastAPI(title="Yure e-SIM API", lifespan=lifespan)
 
@@ -887,18 +736,48 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 1. ROTA DE LOGIN DO ADMIN
+# ------------------------------------------------------------------------------
+# 📡 MODELOS E ENDPOINTS REST (100% MISTICPAY)
+# ------------------------------------------------------------------------------
 class AdminLoginPayload(BaseModel):
     senha: str
 
+class CompraMiniAppPayload(BaseModel):
+    chat_id: str
+    produto_id: str
+
+class AdminAuthAddEsimPayload(BaseModel):
+    usuario_admin: str
+    senha_admin: str
+    produto_id: str
+    conteudo_esim: str
+    ddd: Optional[str] = "BR"
+    gb: Optional[str] = "Padrão"
+    preco: Optional[float] = 25.0
+    texto_instrucoes: Optional[str] = "Escaneie o QR Code para ativar o seu e-SIM."
+
+class GerarPixPayload(BaseModel):
+    valor: float
+
+class ResgatarGiftcardPayload(BaseModel):
+    chat_id: str
+    codigo: str
+
+class PayloadRecargaMiniApp(BaseModel):
+    chat_id: str
+    valor: float
+
+class EnviarMensagemPayload(BaseModel):
+    senha_admin: str
+    chat_ids: list[str]
+    mensagem: str
 
 @app.post("/api/admin/login")
 async def admin_login(payload: AdminLoginPayload):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "admin123").strip()
+    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
     senha_digitada = payload.senha.strip()
 
     if senha_digitada == senha_env:
-        # Retorna a própria senha para o navegador guardar como token de sessão
         return JSONResponse(content={"sucesso": True, "token": senha_digitada})
 
     return JSONResponse(
@@ -912,17 +791,10 @@ async def obter_dados_admin(
     senha_admin: str = None,
     authorization: str = Header(None)
 ):
-    # 🔒 1. VALIDAÇÃO DE SEGURANÇA ADMIN
-    TOKEN_CORRETO = os.getenv("PUSHINPAY_TOKEN", "yuresantos26")
     token_enviado = senha_admin or (authorization.replace("Bearer ", "") if authorization else "")
     token_enviado = token_enviado.strip().lower()
 
-    chaves_validas = [
-        TOKEN_CORRETO.strip().lower(),
-        "yuresantos26",
-        "aguia2026",
-        "admin123"
-    ]
+    chaves_validas = [SENHA_ADMIN_SEGURA.strip().lower(), "yuresantos26", "aguia2026"]
 
     if not token_enviado or token_enviado not in chaves_validas:
         raise HTTPException(
@@ -930,142 +802,103 @@ async def obter_dados_admin(
             detail="Acesso não autorizado. Credenciais de administrador inválidas."
         )
 
-    produtos = []
-    cupons = []
-    vendas = []
-    usuarios = []
-    logs_funil = []
+    produtos, cupons, vendas, usuarios, logs_funil = [], [], [], [], []
 
-    # 📦 2. LEITURA DO ARQUIVO estoque.json
     try:
         if os.path.exists("estoque.json"):
             with open("estoque.json", "r", encoding="utf-8") as f:
                 dados_json = json.load(f)
                 if isinstance(dados_json, dict):
-                    # Puxa APENAS os produtos do JSON. Vendas removidas para não duplicar!
                     produtos.extend(dados_json.get("produtos", []))
     except Exception as e:
         print(f"Aviso ao ler estoque.json: {e}")
 
-    # 📦 3. LEITURA DE e-SIMS E DEMAIS DADOS
     con = None
     try:
         con = conectar_banco()
-        cur = con.cursor()
+        if con:
+            cur = con.cursor()
 
-        # 3.1. Estoque de Códigos
-        try:
-            cur.execute("SELECT id, produto_id, conteudo_esim, ddd, gb FROM estoque_codigos ORDER BY codigo DESC")
-            for row in cur.fetchall():
-                p_id, prod_id, conteudo, ddd, gb = row
-                nome_plano = f"{gb}GB - DDD {ddd}" if (gb and ddd) else f"Plano {prod_id or 'e-SIM'}"
-                produtos.append({
-                    "id": f"COD-{p_id}",
-                    "operadora": "Vivo",
-                    "plano": nome_plano,
-                    "preco": 0.00,
-                    "status": "disponivel",
-                    "imagem_url": conteudo or "",
-                    "imagem_qr": conteudo or "",
-                    "descricao": f"Conteúdo/QR: {conteudo}" if conteudo else ""
-                })
-        except Exception:
-            pass
+            try:
+                cur.execute("SELECT id, produto_id, conteudo_esim, ddd, gb FROM estoque_codigos ORDER BY id DESC")
+                for row in cur.fetchall():
+                    p_id, prod_id, conteudo, ddd, gb = row
+                    nome_plano = f"{gb}GB - DDD {ddd}" if (gb and ddd) else f"Plano {prod_id or 'e-SIM'}"
+                    produtos.append({
+                        "id": f"COD-{p_id}", "operadora": "Vivo", "plano": nome_plano,
+                        "preco": 0.00, "status": "disponivel", "imagem_url": conteudo or "",
+                        "imagem_qr": conteudo or "", "descricao": f"Conteúdo/QR: {conteudo}" if conteudo else ""
+                    })
+            except Exception as e:
+                print(f"Aviso estoque_codigos: {e}")
 
-        # 3.2. Produtos Cadastrais
-        try:
-            cur.execute("SELECT id, operadora, plano, preco, status, imagem_url, descricao FROM produtos ORDER BY id DESC")
-            for row in cur.fetchall():
-                produtos.append({
-                    "id": row[0],
-                    "operadora": row[1] or "Vivo",
-                    "plano": row[2] or "e-SIM",
-                    "preco": float(row[3] or 0.0),
-                    "status": row[4] or "disponivel",
-                    "imagem_url": row[5] or "",
-                    "imagem_qr": row[5] or "",
-                    "descricao": row[6] or ""
-                })
-        except Exception:
-            pass
+            try:
+                cur.execute("SELECT id, operadora, plano, preco, status, imagem_url, descricao FROM produtos ORDER BY id DESC")
+                for row in cur.fetchall():
+                    produtos.append({
+                        "id": row[0], "operadora": row[1] or "Vivo", "plano": row[2] or "e-SIM",
+                        "preco": float(row[3] or 0.0), "status": row[4] or "disponivel",
+                        "imagem_url": row[5] or "", "imagem_qr": row[5] or "", "descricao": row[6] or ""
+                    })
+            except Exception:
+                pass
 
-        # 🎁 4. LEITURA DE CUPONS / GIFT CARDS
-        try:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS giftcards (
-                    codigo TEXT PRIMARY KEY, 
-                    valor REAL, 
-                    usado INTEGER DEFAULT 0,
-                    usado_por TEXT
-                )
-            """)
-            cur.execute("SELECT codigo, valor, usado, usado_por FROM giftcards ORDER BY codigo DESC")
-            for row in cur.fetchall():
-                is_usado = bool(row[2]) if row[2] is not None else False
-                cupons.append({
-                    "codigo": str(row[0]),
-                    "valor": float(row[1] or 0.0),
-                    "usado": is_usado,
-                    "status": "usado" if is_usado else "disponivel",
-                    "usado_por": str(row[3] or "")
-                })
-        except Exception as e:
-            print(f"Erro ao ler giftcards: {e}")
+            try:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS giftcards (
+                        codigo TEXT PRIMARY KEY, valor REAL, usado INTEGER DEFAULT 0, usado_por TEXT
+                    )
+                """)
+                cur.execute("SELECT codigo, valor, usado, usado_por FROM giftcards ORDER BY codigo DESC")
+                for row in cur.fetchall():
+                    is_usado = bool(row[2]) if row[2] is not None else False
+                    cupons.append({
+                        "codigo": str(row[0]), "valor": float(row[1] or 0.0), "usado": is_usado,
+                        "status": "usado" if is_usado else "disponivel", "usado_por": str(row[3] or "")
+                    })
+            except Exception as e:
+                print(f"Erro ao ler giftcards: {e}")
 
-        # 🛒 5. LEITURA DO HISTÓRICO DE VENDAS DO BANCO
-        try:
-            cur.execute("""
-                SELECT h.id, h.user_id, h.plano, h.preco, h.data, c.first_name 
-                FROM historico_vendas h
-                LEFT JOIN carteira c ON h.user_id = c.chat_id
-                ORDER BY h.id DESC
-            """)
-            for row in cur.fetchall():
-                vendas.append({
-                    "id": row[0],
-                    "user_id": str(row[1]),
-                    "chat_id": str(row[1]),
-                    "plano": str(row[2]),
-                    "preco": float(row[3] or 0.0),
-                    "valor": float(row[3] or 0.0),
-                    "data": str(row[4]),
-                    "cliente": str(row[5] or "Desconhecido")
-                })
-        except Exception as e:
-            print(f"Erro vendas sql: {e}")
+            try:
+                cur.execute("""
+                    SELECT h.id, h.user_id, h.plano, h.preco, h.data, c.first_name 
+                    FROM historico_vendas h
+                    LEFT JOIN carteira c ON h.user_id = c.chat_id
+                    ORDER BY h.id DESC
+                """)
+                for row in cur.fetchall():
+                    vendas.append({
+                        "id": row[0], "user_id": str(row[1]), "chat_id": str(row[1]),
+                        "plano": str(row[2]), "preco": float(row[3] or 0.0), "valor": float(row[3] or 0.0),
+                        "data": str(row[4]), "cliente": str(row[5] or "Desconhecido")
+                    })
+            except Exception as e:
+                print(f"Erro vendas sql: {e}")
 
-        # 👥 6. LEITURA DE USUÁRIOS E SALDOS DA CARTEIRA
-        try:
-            cur.execute("SELECT chat_id, first_name, username, saldo, data_criacao FROM carteira ORDER BY data_criacao DESC")
-            for row in cur.fetchall():
-                usuarios.append({
-                    "chat_id": str(row[0]),
-                    "nome": str(row[1] or "Desconhecido"),
-                    "username": str(row[2] or ""),
-                    "saldo": float(row[3] or 0.0),
-                    "data_criacao": str(row[4])
-                })
-        except Exception as e:
-            print(f"Erro carteira sql: {e}")
+            try:
+                cur.execute("SELECT chat_id, first_name, username, saldo, data_criacao FROM carteira ORDER BY data_criacao DESC")
+                for row in cur.fetchall():
+                    usuarios.append({
+                        "chat_id": str(row[0]), "nome": str(row[1] or "Desconhecido"),
+                        "username": str(row[2] or ""), "saldo": float(row[3] or 0.0), "data_criacao": str(row[4])
+                    })
+            except Exception as e:
+                print(f"Erro carteira sql: {e}")
 
-        # 🔍 7. LEITURA DE LOGS DO FUNIL (Ações detalhadas com Nomes e @username)
-        try:
-            cur.execute("""
-                SELECT f.user_id, f.etapa, f.timestamp, c.first_name, c.username 
-                FROM funil_metricas f 
-                LEFT JOIN carteira c ON f.user_id = c.chat_id 
-                ORDER BY f.timestamp DESC
-            """)
-            for row in cur.fetchall():
-                logs_funil.append({
-                    "user_id": row[0],
-                    "etapa": row[1],
-                    "data": row[2],
-                    "nome": row[3] or "Desconhecido",
-                    "username": row[4] or ""
-                })
-        except Exception:
-            pass
+            try:
+                cur.execute("""
+                    SELECT f.user_id, f.etapa, f.timestamp, c.first_name, c.username 
+                    FROM funil_metricas f 
+                    LEFT JOIN carteira c ON f.user_id = c.chat_id 
+                    ORDER BY f.timestamp DESC
+                """)
+                for row in cur.fetchall():
+                    logs_funil.append({
+                        "user_id": row[0], "etapa": row[1], "data": row[2],
+                        "nome": row[3] or "Desconhecido", "username": row[4] or ""
+                    })
+            except Exception:
+                pass
 
     except Exception as main_e:
         print(f"Erro ao conectar ou ler banco: {main_e}")
@@ -1073,25 +906,15 @@ async def obter_dados_admin(
         if con:
             con.close()
 
-    # 🧹 Filtra as listas específicas para o JavaScript do frontend montar as tabelas
     lista_acessos_miniapp = [L for L in logs_funil if L["etapa"] == "acesso_miniapp"]
     lista_pix_gerados = [L for L in logs_funil if L["etapa"] == "pix_gerado"]
 
-    # 🚀 8. RETURN COMPLETO (Com todas as listas exigidas pelo Painel Admin)
     return {
-        "status": "sucesso",
-        "produtos": produtos,
-        "estoque": produtos,
-        "vendas": vendas,
-        "historico_vendas": vendas,
-        "cupons": cupons,
-        "giftcards": cupons,
-        "cupons_detalhados": cupons,
-        "usuarios": usuarios,
-        "utilizadores": usuarios,
-        "logs_funil": logs_funil,
-        "acessos_miniapp": lista_acessos_miniapp,
-        "acessos_miniapp_lista": lista_acessos_miniapp,
+        "status": "sucesso", "produtos": produtos, "estoque": produtos,
+        "vendas": vendas, "historico_vendas": vendas, "cupons": cupons,
+        "giftcards": cupons, "cupons_detalhados": cupons, "usuarios": usuarios,
+        "utilizadores": usuarios, "logs_funil": logs_funil,
+        "acessos_miniapp": lista_acessos_miniapp, "acessos_miniapp_lista": lista_acessos_miniapp,
         "pix_gerados_lista": lista_pix_gerados
     }
 
@@ -1099,28 +922,23 @@ GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 GITHUB_REPO = "thallisimports-maker/bot-esim-yure"
 GITHUB_FILE_PATH = "estoque.json"
 
-
 def salvar_dados_no_github(dados_novos):
+    if not GITHUB_TOKEN:
+        return False
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}"
     headers = {
         "Authorization": f"token {GITHUB_TOKEN}",
         "Accept": "application/vnd.github.v3+json",
     }
-
     try:
-        # 1. Adicionado timeout=10 para impedir que o servidor congele
         res_get = requests.get(url, headers=headers, timeout=10)
         if res_get.status_code != 200:
-            print("Erro ao buscar SHA do GitHub:", res_get.json())
             return False
 
         sha = res_get.json()["sha"]
-
-        # 2. Converter JSON para Base64
         conteudo_json = json.dumps(dados_novos, indent=2, ensure_ascii=False)
         conteudo_base64 = base64.b64encode(conteudo_json.encode("utf-8")).decode("utf-8")
 
-        # 3. Commit no GitHub com timeout
         payload = {
             "message": "📦 Atualização do estoque via Painel Admin",
             "content": conteudo_base64,
@@ -1130,19 +948,17 @@ def salvar_dados_no_github(dados_novos):
         res_put = requests.put(url, headers=headers, json=payload, timeout=10)
         return res_put.status_code == 200
     except Exception as e:
-        print(f"Erro crítico na sincronização do GitHub (evitou travamento): {e}")
+        print(f"Erro crítico na sincronização do GitHub: {e}")
         return False
 
 @app.get("/api/produtos-publico")
 async def obter_produtos_publico(chat_id: str = None):
-    # 🛡️ TRAVA DE SEGURANÇA: Bloqueia acessos diretos de navegadores externos
     if not chat_id or str(chat_id).strip() in ["", "undefined", "null", "None"]:
         raise HTTPException(
             status_code=403,
             detail="Acesso negado. A loja é acessível exclusivamente via Telegram Mini App."
         )
 
-    # 📊 Regista o acesso ao MiniApp nas métricas do painel
     try:
         registrar_evento_funil(str(chat_id).strip(), "acesso_miniapp")
     except Exception as e:
@@ -1151,26 +967,8 @@ async def obter_produtos_publico(chat_id: str = None):
     dados = carregar_dados()
     produtos = dados.get("produtos", []) if isinstance(dados, dict) else []
 
-    disponiveis = [
-        p for p in produtos
-        if str(p.get("status", "")).lower().strip() == "disponivel"
-    ]
-
+    disponiveis = [p for p in produtos if str(p.get("status", "")).lower().strip() == "disponivel"]
     return {"status": "sucesso", "produtos": disponiveis}
-
-
-class NovoProduto(BaseModel):
-    operadora: str
-    plano: str
-    descricao: str = ""
-    preco: float
-    imagem_qr: str
-
-
-class PayloadCompraMiniApp(BaseModel):
-    chat_id: str
-    produto_id: str
-
 
 @app.post("/api/comprar-miniapp")
 async def comprar_miniapp(payload: PayloadCompraMiniApp):
@@ -1178,66 +976,49 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
     prod_id = str(payload.produto_id).strip()
 
     if not user_id:
-        raise HTTPException(
-            status_code=400, detail="ID do usuário não identificado."
-        )
+        raise HTTPException(status_code=400, detail="ID do usuário não identificado.")
 
     dados = carregar_dados()
     produtos = dados.get("produtos", [])
 
-    produto = next(
-        (p for p in produtos if str(p.get("id")) == str(prod_id)), None
-    )
+    produto = next((p for p in produtos if str(p.get("id")) == str(prod_id)), None)
 
-    if (
-        not produto
-        or str(produto.get("status", "")).lower().strip() != "disponivel"
-    ):
-        return {
-            "status": "erro",
-            "detalhe": "Este produto já não se encontra disponível!",
-        }
+    if not produto or str(produto.get("status", "")).lower().strip() != "disponivel":
+        return {"status": "erro", "detalhe": "Este produto já não se encontra disponível!"}
 
     preco = float(produto.get("preco", 0))
 
     con = conectar_banco()
-    try:
-        cur = con.cursor()
-        cur.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,))
-        res_saldo = cur.fetchone()
-        saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
-
-        if saldo_atual < preco:
-            return {
-                "status": "erro",
-                "detalhe": f"Saldo insuficiente! O produto custa R$ {preco:.2f} e você possui R$ {saldo_atual:.2f} na carteira.",
-            }
-
-        novo_saldo = saldo_atual - preco
-        cur.execute(
-            "UPDATE carteira SET saldo = %s WHERE chat_id = %s",
-            (novo_saldo, user_id),
-        )
-
+    if con:
         try:
-            nome_plano = f"{produto.get('operadora', '')} {produto.get('plano', '')}"
-            cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (%s, %s, %s)", (user_id, nome_plano, preco))
-        except Exception as e:
-            print(f"Erro ao registrar histórico no banco: {e}")
+            cur = con.cursor()
+            cur.execute("SELECT saldo FROM carteira WHERE chat_id = %s", (user_id,))
+            res_saldo = cur.fetchone()
+            saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
 
-        con.commit()
-    finally:
-        con.close()
+            if saldo_atual < preco:
+                return {
+                    "status": "erro",
+                    "detalhe": f"Saldo insuficiente! O produto custa R$ {preco:.2f} e você possui R$ {saldo_atual:.2f} na carteira.",
+                }
+
+            novo_saldo = saldo_atual - preco
+            cur.execute("UPDATE carteira SET saldo = %s WHERE chat_id = %s", (novo_saldo, user_id))
+
+            try:
+                nome_plano = f"{produto.get('operadora', '')} {produto.get('plano', '')}"
+                cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (%s, %s, %s)", (user_id, nome_plano, preco))
+            except Exception as e:
+                print(f"Erro ao registrar histórico no banco: {e}")
+
+            con.commit()
+        finally:
+            con.close()
 
     produto["status"] = "vendido"
-
     registro_venda = {
-        "user_id": user_id,
-        "cliente": f"Cliente ({user_id})",
-        "produto_id": produto.get("id"),
-        "operadora": produto.get("operadora"),
-        "valor": preco,
-        "data": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "user_id": user_id, "cliente": f"Cliente ({user_id})", "produto_id": produto.get("id"),
+        "operadora": produto.get("operadora"), "valor": preco, "data": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     }
     dados.setdefault("vendas", []).append(registro_venda)
 
@@ -1247,78 +1028,56 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
     except Exception as e:
         print(f"Aviso sync github: {e}")
 
-    # ENVIO INTELIGENTE (E-SIM OU INFOPRODUTO)
-        categoria = str(produto.get("categoria", "esim")).lower().strip()
+    categoria = str(produto.get("categoria", "esim")).lower().strip()
 
-        try:
-            if "infoproduto" in categoria:
-                mensagem_entrega = montar_mensagem_infoproduto(produto, user_id)
-                url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    try:
+        if "infoproduto" in categoria:
+            mensagem_entrega = montar_mensagem_infoproduto(produto, user_id)
+            url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-                async with httpx.AsyncClient() as client:
-                    await client.post(
-                        url_telegram_msg,
-                        json={
-                            "chat_id": user_id,
-                            "text": mensagem_entrega,
-                            "parse_mode": "HTML",
-                        },
-                        timeout=10.0,
-                    )
-            else:
-                imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
-                descricao_extra = produto.get("descricao", "")
-
-                caption_text = (
-                    f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
-                    f"📱 **Operadora:** {produto.get('operadora')}\n"
-                    f"📲 **Plano:** {produto.get('plano')}\n"
-                    f"💰 **Valor:** R$ {preco:.2f}\n\n"
-                    f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima (na imagem):'}"
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    url_telegram_msg,
+                    json={"chat_id": user_id, "text": mensagem_entrega, "parse_mode": "HTML"},
+                    timeout=10.0,
                 )
+        else:
+            imagem_qr = produto.get("imagem_qr", "") or produto.get("imagem_url", "")
+            descricao_extra = produto.get("descricao", "")
 
-                url_telegram_photo = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
+            caption_text = (
+                f"✅ **COMPRA REALIZADA COM SUCESSO!**\n\n"
+                f"📱 **Operadora:** {produto.get('operadora')}\n"
+                f"📲 **Plano:** {produto.get('plano')}\n"
+                f"💰 **Valor:** R$ {preco:.2f}\n\n"
+                f"{descricao_extra if descricao_extra else 'Seu QR Code de ativação encontra-se acima:'}"
+            )
 
-                async with httpx.AsyncClient() as client:
-                    if imagem_qr and imagem_qr.startswith("data:image"):
-                        import base64
-                        header, encoded = imagem_qr.split(",", 1)
-                        image_data = base64.b64decode(encoded)
-                        files = {"photo": ("qrcode.png", image_data, "image/png")}
-                        data = {"chat_id": user_id, "caption": caption_text, "parse_mode": "Markdown"}
-                        await client.post(url_telegram_photo, data=data, files=files, timeout=10.0)
-                    elif imagem_qr:
-                        json_payload = {
-                            "chat_id": user_id,
-                            "photo": imagem_qr,
-                            "caption": caption_text,
-                            "parse_mode": "Markdown",
-                        }
-                        await client.post(url_telegram_photo, json=json_payload, timeout=10.0)
-                    else:
-                        url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-                        json_payload = {
-                            "chat_id": user_id,
-                            "text": caption_text,
-                            "parse_mode": "Markdown",
-                        }
-                        await client.post(url_telegram_msg, json=json_payload, timeout=10.0)
+            url_telegram_photo = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
 
-        except Exception as err_tg:
-            logging.error(f"Erro ao entregar produto no Telegram via miniapp: {err_tg}")
+            async with httpx.AsyncClient() as client:
+                if imagem_qr and imagem_qr.startswith("data:image"):
+                    header, encoded = imagem_qr.split(",", 1)
+                    image_data = base64.b64decode(encoded)
+                    files = {"photo": ("qrcode.png", image_data, "image/png")}
+                    data = {"chat_id": user_id, "caption": caption_text, "parse_mode": "Markdown"}
+                    await client.post(url_telegram_photo, data=data, files=files, timeout=10.0)
+                elif imagem_qr:
+                    json_payload = {"chat_id": user_id, "photo": imagem_qr, "caption": caption_text, "parse_mode": "Markdown"}
+                    await client.post(url_telegram_photo, json=json_payload, timeout=10.0)
+                else:
+                    url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+                    json_payload = {"chat_id": user_id, "text": caption_text, "parse_mode": "Markdown"}
+                    await client.post(url_telegram_msg, json=json_payload, timeout=10.0)
 
-        return {
-            "status": "sucesso",
-            "mensagem": "Compra realizada com sucesso!",
-            "operadora": produto.get("operadora"),
-            "plano": produto.get("plano"),
-            "preco": preco,
-            "novo_saldo": novo_saldo,
-        }
+    except Exception as err_tg:
+        logging.error(f"Erro ao entregar produto no Telegram via miniapp: {err_tg}")
 
-# MODO DE MANUTENÇÃO (Troque para True se quiser pausar o bot)
-MODO_MANUTENCAO = False
-
+    return {
+        "status": "sucesso", "mensagem": "Compra realizada com sucesso!",
+        "operadora": produto.get("operadora"), "plano": produto.get("plano"),
+        "preco": preco, "novo_saldo": novo_saldo if 'novo_saldo' in locals() else 0.0,
+    }
 
 @app.get("/api/historico-usuario")
 async def obter_historico_usuario(chat_id: str):
@@ -1326,35 +1085,23 @@ async def obter_historico_usuario(chat_id: str):
     dados = carregar_dados()
     vendas = dados.get("vendas", [])
 
-    # Filtra vendas do usuario especifico
     minhas_vendas = [v for v in vendas if str(v.get("user_id")) == user_id]
-
-    # Associa a imagem_qr do produto original se disponível
     produtos = dados.get("produtos", [])
+    
     for v in minhas_vendas:
-        prod_orig = next(
-            (p for p in produtos if str(p.get("id")) == str(v.get("produto_id"))),
-            None,
-        )
+        prod_orig = next((p for p in produtos if str(p.get("id")) == str(v.get("produto_id"))), None)
         if prod_orig:
             v["imagem_qr"] = prod_orig.get("imagem_qr", "")
 
     return {"vendas": minhas_vendas}
-# 1. ROTA GET (Usada pelo Admin para LER os dados do Dashboard)
+
 @app.get("/api/admin/produtos")
 async def obter_produtos_admin(authorization: str = Header(None)):
-    token_pushin = globals().get("PUSHINPAY_TOKEN", "").strip()
+    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
+    token_fornecido = authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else ""
 
-    token_fornecido = ""
-    if authorization and authorization.startswith("Bearer "):
-        token_fornecido = authorization.replace("Bearer ", "").strip()
-
-    if not token_fornecido or (
-        token_pushin and token_fornecido != token_pushin
-    ):
-        raise HTTPException(
-            status_code=401, detail="Erro de Autenticação/Conexão."
-        )
+    if not token_fornecido or token_fornecido != senha_env:
+        raise HTTPException(status_code=401, detail="Erro de Autenticação/Conexão.")
 
     dados = carregar_dados()
     return {
@@ -1363,74 +1110,43 @@ async def obter_produtos_admin(authorization: str = Header(None)):
         "usuarios": dados.get("usuarios", []),
     }
 
-
-# 2. ROTA POST (Usada pelo Admin para ADICIONAR novos e-SIMs e Infoprodutos)
 @app.post("/api/admin/produtos")
 @app.post("/api/admin/adicionar-produto")
-async def adicionar_produto(
-    request: Request, authorization: str = Header(None)
-):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "admin123").strip()
+async def adicionar_produto(request: Request, authorization: str = Header(None)):
+    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
+    token_fornecido = authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else ""
 
-    token_fornecido = ""
-    if authorization and authorization.startswith("Bearer "):
-        token_fornecido = authorization.replace("Bearer ", "").strip()
-
-    try:
+    try: 
         data = await request.json()
-    except Exception:
+    except Exception: 
         data = {}
 
     if not isinstance(data, dict):
-        try:
-            data = data.dict()
-        except Exception:
-            data = {}
+        try: data = data.dict()
+        except Exception: data = {}
 
     if not token_fornecido and data.get("senha_admin"):
         token_fornecido = str(data.get("senha_admin")).strip()
 
-    # Valida usando a Senha do Painel Admin
-    if (
-        token_fornecido != senha_env
-        and token_fornecido != globals().get("PUSHINPAY_TOKEN", "").strip()
-    ):
-        raise HTTPException(
-            status_code=401, detail="Acesso negado! Não autorizado."
-        )
+    if token_fornecido != senha_env:
+        raise HTTPException(status_code=401, detail="Acesso negado! Não autorizado.")
 
     operadora = data.get("operadora") or data.get("categoria_nome") or "Claro"
     plano = data.get("plano") or data.get("nome") or ""
     preco_raw = data.get("preco") or data.get("valor") or 0.0
-    imagem_url = (
-        data.get("imagem_url")
-        or data.get("link_imagem")
-        or data.get("imagem")
-        or data.get("imagem_qr")
-        or ""
-    )
-    descricao = (
-        data.get("descricao")
-        or data.get("instrucoes")
-        or data.get("texto_instrucoes")
-        or ""
-    )
+    imagem_url = data.get("imagem_url") or data.get("link_imagem") or data.get("imagem") or data.get("imagem_qr") or ""
+    descricao = data.get("descricao") or data.get("instrucoes") or data.get("texto_instrucoes") or ""
 
-    # 🔹 CAPTURA DA CATEGORIA E CAMPOS DE INFOPRODUTO
     categoria = str(data.get("categoria", "esim")).lower().strip()
     dados_principais = data.get("dados_principais") or data.get("dados") or ""
     informacoes_adicionais = data.get("informacoes_adicionais") or data.get("info_extra") or ""
     conteudo_copia_cola = data.get("conteudo_copia_cola") or data.get("copia_cola") or ""
 
-    try:
-        preco_float = float(preco_raw)
-    except Exception:
-        preco_float = 0.0
+    try: preco_float = float(preco_raw)
+    except Exception: preco_float = 0.0
 
     if not plano or preco_float <= 0:
-        raise HTTPException(
-            status_code=400, detail="Plano ou preço inválido."
-        )
+        raise HTTPException(status_code=400, detail="Plano ou preço inválido.")
 
     dados = carregar_dados()
     if "produtos" not in dados or not isinstance(dados["produtos"], list):
@@ -1439,112 +1155,64 @@ async def adicionar_produto(
     produtos = dados["produtos"]
 
     novo_item = {
-        "id": f"prod_{len(produtos) + 1}",
-        "operadora": operadora,
-        "plano": plano,
-        "preco": preco_float,
-        "descricao": descricao,
-        "categoria": categoria,
-        "dados_principais": dados_principais,
-        "informacoes_adicionais": informacoes_adicionais,
-        "conteudo_copia_cola": conteudo_copia_cola,
-        "imagem_qr": imagem_url,
-        "imagem_url": imagem_url,
-        "status": "disponivel",
+        "id": f"prod_{len(produtos) + 1}", "operadora": operadora, "plano": plano,
+        "preco": preco_float, "descricao": descricao, "categoria": categoria,
+        "dados_principais": dados_principais, "informacoes_adicionais": informacoes_adicionais,
+        "conteudo_copia_cola": conteudo_copia_cola, "imagem_qr": imagem_url,
+        "imagem_url": imagem_url, "status": "disponivel",
     }
 
     produtos.append(novo_item)
     dados["produtos"] = produtos
 
-    # Salva localmente e sincroniza com o GitHub
     salvar_dados(dados)
-    if "salvar_dados_no_github" in globals():
-        sucesso_github = salvar_dados_no_github(dados)
-        if not sucesso_github:
-            print("Aviso: Salvo localmente, mas falhou ao sincronizar com o GitHub.")
+    salvar_dados_no_github(dados)
 
-    return {
-        "status": "sucesso",
-        "mensagem": f"Produto {plano} cadastrado com sucesso!",
-        "produto": novo_item,
-    }
-    
-    # ROTA PUT (Usada para EDITAR um e-SIM)
+    return {"status": "sucesso", "mensagem": f"Produto {plano} cadastrado com sucesso!", "produto": novo_item}
+
 @app.put("/api/admin/produtos/{produto_id}")
-async def editar_produto(
-    produto_id: str, request: Request, authorization: str = Header(None)
-):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "admin123").strip()
-    token_fornecido = ""
-    if authorization and authorization.startswith("Bearer "):
-        token_fornecido = authorization.replace("Bearer ", "").strip()
+async def editar_produto(produto_id: str, request: Request, authorization: str = Header(None)):
+    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
+    token_fornecido = authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else ""
 
-    try:
-        data = await request.json()
-    except Exception:
-        data = {}
+    try: data = await request.json()
+    except Exception: data = {}
 
     if not token_fornecido and data.get("senha_admin"):
         token_fornecido = str(data.get("senha_admin")).strip()
 
-    if (
-        token_fornecido != senha_env
-        and token_fornecido != globals().get("PUSHINPAY_TOKEN", "").strip()
-    ):
-        raise HTTPException(
-            status_code=401, detail="Acesso negado! Não autorizado."
-        )
+    if token_fornecido != senha_env:
+        raise HTTPException(status_code=401, detail="Acesso negado! Não autorizado.")
 
     dados = carregar_dados()
     produtos = dados.get("produtos", [])
 
-    produto_encontrado = None
-    for p in produtos:
-        if str(p.get("id")) == str(produto_id):
-            produto_encontrado = p
-            break
+    produto_encontrado = next((p for p in produtos if str(p.get("id")) == str(produto_id)), None)
 
     if not produto_encontrado:
         raise HTTPException(status_code=404, detail="Produto não encontrado.")
 
-    if "operadora" in data:
-        produto_encontrado["operadora"] = data["operadora"]
-    if "plano" in data:
-        produto_encontrado["plano"] = data["plano"]
+    if "operadora" in data: produto_encontrado["operadora"] = data["operadora"]
+    if "plano" in data: produto_encontrado["plano"] = data["plano"]
     if "preco" in data:
-        try:
-            produto_encontrado["preco"] = float(data["preco"])
-        except ValueError:
-            pass
+        try: produto_encontrado["preco"] = float(data["preco"])
+        except ValueError: pass
     if "imagem_url" in data:
         produto_encontrado["imagem_url"] = data["imagem_url"]
         produto_encontrado["imagem_qr"] = data["imagem_url"]
-    if "descricao" in data:
-        produto_encontrado["descricao"] = data["descricao"]
+    if "descricao" in data: produto_encontrado["descricao"] = data["descricao"]
 
     dados["produtos"] = produtos
     salvar_dados(dados)
-    return {
-        "status": "sucesso",
-        "mensagem": "Produto editado com sucesso!",
-        "produto": produto_encontrado,
-    }
+    return {"status": "sucesso", "mensagem": "Produto editado com sucesso!", "produto": produto_encontrado}
 
-
-# ROTA DELETE (Usada para EXCLUIR um e-SIM)
 @app.delete("/api/admin/produtos/{produto_id}")
-async def excluir_produto(
-    produto_id: str, request: Request, authorization: str = Header(None)
-):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "admin123").strip()
-    token_fornecido = ""
-    if authorization and authorization.startswith("Bearer "):
-        token_fornecido = authorization.replace("Bearer ", "").strip()
+async def excluir_produto(produto_id: str, request: Request, authorization: str = Header(None)):
+    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
+    token_fornecido = authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else ""
 
     if token_fornecido != senha_env:
-        raise HTTPException(
-            status_code=401, detail="Acesso negado! Não autorizado."
-        )
+        raise HTTPException(status_code=401, detail="Acesso negado! Não autorizado.")
 
     dados = carregar_dados()
     produtos = dados.get("produtos", [])
@@ -1557,21 +1225,14 @@ async def excluir_produto(
     dados["produtos"] = novos_produtos
     salvar_dados(dados)
     return {"status": "sucesso", "mensagem": "Produto excluído com sucesso!"}
-    
+
 def limpar_markdown(texto: str) -> str:
-    if not texto:
-        return ""
+    if not texto: return ""
     for char in ["_", "*", "`", "["]:
         texto = texto.replace(char, f"\\{char}")
     return texto
 
-import random
-
-import random
-
 def montar_mensagem_infoproduto(produto: dict, user_id: str = "") -> str:
-    import html
-
     plano = html.escape(str(produto.get("plano", "Info Produto")))
     dados = str(produto.get("dados_principais") or produto.get("dados") or "").strip()
     info = html.escape(str(produto.get("informacoes_adicionais") or produto.get("info_extra") or ""))
@@ -1596,7 +1257,6 @@ def montar_mensagem_infoproduto(produto: dict, user_id: str = "") -> str:
                 f"📱 <b>Tel:</b> {html.escape(partes[2])}\n\n"
             )
         elif len(partes) == 2:
-            # 👈 ADICIONADO PARA TRATAR APENAS 2 ITENS NA ENTREGA
             msg += (
                 f"🏦 <b>Banco:</b> {html.escape(partes[0])}\n"
                 f"📄 <b>Tipo:</b> {html.escape(partes[1])}\n\n"
@@ -1611,33 +1271,6 @@ def montar_mensagem_infoproduto(produto: dict, user_id: str = "") -> str:
         msg += f"<b>👇 Clique para copiar:</b>\n<code>{copia_cola}</code>"
 
     return msg
-    
-class CompraMiniAppPayload(BaseModel):
-    chat_id: str
-    produto_id: str
-
-class AdminAuthAddEsimPayload(BaseModel):
-    usuario_admin: str
-    senha_admin: str
-    produto_id: str
-    conteudo_esim: str
-    ddd: Optional[str] = "BR"
-    gb: Optional[str] = "Padrão"
-    preco: Optional[float] = 25.0  # Campo de Preço do e-SIM
-    texto_instrucoes: Optional[str] = "Escaneie o QR Code para ativar o seu e-SIM."
-
-class GerarPixPayload(BaseModel):
-    valor: float
-
-class CriarGiftcardPayload(BaseModel):
-    usuario_admin: str
-    senha_admin: str
-    codigo: str
-    valor: float
-
-class ResgatarGiftcardPayload(BaseModel):
-    chat_id: str
-    codigo: str
 
 @app.get("/")
 async def root():
@@ -1646,6 +1279,8 @@ async def root():
 @app.get("/api/estoque")
 async def consultar_estoque_publico():
     con = conectar_banco()
+    if not con:
+        return {"status": "sucesso", "estoque": {}}
     cur = con.cursor()
     try:
         cur.execute("SELECT produto_id, quantidade FROM estoque")
@@ -1657,6 +1292,8 @@ async def consultar_estoque_publico():
 @app.get("/api/saldo-usuario")
 async def obter_dados_usuario(chat_id: str):
     con = conectar_banco()
+    if not con:
+        return {"status": "sucesso", "chat_id": chat_id, "saldo": 0.0}
     cur = con.cursor()
     try:
         cur.execute("INSERT OR IGNORE INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (chat_id,))
@@ -1676,6 +1313,8 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
     preco_item = precos.get(payload.produto_id, 999.0)
 
     con = conectar_banco()
+    if not con:
+        return {"status": "erro", "detalhe": "Sem conexão com o banco de dados."}
     cur = con.cursor()
     try:
         cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (payload.chat_id,))
@@ -1696,10 +1335,8 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
         cur.execute("DELETE FROM estoque_codigos WHERE id = ?", (chip_id,))
         cur.execute("UPDATE estoque SET quantidade = quantidade - 1 WHERE produto_id = ?", (payload.produto_id,))
         
-        # 🛒 Regista a venda oficialmente no histórico para aparecer no Painel
         nome_plano = f"{payload.produto_id.split('_')[0].upper()} {esim_gb}"
         cur.execute("INSERT INTO historico_vendas (user_id, plano, preco) VALUES (?, ?, ?)", (payload.chat_id, nome_plano, preco_item))
-        
         con.commit()
 
         partes = conteudo_bruto.split('||')
@@ -1723,27 +1360,19 @@ async def comprar_esim_miniapp(payload: CompraMiniAppPayload):
                     "caption": caption_text,
                     "parse_mode": "Markdown"
                 }
-                requests.post(url_telegram_photo, data=payload_photo, timeout=10)
+                requests.post(url_telegram_photo, json=payload_photo, timeout=10)
         except Exception as err_tg:
             logging.error(f"Erro ao enviar foto no Telegram: {err_tg}")
 
         return {
-            "status": "sucesso",
-            "mensagem": "Compra efetuada com sucesso!",
-            "qr_code_url": qr_code_url,
-            "instrucoes": instrucoes,
-            "ddd": esim_ddd,
-            "gb": esim_gb,
-            "novo_saldo": saldo - preco_item
+            "status": "sucesso", "mensagem": "Compra efetuada com sucesso!",
+            "qr_code_url": qr_code_url, "instrucoes": instrucoes,
+            "ddd": esim_ddd, "gb": esim_gb, "novo_saldo": saldo - preco_item
         }
     except Exception as e:
         return {"status": "erro", "detalhe": str(e)}
     finally:
         con.close()
-
-class PayloadRecargaMiniApp(BaseModel):
-    chat_id: str
-    valor: float
 
 @app.post("/api/gerar-pix-miniapp")
 async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
@@ -1751,9 +1380,7 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
     valor = float(payload.valor)
 
     if not user_id or valor <= 0:
-        raise HTTPException(
-            status_code=400, detail="Valor de recarga inválido."
-        )
+        raise HTTPException(status_code=400, detail="Valor de recarga inválido.")
 
     try:
         url_mistic = "https://api.misticpay.com/api/transactions/create"
@@ -1762,10 +1389,8 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
         client_secret = os.environ.get("MISTICPAY_CS", "")
 
         headers = {
-            "ci": client_id,
-            "cs": client_secret,
-            "Content-Type": "application/json",
-            "Accept": "application/json"
+            "ci": client_id, "cs": client_secret,
+            "Content-Type": "application/json", "Accept": "application/json"
         }
 
         transaction_id = f"yure_{user_id}_{int(datetime.now().timestamp())}"
@@ -1781,9 +1406,6 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
         async with httpx.AsyncClient() as client:
             resp = await client.post(url_mistic, json=body, headers=headers, timeout=15.0)
             resposta_completa = resp.json()
-            
-            print(f"🔍 [DEBUG MISTICPAY]: {resposta_completa}")
-
             dados_transacao = resposta_completa.get("data", {})
 
             pix_copia_cola = (
@@ -1796,41 +1418,26 @@ async def gerar_pix_miniapp(payload: PayloadRecargaMiniApp):
             qr_code_url = (
                 dados_transacao.get("qrCodeBase64") or 
                 dados_transacao.get("qr_code_base64") or 
-                dados_transacao.get("encodedImage") or
-                ""
+                dados_transacao.get("encodedImage") or ""
             )
 
             if qr_code_url and not qr_code_url.startswith("data:image"):
                 qr_code_url = f"data:image/png;base64,{qr_code_url}"
 
             if not pix_copia_cola:
-                print(f"⚠️ Resposta da MisticPay sem PIX: {resposta_completa}")
-                return {
-                    "status": "erro",
-                    "detalhe": "Não foi possível gerar a chave PIX na MisticPay.",
-                }
+                return {"status": "erro", "detalhe": "Não foi possível gerar a chave PIX na MisticPay."}
 
         try:
             registrar_evento_funil(user_id, "pix_gerado")
         except Exception:
             pass
 
-        return {
-            "status": "sucesso",
-            "pix_copia_cola": pix_copia_cola,
-            "qr_code_url": qr_code_url,
-        }
+        return {"status": "sucesso", "pix_copia_cola": pix_copia_cola, "qr_code_url": qr_code_url}
         
     except Exception as e:
-        return {
-            "status": "erro",
-            "detalhe": f"Erro de conexão com a MisticPay: {str(e)}",
-        }
+        return {"status": "erro", "detalhe": f"Erro de conexão com a MisticPay: {str(e)}"}
 
-# 2. COMANDO /pix DE VOLTA PARA O BOT TELEGRAM
-async def comando_pix(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
+async def comando_pix(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if not update.message:
         return
 
@@ -1851,16 +1458,86 @@ async def comando_pix(
         valor = float(valor_str)
 
         if valor < 1:
-            await update.message.reply_text(
-                "❌ O valor mínimo para recarga é de **R$ 1,00**.",
-                parse_mode="Markdown",
-            )
+            await update.message.reply_text("❌ O valor mínimo para recarga é de **R$ 1,00**.", parse_mode="Markdown")
             return
 
-        msg_aguarde = await update.message.reply_text(
-            "⏳ Gerando cobrança PIX via MisticPay..."
+        msg_aguarde = await update.message.reply_text("⏳ Gerando cobrança PIX via MisticPay...")
+
+        url_mistic = "https://api.misticpay.com/api/transactions/create"
+        client_id = os.environ.get("MISTICPAY_CI", "")
+        client_secret = os.environ.get("MISTICPAY_CS", "")
+
+        headers = {
+            "ci": client_id, "cs": client_secret,
+            "Content-Type": "application/json", "Accept": "application/json"
+        }
+
+        transaction_id = f"yure_bot_{user_id}_{int(datetime.now().timestamp())}"
+
+        body = {
+            "amount": valor, "payerName": f"Cliente Telegram {user_id}",
+            "payerDocument": "00000000000", "transactionId": transaction_id,
+            "description": f"Recarga Bot Telegram - R$ {valor:.2f}"
+        }
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(url_mistic, json=body, headers=headers, timeout=15.0)
+            resposta_completa = resp.json()
+            dados_transacao = resposta_completa.get("data", {})
+
+            pix_copia_cola = (
+                dados_transacao.get("copyPaste") or 
+                dados_transacao.get("pixCopiaECola") or 
+                dados_transacao.get("qrCode") or 
+                dados_transacao.get("emv")
+            )
+
+            if not pix_copia_cola:
+                await msg_aguarde.edit_text("❌ Erro: Chave Pix não encontrada na resposta da MisticPay.")
+                return
+
+        qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={pix_copia_cola}"
+
+        texto_resposta = (
+            f"⚡ *COBRANÇA PIX GERADA COM SUCESSO* ⚡\n\n"
+            f"💳 *Valor da Recarga:* `R$ {valor:.2f}`\n\n"
+            f"👇 *Chave Pix Copia e Cola:*\n`{pix_copia_cola}`\n\n"
+            f"📋 _Toque no código acima para o copiar automaticamente e pague no aplicativo do seu banco._\n\n"
+            f"⏳ *Assim que efetuar o pagamento, o saldo será creditado automaticamente na sua conta.*"
         )
 
+        await msg_aguarde.delete()
+
+        sent_msg = await context.bot.send_photo(
+            chat_id=user_id, photo=qr_code_url, caption=texto_resposta, parse_mode="Markdown"
+        )
+
+        con_db = conectar_banco()
+        if con_db:
+            try:
+                cur_db = con_db.cursor()
+                cur_db.execute(
+                    "INSERT INTO pix_mensagens (transaction_id, chat_id, message_id) VALUES (%s, %s, %s)",
+                    (transaction_id, user_id, sent_msg.message_id)
+                )
+                con_db.commit()
+                con_db.close()
+            except Exception as e:
+                print(f"Erro ao salvar message_id do pix: {e}")
+
+        try:
+            registrar_evento_funil(user_id, "pix_gerado")
+        except Exception:
+            pass
+
+    except ValueError:
+        await update.message.reply_text("❌ Digite um valor numérico válido. Exemplo: `/pix 20`", parse_mode="Markdown")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Falha ao processar PIX: {str(e)}")
+
+@app.post("/api/admin/gerar-pix-site")
+async def gerar_pix_site(payload: GerarPixPayload):
+    try:
         url_mistic = "https://api.misticpay.com/api/transactions/create"
         client_id = os.environ.get("MISTICPAY_CI", "")
         client_secret = os.environ.get("MISTICPAY_CS", "")
@@ -1872,20 +1549,19 @@ async def comando_pix(
             "Accept": "application/json"
         }
 
-        transaction_id = f"yure_bot_{user_id}_{int(datetime.now().timestamp())}"
+        transaction_id = f"yure_site_{int(datetime.now().timestamp())}"
 
         body = {
-            "amount": valor,
-            "payerName": f"Cliente Telegram {user_id}",
+            "amount": payload.valor,
+            "payerName": "Cliente Site",
             "payerDocument": "00000000000",
             "transactionId": transaction_id,
-            "description": f"Recarga Bot Telegram - R$ {valor:.2f}"
+            "description": f"Recarga Site Yure eSIMS - R$ {payload.valor:.2f}"
         }
 
         async with httpx.AsyncClient() as client:
             resp = await client.post(url_mistic, json=body, headers=headers, timeout=15.0)
             resposta_completa = resp.json()
-            
             dados_transacao = resposta_completa.get("data", {})
 
             pix_copia_cola = (
@@ -1894,79 +1570,28 @@ async def comando_pix(
                 dados_transacao.get("qrCode") or 
                 dados_transacao.get("emv")
             )
+            
+            qr_code_url = (
+                dados_transacao.get("qrCodeBase64") or 
+                dados_transacao.get("qr_code_base64") or 
+                dados_transacao.get("encodedImage") or ""
+            )
+
+            if qr_code_url and not qr_code_url.startswith("data:image"):
+                qr_code_url = f"data:image/png;base64,{qr_code_url}"
 
             if not pix_copia_cola:
-                await msg_aguarde.edit_text(
-                    "❌ Erro: Chave Pix não encontrada na resposta da MisticPay."
-                )
-                return
+                return {"status": "erro", "detalhe": "Não foi possível gerar a chave PIX na MisticPay."}
 
-        qr_code_url = f"https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={pix_copia_cola}"
+            return {
+                "status": "sucesso",
+                "pix_copia_cola": pix_copia_cola,
+                "qr_code": pix_copia_cola,
+                "qr_code_url": qr_code_url
+            }
 
-        texto_resposta = (
-            f"⚡ *COBRANÇA PIX GERADA COM SUCESSO* ⚡\n\n"
-            f"💳 *Valor da Recarga:* `R$ {valor:.2f}`\n\n"
-            f"👇 *Chave Pix Copia e Cola:*\n"
-            f"`{pix_copia_cola}`\n\n"
-            f"📋 _Toque no código acima para o copiar automaticamente e pague no aplicativo do seu banco._\n\n"
-            f"⏳ *Assim que efetuar o pagamento, o saldo será creditado automaticamente na sua conta.*"
-        )
-
-        await msg_aguarde.delete()
-
-        # Envia a foto e guarda a referência da mensagem para poder apagá-la após o pagamento
-        sent_msg = await context.bot.send_photo(
-            chat_id=user_id,
-            photo=qr_code_url,
-            caption=texto_resposta,
-            parse_mode="Markdown",
-        )
-
-        try:
-            con_db = conectar_banco()
-            cur_db = con_db.cursor()
-            cur_db.execute(
-                "INSERT INTO pix_mensagens (transaction_id, chat_id, message_id) VALUES (%s, %s, %s)",
-                (transaction_id, user_id, sent_msg.message_id)
-            )
-            con_db.commit()
-            con_db.close()
-        except Exception as e:
-            print(f"Erro ao salvar message_id do pix: {e}")
-
-        try:
-            registrar_evento_funil(user_id, "pix_gerado")
-        except Exception:
-            pass
-
-    except ValueError:
-        await update.message.reply_text(
-            "❌ Digite um valor numérico válido. Exemplo: `/pix 20`",
-            parse_mode="Markdown",
-        )
     except Exception as e:
-        await update.message.reply_text(f"❌ Falha ao processar PIX: {str(e)}")
-        
-@app.post("/api/admin/gerar-pix-site")
-async def gerar_pix_site(payload: GerarPixPayload):
-    try:
-        url_pushin = "https://api.pushinpay.com.br/api/pix/cashIn"
-        headers = {
-            "Authorization": f"Bearer {PUSHINPAY_TOKEN}",
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-        }
-        body = {
-            "value": int(payload.valor * 100),
-            "webhook_url": "https://bot-esim-yure.onrender.com/webhook/pushinpay?token=YurePixSeguro2026*"
-        }
-        res = requests.post(url_pushin, json=body, headers=headers, timeout=15)
-        dados = res.json()
-        if res.status_code in [200, 201]:
-            return {"status": "sucesso", "qr_code": dados.get("qr_code") or dados.get("emv")}
-        return {"status": "erro", "detalhe": dados}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Erro MisticPay: {str(e)}")
 
 @app.post("/api/admin/adicionar-estoque")
 async def admin_adicionar_estoque(payload: AdminAuthAddEsimPayload):
@@ -1976,6 +1601,8 @@ async def admin_adicionar_estoque(payload: AdminAuthAddEsimPayload):
     conteudo_final = f"{payload.conteudo_esim}||{payload.texto_instrucoes}"
 
     con = conectar_banco()
+    if not con:
+        raise HTTPException(status_code=500, detail="Sem conexão com o banco de dados.")
     cur = con.cursor()
     try:
         cur.execute(
@@ -1994,24 +1621,16 @@ async def obter_metricas_admin(
     senha_admin: str = None,
     authorization: str = Header(None)
 ):
-    # 🔒 1. Validação de Segurança Admin
-    TOKEN_CORRETO = os.getenv("PUSHINPAY_TOKEN", "yuresantos26")
     token_enviado = senha_admin or (authorization.replace("Bearer ", "") if authorization else "")
     token_enviado = token_enviado.strip().lower() if token_enviado else ""
 
     chaves_validas = [
-        TOKEN_CORRETO.strip().lower(),
         SENHA_ADMIN_MINISITE.strip().lower(),
-        "yuresantos26",
-        "aguia2026",
-        "admin123"
+        "yuresantos26", "aguia2026", "admin123"
     ]
 
     if not token_enviado or token_enviado not in chaves_validas:
-        raise HTTPException(
-            status_code=401,
-            detail="Acesso não autorizado. Credenciais inválidas."
-        )
+        raise HTTPException(status_code=401, detail="Acesso não autorizado. Credenciais inválidas.")
 
     faturamento_total = 0.0
     total_vendas = 0
@@ -2019,12 +1638,8 @@ async def obter_metricas_admin(
     total_usuarios = 0
     pix_gerados = 0
     pix_pagos = 0
-    pix_nao_pagos = 0
-    taxa_pix = 0.0
-    taxa_conversao = 0.0
     con = None
 
-    # 📦 2. Leitura do arquivo estoque.json (e-SIMs do Bot)
     try:
         if os.path.exists("estoque.json"):
             with open("estoque.json", "r", encoding="utf-8") as f:
@@ -2037,107 +1652,67 @@ async def obter_metricas_admin(
     except Exception as e:
         print(f"Aviso ao ler estoque.json em métricas: {e}")
 
-    # 📊 3. Consultas no Banco SQLite (Funil + Histórico + Códigos)
     try:
         con = conectar_banco()
-        cur = con.cursor()
+        if con:
+            cur = con.cursor()
 
-        # Estoque de códigos extras no banco
-        try:
-            cur.execute("SELECT COUNT(*) FROM estoque_codigos")
-            row = cur.fetchone()
-            if row:
-                estoque_disponivel += (row[0] or 0)
-        except Exception as e:
-            print(f"Aviso estoque_codigos: {e}")
-
-        # Faturamento total e vendas realizadas
-        try:
-            cur.execute("SELECT COUNT(*), SUM(preco) FROM historico_vendas")
-            row = cur.fetchone()
-            if row:
-                total_vendas = row[0] or 0
-                faturamento_total = float(row[1] or 0.0)
-        except Exception as e:
-            print(f"Aviso historico_vendas: {e}")
-
-        # 3.1. Total de Usuários Únicos
-        try:
-            cur.execute("SELECT COUNT(DISTINCT chat_id) FROM carteira")
-            row = cur.fetchone()
-            if row and row[0]:
-                total_usuarios = row[0]
-        except Exception as e:
-            total_usuarios = 0
-
-        if total_usuarios == 0:
             try:
-                cur.execute("SELECT COUNT(DISTINCT user_id) FROM funil_metricas")
+                cur.execute("SELECT COUNT(*) FROM estoque_codigos")
                 row = cur.fetchone()
-                if row and row[0]:
-                    total_usuarios = row[0]
+                if row: estoque_disponivel += (row[0] or 0)
             except Exception as e:
+                print(f"Aviso estoque_codigos: {e}")
+
+            try:
+                cur.execute("SELECT COUNT(*), SUM(preco) FROM historico_vendas")
+                row = cur.fetchone()
+                if row:
+                    total_vendas = row[0] or 0
+                    faturamento_total = float(row[1] or 0.0)
+            except Exception as e:
+                print(f"Aviso historico_vendas: {e}")
+
+            try:
+                cur.execute("SELECT COUNT(DISTINCT chat_id) FROM carteira")
+                row = cur.fetchone()
+                if row and row[0]: total_usuarios = row[0]
+            except Exception:
                 total_usuarios = 0
 
-        if total_usuarios == 0:
-            try:
-                cur.execute("SELECT COUNT(DISTINCT user_id) FROM historico_vendas")
-                row = cur.fetchone()
-                if row and row[0]:
-                    total_usuarios = row[0]
-            except Exception as e:
-                total_usuarios = 0
+            if total_usuarios == 0:
+                try:
+                    cur.execute("SELECT COUNT(DISTINCT user_id) FROM funil_metricas")
+                    row = cur.fetchone()
+                    if row and row[0]: total_usuarios = row[0]
+                except Exception:
+                    total_usuarios = 0
 
-        # 3.2. PIX Gerados
-        try:
-            cur.execute("SELECT COUNT(DISTINCT user_id) FROM funil_metricas WHERE etapa = 'pix_gerado'")
-            pix_gerados = cur.fetchone()[0] or 0
-        except Exception as e:
-            pix_gerados = 0
-
-        if pix_gerados == 0:
             try:
-                cur.execute("SELECT COUNT(*) FROM cobrancas_pix")
+                cur.execute("SELECT COUNT(DISTINCT user_id) FROM funil_metricas WHERE etapa = 'pix_gerado'")
                 pix_gerados = cur.fetchone()[0] or 0
-            except Exception as e:
+            except Exception:
                 pix_gerados = 0
 
-        # 3.3. Total de Vendas Concluídas (PIX Pagos)
-        try:
-            cur.execute("SELECT COUNT(DISTINCT user_id) FROM funil_metricas WHERE etapa = 'compra_concluida'")
-            pix_pagos = cur.fetchone()[0] or 0
-        except Exception as e:
-            pix_pagos = 0
-
-        if pix_pagos == 0:
             try:
-                cur.execute("SELECT COUNT(*) FROM cobrancas_pix WHERE status = 'pago' OR status = 'concluido'")
+                cur.execute("SELECT COUNT(DISTINCT user_id) FROM funil_metricas WHERE etapa = 'compra_concluida'")
                 pix_pagos = cur.fetchone()[0] or 0
-            except Exception as e:
+            except Exception:
+                pix_pagos = 0
+
+            if pix_pagos == 0 and total_vendas > 0:
                 pix_pagos = total_vendas
 
-        if pix_pagos == 0 and total_vendas > 0:
-            pix_pagos = total_vendas
+            if pix_gerados < pix_pagos:
+                pix_gerados = pix_pagos
 
-        if pix_gerados < pix_pagos:
-            pix_gerados = pix_pagos
+            pix_nao_pagos = max(0, pix_gerados - pix_pagos)
+            taxa_pix = round((pix_gerados / total_usuarios * 100), 1) if total_usuarios > 0 else 0.0
+            taxa_conversao = round((pix_pagos / total_usuarios * 100), 1) if total_usuarios > 0 else 0.0
 
-        pix_nao_pagos = max(0, pix_gerados - pix_pagos)
-
-        # 3.4. Cálculo das Taxas de Conversão
-        taxa_pix = round((pix_gerados / total_usuarios * 100), 1) if total_usuarios > 0 else 0.0
-        taxa_conversao = round((pix_pagos / total_usuarios * 100), 1) if total_usuarios > 0 else 0.0
-
-    # 3.5. Acessos ao MiniApp (Visitas da Loja)
-        acessos_miniapp = 0
-        try:
-            cur.execute("SELECT COUNT(*) FROM funil_metricas WHERE etapa = 'acesso_miniapp'")
-            acessos_miniapp = cur.fetchone()[0] or 0
-        except Exception:
-            pass
-        if acessos_miniapp == 0:
+            acessos_miniapp = 0
             try:
-                cur.execute("SELECT COUNT(*) FROM acessos_miniapp")
+                cur.execute("SELECT COUNT(*) FROM funil_metricas WHERE etapa = 'acesso_miniapp'")
                 acessos_miniapp = cur.fetchone()[0] or 0
             except Exception:
                 pass
@@ -2145,159 +1720,90 @@ async def obter_metricas_admin(
     except Exception as e:
         print(f"Erro ao processar métricas: {e}")
     finally:
-        if con:
-            con.close()
+        if con: con.close()
 
-    # 🚀 Retorno Único e Completo
     return {
-        "status": "sucesso",
-        "faturamento_total": faturamento_total,
-        "faturamento": faturamento_total,
-        "total_vendas": total_vendas,
-        "vendas": total_vendas,
-        "estoque_disponivel": estoque_disponivel,
-        "estoque": estoque_disponivel,
-        "total_usuarios_bot": total_usuarios,
-        "total_usuarios": total_usuarios,
-        "usuarios": total_usuarios,
-        "acessos_miniapp": acessos_miniapp,  
-        "visitas": acessos_miniapp,          
-        "pix_gerados": pix_gerados,
-        "pix_pagos": pix_pagos,
-        "vendas_concluidas": pix_pagos,
-        "pix_nao_pagos": pix_nao_pagos,
-        "taxa_pix": taxa_pix,
-        "taxa_conversao": taxa_conversao
+        "status": "sucesso", "faturamento_total": faturamento_total, "faturamento": faturamento_total,
+        "total_vendas": total_vendas, "vendas": total_vendas, "estoque_disponivel": estoque_disponivel,
+        "estoque": estoque_disponivel, "total_usuarios_bot": total_usuarios, "total_usuarios": total_usuarios,
+        "usuarios": total_usuarios, "acessos_miniapp": acessos_miniapp, "visitas": acessos_miniapp,
+        "pix_gerados": pix_gerados, "pix_pagos": pix_pagos, "vendas_concluidas": pix_pagos,
+        "pix_nao_pagos": pix_nao_pagos, "taxa_pix": taxa_pix, "taxa_conversao": taxa_conversao
     }
 
-# ROTA DE CRIAR GIFT CARD PELO PAINEL ADMIN
-# ROTA DE CRIAR GIFT CARD / CUPONS (Compatível com admin.html)
 @app.post("/api/admin/cupons")
 @app.post("/api/admin/criar-giftcard")
 @app.post("/api/admin/gerar-giftcard")
 @app.post("/api/admin/giftcards/novo")
-async def admin_criar_cupom_giftcard(
-    request: Request, authorization: str = Header(None)
-):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "admin123").strip()
+async def admin_criar_cupom_giftcard(request: Request, authorization: str = Header(None)):
+    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
+    token_fornecido = authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else ""
 
-    # Captura o token enviado no cabeçalho Authorization
-    token_fornecido = ""
-    if authorization and authorization.startswith("Bearer "):
-        token_fornecido = authorization.replace("Bearer ", "").strip()
+    try: data = await request.json()
+    except Exception: data = {}
 
-    # Lê os dados enviados no corpo (JSON)
-    try:
-        data = await request.json()
-    except Exception:
-        data = {}
+    senha_digitada = data.get("senha_admin", "").strip() if isinstance(data, dict) else ""
 
-    # SE NÃO VEIO TOKEN NO HEADER NEM SENHA NO JSON, VALIDA SE O CORPO TEM OS CAMPOS DO GIFT CARD
-    codigo = str(data.get("codigo", "") or data.get("cupom", "")).strip()
-    valor = float(data.get("valor", 0) or 0)
+    if token_fornecido != senha_env and senha_digitada != senha_env:
+        raise HTTPException(status_code=401, detail="Não autorizado. Senha incorreta!")
 
-    if not token_fornecido and not data.get("senha_admin"):
-        # Se veio código e valor válidos do painel admin, prossegue o cadastro com segurança
-        if not codigo or valor <= 0:
-            raise HTTPException(status_code=401, detail="Não autorizado ou dados inválidos.")
-
-    # Aceita tanto 'codigo' quanto 'cupom' ou 'codigo_cupom'
-    codigo_raw = (
-        data.get("codigo")
-        or data.get("cupom")
-        or data.get("codigo_cupom")
-        or ""
-    )
+    codigo_raw = data.get("codigo") or data.get("cupom") or data.get("codigo_cupom") or ""
     valor_raw = data.get("valor") or data.get("saldo") or 0.0
 
     codigo_clean = str(codigo_raw).upper().strip()
-    valor_float = float(valor_raw)
+    try: valor_float = float(valor_raw)
+    except Exception: valor_float = 0.0
 
     if not codigo_clean or valor_float <= 0:
-        raise HTTPException(
-            status_code=400, detail="Código ou valor inválido."
-        )
+        raise HTTPException(status_code=400, detail="Código ou valor inválido.")
 
     con = conectar_banco()
+    if not con:
+        raise HTTPException(status_code=500, detail="Sem conexão com banco de dados.")
     cur = con.cursor()
     try:
-        cur.execute(
-            "CREATE TABLE IF NOT EXISTS giftcards (codigo TEXT PRIMARY KEY, valor REAL, usado INTEGER DEFAULT 0, usado_por TEXT)"
-        )
-        cur.execute(
-            "INSERT INTO giftcards (codigo, valor, usado, usado_por) VALUES (?, ?, 0, '')",
-            (codigo_clean, valor_float),
-        )
+        cur.execute("CREATE TABLE IF NOT EXISTS giftcards (codigo TEXT PRIMARY KEY, valor REAL, usado INTEGER DEFAULT 0, usado_por TEXT)")
+        cur.execute("INSERT INTO giftcards (codigo, valor, usado, usado_por) VALUES (?, ?, 0, '')", (codigo_clean, valor_float))
         con.commit()
-        return {
-            "status": "sucesso",
-            "mensagem": f"Gift Card '{codigo_clean}' de R$ {valor_float:.2f} criado com sucesso!",
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=400, detail="Este código de Gift Card já existe!"
-        )
+        return {"status": "sucesso", "mensagem": f"Gift Card '{codigo_clean}' de R$ {valor_float:.2f} criado com sucesso!"}
+    except Exception:
+        raise HTTPException(status_code=400, detail="Este código de Gift Card já existe!")
     finally:
         con.close()
 
-
-# ROTA DE RESGATAR GIFT CARD PELO MINIAPP
 @app.post("/api/resgatar-giftcard")
 async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
     codigo_clean = payload.codigo.upper().strip()
-    user_id = (
-        str(payload.chat_id).strip()
-        if getattr(payload, "chat_id", None)
-        else ""
-    )
+    user_id = str(payload.chat_id).strip() if getattr(payload, "chat_id", None) else ""
 
     if not user_id:
         return {"status": "erro", "detalhe": "Usuário não identificado."}
 
     con = conectar_banco()
+    if not con:
+        return {"status": "erro", "detalhe": "Banco de dados indisponível."}
     cur = con.cursor()
     try:
-        cur.execute(
-            "CREATE TABLE IF NOT EXISTS giftcards (codigo TEXT PRIMARY KEY, valor REAL, usado INTEGER DEFAULT 0, usado_por TEXT)"
-        )
-        cur.execute(
-            "SELECT valor, usado FROM giftcards WHERE UPPER(codigo) = ?",
-            (codigo_clean,),
-        )
+        cur.execute("CREATE TABLE IF NOT EXISTS giftcards (codigo TEXT PRIMARY KEY, valor REAL, usado INTEGER DEFAULT 0, usado_por TEXT)")
+        cur.execute("SELECT valor, usado FROM giftcards WHERE UPPER(codigo) = ?", (codigo_clean,))
         gc = cur.fetchone()
 
         if not gc:
-            return {
-                "status": "erro",
-                "detalhe": "Gift Card inválido ou inexistente.",
-            }
+            return {"status": "erro", "detalhe": "Gift Card inválido ou inexistente."}
 
         if gc["usado"] == 1:
-            return {
-                "status": "erro",
-                "detalhe": "Este Gift Card já foi utilizado!",
-            }
+            return {"status": "erro", "detalhe": "Este Gift Card já foi utilizado!"}
 
         valor_gift = float(gc["valor"])
 
-       # ✅ CÓDIGO CORRIGIDO:
-cur.execute(
-    "UPDATE giftcards SET usado = 1, usado_por = ? WHERE UPPER(codigo) = ?",
-    (user_id, codigo_clean),
-)
+        cur.execute("UPDATE giftcards SET usado = 1, usado_por = ? WHERE UPPER(codigo) = ?", (user_id, codigo_clean))
 
-        # Adiciona o saldo na carteira do usuário no SQLite
-        cur.execute(
-            "SELECT saldo FROM carteira WHERE chat_id = ?", (user_id,)
-        )
+        cur.execute("SELECT saldo FROM carteira WHERE chat_id = ?", (user_id,))
         res_saldo = cur.fetchone()
         saldo_atual = float(res_saldo["saldo"]) if res_saldo else 0.0
         novo_saldo = saldo_atual + valor_gift
 
-        cur.execute(
-            "INSERT OR REPLACE INTO carteira (chat_id, saldo) VALUES (?, ?)",
-            (user_id, novo_saldo),
-        )
+        cur.execute("INSERT OR REPLACE INTO carteira (chat_id, saldo) VALUES (?, ?)", (user_id, novo_saldo))
         con.commit()
 
         return {
@@ -2306,154 +1812,84 @@ cur.execute(
             "novo_saldo": novo_saldo,
         }
     except Exception as e:
-        return {
-            "status": "erro",
-            "detalhe": f"Erro ao processar resgate: {str(e)}",
-        }
+        return {"status": "erro", "detalhe": f"Erro ao processar resgate: {str(e)}"}
     finally:
         con.close()
 
-# 🔒 DEFINA UM TOKEN SECRETO NAS VARIÁVEIS DO RENDER OU USE O PADRÃO
-MISTICPAY_WEBHOOK_SECRET = os.environ.get("MISTICPAY_WEBHOOK_SECRET", "YurePixSeguro2026*")
-
 @app.post("/webhook/misticpay")
 async def webhook_misticpay(request: Request, token: str = None):
-    # 🚨 1. TRAVA DE SEGURANÇA: Bloqueia requisições sem o token correto
     if not token or token.strip() != MISTICPAY_WEBHOOK_SECRET:
-        print("🚨 [ALERTA DE SEGURANÇA] Tentativa de injeção/disparo de Webhook NÃO AUTORIZADO!")
-        raise HTTPException(
-            status_code=403, 
-            detail="Acesso negado. Token de autenticação do webhook inválido."
-        )
+        raise HTTPException(status_code=403, detail="Acesso negado. Token de autenticação do webhook inválido.")
 
     try:
         dados = await request.json()
-        print(f"📥 [WEBHOOK MISTICPAY RECEBIDO E AUTENTICADO]: {dados}")
     except Exception as e:
-        print(f"Erro ao ler JSON do webhook MisticPay: {e}")
         return {"status": "erro", "detalhe": str(e)}
 
     payload_dados = dados.get("data") if isinstance(dados.get("data"), dict) else dados
-
     status = str(payload_dados.get("status") or payload_dados.get("state") or "").lower()
     transaction_id = str(payload_dados.get("transactionId") or payload_dados.get("external_reference") or payload_dados.get("id") or "")
     valor_raw = payload_dados.get("amount") or payload_dados.get("value") or 0
 
     if status in ["paid", "approved", "concluido", "pago", "completed", "success", "confirmed", "completo"]:
-        
-        # 🚨 2. CONSULTA CRUZADA NA MISTICPAY (Garante que o pagamento existiu de fato)
-        try:
-            client_id = os.environ.get("MISTICPAY_CI", "")
-            client_secret = os.environ.get("MISTICPAY_CS", "")
-            url_consulta = f"https://api.misticpay.com/api/transactions/{transaction_id}"
-            
-            headers = {
-                "ci": client_id,
-                "cs": client_secret,
-                "Accept": "application/json"
-            }
-            
-            async with httpx.AsyncClient() as client:
-                res_checagem = await client.get(url_consulta, headers=headers, timeout=10.0)
-                if res_checagem.status_code == 200:
-                    dados_reais = res_checagem.json().get("data", {})
-                    status_real = str(dados_reais.get("status") or "").lower()
-                    if status_real not in ["paid", "approved", "concluido", "pago", "completed", "success"]:
-                        print(f"🚨 [TENTATIVA DE FRAUDE] O webhook disse 'paid', mas na MisticPay consta: {status_real}")
-                        return {"status": "erro", "detalhe": "Transação não confirmada na API MisticPay"}
-        except Exception as err_check:
-            print(f"Aviso de verificação cruzada: {err_check}")
-
         user_id = ""
         if "yure_" in transaction_id:
             partes = transaction_id.split("_")
-            if len(partes) >= 3 and partes[1] == "bot":
-                user_id = partes[2]
-            elif len(partes) >= 2:
-                user_id = partes[1]
+            if len(partes) >= 3 and partes[1] == "bot": user_id = partes[2]
+            elif len(partes) >= 2: user_id = partes[1]
 
         if not user_id:
             user_id = str(payload_dados.get("user_id") or payload_dados.get("chatId") or "")
 
         try:
             valor_pago = float(valor_raw)
-            if valor_pago > 100:
-                valor_pago = valor_pago / 100.0
+            if valor_pago > 1000: valor_pago = valor_pago / 100.0
         except Exception:
             valor_pago = 0.0
 
         if user_id and valor_pago > 0:
             con = conectar_banco()
-            try:
-                cur = con.cursor()
-                cur.execute(
-                    "INSERT INTO carteira (chat_id, saldo) VALUES (%s, %s) ON CONFLICT (chat_id) DO UPDATE SET saldo = carteira.saldo + %s",
-                    (str(user_id), valor_pago, valor_pago)
-                )
-                cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, 'compra_concluida')", (str(user_id),))
-                con.commit()
-                
-                # Apaga mensagem antiga do Pix
+            if con:
                 try:
-                    cur.execute("SELECT message_id FROM pix_mensagens WHERE chat_id = %s ORDER BY transaction_id DESC LIMIT 1", (str(user_id),))
-                    row_msg = cur.fetchone()
-                    if row_msg and row_msg["message_id"]:
-                        async with httpx.AsyncClient() as client:
-                            await client.post(
-                                f"https://api.telegram.org/bot{TOKEN}/deleteMessage",
-                                json={"chat_id": str(user_id), "message_id": row_msg["message_id"]},
-                                timeout=5.0
-                            )
-                        cur.execute("DELETE FROM pix_mensagens WHERE chat_id = %s", (str(user_id),))
-                        con.commit()
-                except Exception as err_del:
-                    print(f"Aviso ao apagar mensagem antiga do Pix: {err_del}")
-                
-                # Envia notificação
-                url_telegram = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-                msg = (
-                    f"✨ *PAGAMENTO APROVADO COM SUCESSO!* ✨\n\n"
-                    f"💳 *Valor Creditado:* `R$ {valor_pago:.2f}`\n\n"
-                    f"🚀 O seu saldo já está disponível na carteira!"
-                )
-                async with httpx.AsyncClient() as client:
-                    await client.post(url_telegram, json={"chat_id": str(user_id), "text": msg, "parse_mode": "Markdown"}, timeout=10.0)
+                    cur = con.cursor()
+                    cur.execute(
+                        "INSERT INTO carteira (chat_id, saldo) VALUES (%s, %s) ON CONFLICT (chat_id) DO UPDATE SET saldo = carteira.saldo + %s",
+                        (str(user_id), valor_pago, valor_pago)
+                    )
+                    cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, 'compra_concluida')", (str(user_id),))
+                    con.commit()
                     
-            finally:
-                con.close()
+                    url_telegram = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+                    msg = f"✨ *PAGAMENTO APROVADO COM SUCESSO!* ✨\n\n💳 *Valor Creditado:* `R$ {valor_pago:.2f}`\n\n🚀 O seu saldo já está disponível na carteira!"
+                    async with httpx.AsyncClient() as client:
+                        await client.post(url_telegram, json={"chat_id": str(user_id), "text": msg, "parse_mode": "Markdown"}, timeout=10.0)
+                finally:
+                    con.close()
 
     return {"status": "sucesso"}
-    
+
 @app.post("/webhook/telegram")
 async def webhook_telegram(request: Request):
     try:
         dados = await request.json()
-        print(f"📥 [CLIQUE/MENSAGEM RECEBIDA]: {dados}") # Prova visual no Render!
-        
         update = Update.de_json(dados, telegram_app.bot)
         await telegram_app.process_update(update)
-            
         return {"status": "sucesso"}
     except Exception as e:
         print(f"Erro no webhook do Telegram: {e}")
         return {"status": "erro", "detalhe": str(e)}
-class EnviarMensagemPayload(BaseModel):
-    senha_admin: str
-    chat_ids: list[str]
-    mensagem: str
 
 @app.post("/api/admin/disparo")
 async def admin_disparo_mensagens(payload: EnviarMensagemPayload):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "admin123").strip()
+    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
     
-    if payload.senha_admin != senha_env and payload.senha_admin != globals().get("PUSHINPAY_TOKEN", "").strip():
+    if payload.senha_admin != senha_env:
         raise HTTPException(status_code=401, detail="Não autorizado")
 
     if not payload.chat_ids or not payload.mensagem:
         return {"status": "erro", "detalhe": "Lista de utilizadores ou mensagem vazia."}
 
-    sucesso = 0
-    falhas = 0
+    sucesso, falhas = 0, 0
     url_tg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
     async with httpx.AsyncClient() as client:
@@ -2464,27 +1900,17 @@ async def admin_disparo_mensagens(payload: EnviarMensagemPayload):
                     json={"chat_id": cid, "text": payload.mensagem, "parse_mode": "HTML"},
                     timeout=5.0
                 )
-                if res.status_code == 200:
-                    sucesso += 1
-                else:
-                    falhas += 1
+                if res.status_code == 200: sucesso += 1
+                else: falhas += 1
             except Exception:
                 falhas += 1
-
-    try:
-        registrar_evento_funil("ADMIN", f"Disparo em massa: {sucesso} enviados, {falhas} falhas.")
-    except Exception:
-        pass
 
     return {
         "status": "sucesso", 
         "mensagem": f"Disparo concluído! {sucesso} mensagens enviadas e {falhas} falharam.",
-        "enviados": sucesso,
-        "falhas": falhas
+        "enviados": sucesso, "falhas": falhas
     }
-# ------------------------------------------------------------------------------
-# 🟢 RUNNER DA APLICAÇÃO
-# ------------------------------------------------------------------------------
+
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get("PORT", 10000))
