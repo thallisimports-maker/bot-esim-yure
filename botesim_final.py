@@ -2280,11 +2280,11 @@ async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
 
         valor_gift = float(gc["valor"])
 
-        # Marca como usado
-        cur.execute(
-            "UPDATE giftcards SET usado = 1, usado_por = ? WHERE UPPER(codigo) = ?",
-            (user_id, codigo_clean),
-        )
+       # ✅ CÓDIGO CORRIGIDO:
+cur.execute(
+    "UPDATE giftcards SET usado = 1, usado_por = ? WHERE UPPER(codigo) = ?",
+    (user_id, codigo_clean),
+)
 
         # Adiciona o saldo na carteira do usuário no SQLite
         cur.execute(
