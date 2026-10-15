@@ -315,7 +315,7 @@
       "conteudo_copia_cola": "4745 2507 1179 0835",
       "imagem_qr": "",
       "imagem_url": "",
-      "status": "disponivel"
+      "status": "vendido"
     },
     {
       "id": "prod_28",
@@ -549,6 +549,14 @@
       "operadora": "InfoProduto",
       "valor": 100.0,
       "data": "2026-10-15 15:22:51"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "prod_27",
+      "operadora": "InfoProduto",
+      "valor": 75.0,
+      "data": "2026-10-15 15:36:42"
     }
   ],
   "cupons": {
