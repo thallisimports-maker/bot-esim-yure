@@ -900,7 +900,6 @@ class AdicionarSaldoPayload(BaseModel):
 
 @app.post("/api/admin/login")
 async def admin_login(payload: AdminLoginPayload):
-    async def admin_login(payload: AdminLoginPayload):
     senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
     senha_digitada = payload.senha.strip()
 
