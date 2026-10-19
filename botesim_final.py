@@ -26,7 +26,9 @@ TOKEN = os.environ.get("TOKEN", "")
 MISTICPAY_CI = os.environ.get("MISTICPAY_CI", "")
 MISTICPAY_CS = os.environ.get("MISTICPAY_CS", "")
 MISTICPAY_WEBHOOK_SECRET = os.environ.get("MISTICPAY_WEBHOOK_SECRET", "")
-TELEGRAM_WEBHOOK_SECRET = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "").strip()
+TELEGRAM_WEBHOOK_SECRET = (
+    os.environ.get("TELEGRAM_WEBHOOK_SECRET") or os.environ.get("TELEGRAM_SECRET_TOKEN") or ""
+).strip()
 URL_BACKEND = "https://bot-esim-yure.onrender.com"
 URL_MINIAPP_OFICIAL = "https://baseyure.shop"
 MODO_MANUTENCAO = False
