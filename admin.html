@@ -941,7 +941,7 @@ if (elTabelaGifts) {
     elTabelaGifts.innerHTML = htmlG || '<tr><td colspan="5" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum Gift Card cadastrado.</td></tr>';
 }
       // Função para excluir Gift Card/Cupom via API
-async function excluirCupom(codigoCupom) {
+window.excluirCupom = async function(codigoCupom) {
     if (!confirm(`Deseja realmente apagar o cupom ${codigoCupom}?`)) return;
 
     const token = localStorage.getItem("senha_admin") || "";
