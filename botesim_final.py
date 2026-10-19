@@ -40,6 +40,10 @@ logging.basicConfig(level=logging.INFO)
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+GITHUB_REPO = "thallisimports-maker/bot-esim-yure"
+GITHUB_FILE_PATH = "estoque.json"
+
 # ------------------------------------------------------------------------------
 # 🗄️ ADAPTADOR DE BANCO DE DADOS (POSTGRESQL / SUPABASE VIA PSYCOPG2)
 # ------------------------------------------------------------------------------
@@ -49,7 +53,7 @@ class SmartRow:
         self.c_names = c_names
     def __getitem__(self, key):
         if isinstance(key, int): return self.t_row[key]
-        if key in self.c_names: return self.t_row[self.c_names.index(key)]
+        if key in self.c_names: return self.c_names.index(key)
         return None
     def __iter__(self): return iter(self.t_row)
     def keys(self): return self.c_names
@@ -106,7 +110,6 @@ def conectar_banco():
     return DBWrapper(conn)
 
 def usuario_esta_bloqueado(chat_id: str) -> bool:
-    """Verifica se o utilizador consta na tabela usuarios_bloqueados do Supabase."""
     if not chat_id or str(chat_id).strip() in ["", "undefined", "null", "None"]:
         return False
     con = conectar_banco()
@@ -143,17 +146,31 @@ def registrar_evento_funil(user_id, etapa):
         print(f"Erro ao registrar evento funil: {e}")
 
 def carregar_dados():
+    """
+    Busca os dados diretamente do repositório no GitHub para impedir 
+    que reinícios do Render apaguem produtos cadastrados.
+    """
+    if GITHUB_TOKEN:
+        try:
+            url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}"
+            headers = {
+                "Authorization": f"token {GITHUB_TOKEN}",
+                "Accept": "application/vnd.github.v3+json",
+            }
+            res = requests.get(url, headers=headers, timeout=6)
+            if res.status_code == 200:
+                content_b64 = res.json().get("content", "")
+                if content_b64:
+                    content_json = base64.b64decode(content_b64).decode("utf-8")
+                    dados = json.loads(content_json)
+                    with open("estoque.json", "w", encoding="utf-8") as f:
+                        json.dump(dados, f, indent=4, ensure_ascii=False)
+                    return dados
+        except Exception as e:
+            logging.warning(f"Erro ao carregar do GitHub, usando cache local: {e}")
+
     if not os.path.exists("estoque.json"):
-        return {
-            "produtos": [
-                {"id": "claro_40gb_001", "operadora": "Claro", "plano": "40GB", "preco": 35.0, "status": "vendido"},
-                {"id": "esim_2", "operadora": "Claro", "plano": "35GB", "preco": 35.0, "status": "vendido"},
-                {"id": "esim_3", "operadora": "Claro", "plano": "35GB", "preco": 35.0, "status": "vendido"},
-                {"id": "esim_4", "operadora": "Claro", "plano": "35GB", "preco": 25.0, "status": "vendido"}
-            ],
-            "utilizadores": {},
-            "vendas": []
-        }
+        return {"produtos": [], "utilizadores": {}, "vendas": []}
     try:
         with open("estoque.json", "r", encoding="utf-8") as f:
             return json.load(f)
@@ -163,6 +180,35 @@ def carregar_dados():
 def salvar_dados(dados):
     with open("estoque.json", "w", encoding="utf-8") as f:
         json.dump(dados, f, indent=4, ensure_ascii=False)
+
+def salvar_dados_no_github(dados_novos):
+    if not GITHUB_TOKEN:
+        return False
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json",
+    }
+    try:
+        res_get = requests.get(url, headers=headers, timeout=10)
+        if res_get.status_code != 200:
+            return False
+
+        sha = res_get.json()["sha"]
+        conteudo_json = json.dumps(dados_novos, indent=2, ensure_ascii=False)
+        conteudo_base64 = base64.b64encode(conteudo_json.encode("utf-8")).decode("utf-8")
+
+        payload = {
+            "message": "📦 Atualização do estoque via Painel Admin",
+            "content": conteudo_base64,
+            "sha": sha,
+        }
+
+        res_put = requests.put(url, headers=headers, json=payload, timeout=10)
+        return res_put.status_code == 200
+    except Exception as e:
+        print(f"Erro crítico na sincronização do GitHub: {e}")
+        return False
 
 def inicializar_banco():
     if not DATABASE_URL:
@@ -236,10 +282,6 @@ def inicializar_banco():
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        cur.execute("SELECT COUNT(*) as qtd FROM estoque")
-        row = cur.fetchone()
-        if row and row['qtd'] == 0:
-            cur.execute("INSERT INTO estoque (produto_id, quantidade) VALUES ('vivo_30gb', 0), ('tim_40gb', 0), ('claro_40gb', 0)")
         con.commit()
     except Exception as e:
         logging.error(f"Erro ao inicializar banco Postgres: {e}")
@@ -885,13 +927,11 @@ async def obter_dados_admin(
     produtos, cupons, vendas, usuarios, logs_funil = [], [], [], [], []
 
     try:
-        if os.path.exists("estoque.json"):
-            with open("estoque.json", "r", encoding="utf-8") as f:
-                dados_json = json.load(f)
-                if isinstance(dados_json, dict):
-                    produtos.extend(dados_json.get("produtos", []))
+        dados_json = carregar_dados()
+        if isinstance(dados_json, dict):
+            produtos.extend(dados_json.get("produtos", []))
     except Exception as e:
-        print(f"Aviso ao ler estoque.json: {e}")
+        print(f"Aviso ao carregar dados admin: {e}")
 
     con = None
     try:
@@ -911,17 +951,6 @@ async def obter_dados_admin(
                     })
             except Exception as e:
                 print(f"Aviso estoque_codigos: {e}")
-
-            try:
-                cur.execute("SELECT id, operadora, plano, preco, status, imagem_url, descricao FROM produtos ORDER BY id DESC")
-                for row in cur.fetchall():
-                    produtos.append({
-                        "id": row[0], "operadora": row[1] or "Vivo", "plano": row[2] or "e-SIM",
-                        "preco": float(row[3] or 0.0), "status": row[4] or "disponivel",
-                        "imagem_url": row[5] or "", "imagem_qr": row[5] or "", "descricao": row[6] or ""
-                    })
-            except Exception:
-                pass
 
             try:
                 cur.execute("""
@@ -997,41 +1026,6 @@ async def obter_dados_admin(
         "acessos_miniapp": lista_acessos_miniapp, "acessos_miniapp_lista": lista_acessos_miniapp,
         "pix_gerados_lista": lista_pix_gerados
     }
-
-GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
-GITHUB_REPO = "thallisimports-maker/bot-esim-yure"
-GITHUB_FILE_PATH = "estoque.json"
-
-def salvar_dados_no_github(dados_novos):
-    if not GITHUB_TOKEN:
-        return False
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_FILE_PATH}"
-    headers = {
-        "Authorization": f"token {GITHUB_TOKEN}",
-        "Accept": "application/vnd.github.v3+json",
-    }
-    try:
-        res_get = requests.get(url, headers=headers, timeout=10)
-        if res_get.status_code != 200:
-            return False
-
-        sha = res_get.json()["sha"]
-        conteudo_json = json.dumps(dados_novos, indent=2, ensure_ascii=False)
-        conteudo_base64 = base64.b64encode(conteudo_json.encode("utf-8")).decode("utf-8")
-
-        payload = {
-            "message": "📦 Atualização do estoque via Painel Admin",
-            "content": conteudo_base64,
-            "sha": sha,
-        }
-
-        res_put = requests.put(url, headers=headers, json=payload, timeout=10)
-        return res_put.status_code == 200
-    except Exception as e:
-        print(f"Erro crítico na sincronização do GitHub: {e}")
-        return False
-
-# --- ENDPOINTS ADMINISTRATIVOS DE GESTÃO DE UTILIZADORES E BLOQUEIOS ---
 
 @app.post("/api/admin/bloquear")
 async def admin_bloquear_usuario(payload: BloquearUsuarioPayload, request: Request, authorization: str = Header(None)):
@@ -1419,6 +1413,7 @@ async def editar_produto(produto_id: str, request: Request, authorization: str =
 
     dados["produtos"] = produtos
     salvar_dados(dados)
+    salvar_dados_no_github(dados)
     return {"status": "sucesso", "mensagem": "Produto editado com sucesso!", "produto": produto_encontrado}
 
 @app.delete("/api/admin/produtos/{produto_id}")
@@ -1439,6 +1434,7 @@ async def excluir_produto(produto_id: str, request: Request, authorization: str 
 
     dados["produtos"] = novos_produtos
     salvar_dados(dados)
+    salvar_dados_no_github(dados)
     return {"status": "sucesso", "mensagem": "Produto excluído com sucesso!"}
 
 def limpar_markdown(texto: str) -> str:
@@ -1868,16 +1864,12 @@ async def obter_metricas_admin(
     con = None
 
     try:
-        if os.path.exists("estoque.json"):
-            with open("estoque.json", "r", encoding="utf-8") as f:
-                dados_json = json.load(f)
-                if isinstance(dados_json, list):
-                    estoque_disponivel += len(dados_json)
-                elif isinstance(dados_json, dict):
-                    itens = dados_json.get("produtos") or dados_json.get("estoque") or []
-                    estoque_disponivel += len(itens)
+        dados_json = carregar_dados()
+        if isinstance(dados_json, dict):
+            itens = dados_json.get("produtos") or dados_json.get("estoque") or []
+            estoque_disponivel += len(itens)
     except Exception as e:
-        print(f"Aviso ao ler estoque.json em métricas: {e}")
+        print(f"Aviso ao ler estoque em métricas: {e}")
 
     try:
         con = conectar_banco()
