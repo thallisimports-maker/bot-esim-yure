@@ -25,13 +25,13 @@ from telegram.ext import Application, CommandHandler, CallbackQueryHandler, Cont
 TOKEN = os.environ.get("TOKEN", "")
 MISTICPAY_CI = os.environ.get("MISTICPAY_CI", "")
 MISTICPAY_CS = os.environ.get("MISTICPAY_CS", "")
-MISTICPAY_WEBHOOK_SECRET = os.environ.get("MISTICPAY_WEBHOOK_SECRET", "YurePixSeguro2026*")
+MISTICPAY_WEBHOOK_SECRET = os.environ.get("MISTICPAY_WEBHOOK_SECRET", "")
 URL_BACKEND = "https://bot-esim-yure.onrender.com"
 URL_MINIAPP_OFICIAL = "https://baseyure.shop"
 MODO_MANUTENCAO = False
 
-USUARIO_ADMIN_MINISITE = os.environ.get("USUARIO_ADMIN_MINISITE", "aguia2026")
-SENHA_ADMIN_SEGURA = os.environ.get("SENHA_ADMIN_SEGURA", "yuresantos26")
+USUARIO_ADMIN_MINISITE = os.environ.get("USUARIO_ADMIN_MINISITE", "")
+SENHA_ADMIN_SEGURA = os.environ.get("SENHA_ADMIN_SEGURA", "")
 SENHA_ADMIN_MINISITE = SENHA_ADMIN_SEGURA
 
 LOGO_URL = "https://raw.githubusercontent.com/thallisimports-maker/bot-esim-yure/main/logo.png"
