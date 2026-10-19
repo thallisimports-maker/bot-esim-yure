@@ -940,14 +940,21 @@ const elTabelaGifts = document.getElementById('tabelaGifts');
 if (elTabelaGifts) {
     elTabelaGifts.innerHTML = htmlG || '<tr><td colspan="5" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum Gift Card cadastrado.</td></tr>';
 }
-      // Função para excluir Gift Card/Cupom via API
-window.excluirCupom = async function(codigoCupom) {
+      window.excluirCupom = async function(codigoCupom) {
     if (!confirm(`Deseja realmente apagar o cupom ${codigoCupom}?`)) return;
 
-    const token = localStorage.getItem("senha_admin") || "";
+    // Procura o token em todas as chaves e variáveis possíveis do painel
+    const token = localStorage.getItem("senha_admin") 
+               || localStorage.getItem("token") 
+               || localStorage.getItem("senha") 
+               || sessionStorage.getItem("senha_admin")
+               || sessionStorage.getItem("token")
+               || (typeof senhaAdmin !== 'undefined' ? senhaAdmin : '')
+               || (typeof TOKEN !== 'undefined' ? TOKEN : '');
 
     try {
-        const response = await fetch(`https://bot-esim-yure.onrender.com/api/admin/cupons/${codigoCupom}`, {
+        const url = `https://bot-esim-yure.onrender.com/api/admin/cupons/${codigoCupom}?senha_admin=${encodeURIComponent(token)}`;
+        const response = await fetch(url, {
             method: "DELETE",
             headers: {
                 "Authorization": "Bearer " + token,
@@ -956,17 +963,17 @@ window.excluirCupom = async function(codigoCupom) {
         });
 
         const res = await response.json();
-        if (response.ok && res.status === "sucesso") {
+        if (response.ok && (res.status === "sucesso" || res.sucesso)) {
             alert(res.mensagem || "Cupom excluído com sucesso!");
             if (typeof carregarDados === 'function') carregarDados();
             else location.reload();
         } else {
-            alert("Erro ao excluir: " + (res.detail || res.detalhe || "Falha na requisição."));
+            alert("Erro ao excluir: " + (res.detail || res.detalhe || res.mensagem || "Acesso não autorizado!"));
         }
     } catch (erro) {
         alert("Erro de conexão ao excluir cupom: " + erro.message);
     }
-}
+};
 
       // 4. Tabela de Clientes, Saldos e Gastos
       const usuarios = dados.usuarios || dados.utilizadores || [];
