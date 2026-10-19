@@ -2180,8 +2180,8 @@ async def webhook_telegram(request: Request):
     secret_env = (os.environ.get("TELEGRAM_WEBHOOK_SECRET") or os.environ.get("TELEGRAM_SECRET_TOKEN") or "").strip()
     secret_recebido = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "").strip()
 
-    # Bloqueia qualquer requisição se o segredo não for enviado ou for inválido
-    if not secret_env or secret_recebido != secret_env:
+    # Valida apenas se secret_env estiver definido no servidor
+    if secret_env and secret_recebido != secret_env:
         raise HTTPException(status_code=403, detail="Acesso negado. Token do Telegram inválido.")
 
     try:
