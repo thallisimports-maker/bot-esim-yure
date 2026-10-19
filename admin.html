@@ -922,19 +922,51 @@ async function salvarNovoProduto() {
           : '<span style="color: #6b7280;">—</span>';
 
         htmlG += `
-          <tr>
-            <td><strong>${c.codigo}</strong></td>
-            <td>R$ ${parseFloat(c.valor || 0).toFixed(2)}</td>
-            <td>${statusTag}</td>
-            <td>${quemResgatou}</td>
-          </tr>
-        `;
-      });
+      <tr>
+        <td><strong>${c.codigo}</strong></td>
+        <td>R$ ${parseFloat(c.valor || 0).toFixed(2)}</td>
+        <td>${statusTag}</td>
+        <td>${quemResgatou}</td>
+        <td>
+          <button onclick="excluirCupom('${c.codigo}')" style="background-color: #ef4444; color: #ffffff; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">
+            🗑️ Excluir
+          </button>
+        </td>
+      </tr>
+    `;
+});
 
-      const elTabelaGifts = document.getElementById('tabelaGifts');
-      if (elTabelaGifts) {
-        elTabelaGifts.innerHTML = htmlG || '<tr><td colspan="4" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum Gift Card cadastrado.</td></tr>';
-      }
+const elTabelaGifts = document.getElementById('tabelaGifts');
+if (elTabelaGifts) {
+    elTabelaGifts.innerHTML = htmlG || '<tr><td colspan="5" style="text-align:center; padding:12px; color:#94a3b8;">Nenhum Gift Card cadastrado.</td></tr>';
+}
+      // Função para excluir Gift Card/Cupom via API
+async function excluirCupom(codigoCupom) {
+    if (!confirm(`Deseja realmente apagar o cupom ${codigoCupom}?`)) return;
+
+    const token = localStorage.getItem("senha_admin") || "";
+
+    try {
+        const response = await fetch(`https://bot-esim-yure.onrender.com/api/admin/cupons/${codigoCupom}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": "Bearer " + token,
+                "Content-Type": "application/json"
+            }
+        });
+
+        const res = await response.json();
+        if (response.ok && res.status === "sucesso") {
+            alert(res.mensagem || "Cupom excluído com sucesso!");
+            if (typeof carregarDados === 'function') carregarDados();
+            else location.reload();
+        } else {
+            alert("Erro ao excluir: " + (res.detail || res.detalhe || "Falha na requisição."));
+        }
+    } catch (erro) {
+        alert("Erro de conexão ao excluir cupom: " + erro.message);
+    }
+},
 
       // 4. Tabela de Clientes, Saldos e Gastos
       const usuarios = dados.usuarios || dados.utilizadores || [];
