@@ -1055,10 +1055,10 @@ async def admin_bloquear_usuario(payload: BloquearUsuarioPayload, request: Reque
 
 @app.post("/api/admin/desbloquear")
 async def admin_desbloquear_usuario(payload: DesbloquearUsuarioPayload, request: Request, authorization: str = Header(None)):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
-    token_fornecido = payload.senha_admin or (authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else "")
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
+    token_fornecido = (payload.senha_admin or (authorization.replace("Bearer ", "") if authorization else "")).strip()
 
-    if not token_fornecido or token_fornecido.strip().lower() not in [senha_env.lower(), "yuresantos26", "aguia2026"]:
+    if not token_fornecido or not senha_env or token_fornecido != senha_env:
         raise HTTPException(status_code=401, detail="Acesso não autorizado!")
 
     chat_id = str(payload.chat_id).strip()
