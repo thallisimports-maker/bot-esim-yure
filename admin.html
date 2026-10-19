@@ -645,7 +645,7 @@ function alternarCamposCategoria() {
 
 // 🔹 SALVAR NOVO PRODUTO (E-SIM OU INFOPRODUTO)
 async function salvarNovoProduto() {
-    const token = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin') || "yuresantos26";
+    const token = sessionStorage.getItem('token_admin') || sessionStorage.getItem('senha_admin');
     const categoria = document.getElementById("p_categoria").value;
     const operadora = document.getElementById("p_operadora").value;
     const plano = document.getElementById("p_plano").value.trim();
