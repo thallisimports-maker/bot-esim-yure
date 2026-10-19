@@ -344,6 +344,20 @@
       "imagem_qr": "",
       "imagem_url": "",
       "status": "disponivel"
+    },
+    {
+      "id": "prod_30",
+      "operadora": "Claro",
+      "plano": "RENNER - FEM - $1213",
+      "preco": 95.0,
+      "descricao": "",
+      "categoria": "infoproduto",
+      "dados_principais": "",
+      "informacoes_adicionais": "RENNER SALDO R$ 1213,02\n\nCARTÃO: 4745 2539 3526 0999\nDATA: 11/2027\nCVV: 730\nNASCIMENTO: 2000\nSENHA: 1779\nDADOS:\nNome: Maria Helena Buss Pereira dos Santos\nCPF: 11288786905",
+      "conteudo_copia_cola": "4745 2539 3526 0999",
+      "imagem_qr": "",
+      "imagem_url": "",
+      "status": "disponivel"
     }
   ],
   "utilizadores": {},
