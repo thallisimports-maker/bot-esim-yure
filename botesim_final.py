@@ -2174,7 +2174,7 @@ async def webhook_misticpay(request: Request, token: Optional[str] = None):
 
 @app.post("/webhook/telegram")
 async def webhook_telegram(request: Request):
-    secret_env = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "").strip()
+    secret_env = (os.environ.get("TELEGRAM_WEBHOOK_SECRET") or os.environ.get("TELEGRAM_SECRET_TOKEN") or "").strip()
     secret_recebido = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "").strip()
 
     # Bloqueia qualquer requisição se o segredo não for enviado ou for inválido
