@@ -1103,12 +1103,11 @@ async def admin_zerar_saldo(payload: ZerarSaldoPayload, request: Request, author
 @app.post("/api/admin/adicionar-saldo")
 @app.post("/api/admin/adicionar_saldo")
 async def admin_adicionar_saldo(payload: AdicionarSaldoPayload, request: Request, authorization: str = Header(None)):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
-    token_fornecido = payload.senha_admin or (authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else "")
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
+    token_fornecido = (payload.senha_admin or (authorization.replace("Bearer ", "") if authorization else "")).strip()
 
-    if not token_fornecido or token_fornecido.strip().lower() not in [senha_env.lower(), "yuresantos26", "aguia2026"]:
+    if not token_fornecido or not senha_env or token_fornecido != senha_env:
         raise HTTPException(status_code=401, detail="Acesso não autorizado!")
-
     chat_id = str(payload.chat_id).strip()
     valor = float(payload.valor)
     if valor <= 0:
