@@ -2040,10 +2040,11 @@ async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
 
 @app.post("/webhook/misticpay")
 async def webhook_misticpay(request: Request, token: Optional[str] = None):
-    secret_val = os.environ.get("MISTICPAY_WEBHOOK_SECRET", "YurePixSeguro2026*").strip()
+    secret_val = os.environ.get("MISTICPAY_WEBHOOK_SECRET", "").strip()
     
-    if token and token.strip() != secret_val:
-        raise HTTPException(status_code=403, detail="Acesso negado. Token de autenticação do webhook inválido.")
+    # Exige que o token seja enviado E que seja igual à variável do Render
+    if not token or not secret_val or token.strip() != secret_val:
+        raise HTTPException(status_code=403, detail="Acesso negado. Token inválido.")
 
     try:
         dados = await request.json()
