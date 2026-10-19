@@ -832,7 +832,10 @@ app = FastAPI(title="Yure e-SIM API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://baseyure.shop",
+        "https://bot-esim-yure.onrender.com"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
