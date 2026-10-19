@@ -812,9 +812,12 @@ async def lifespan(app: FastAPI):
     await telegram_app.start()
 
     print("🔧 Configurando permissões do Webhook...")
+    secret_env = (os.environ.get("TELEGRAM_WEBHOOK_SECRET") or os.environ.get("TELEGRAM_SECRET_TOKEN") or "").strip()
+    
     await telegram_app.bot.set_webhook(
         url=f"{URL_BACKEND}/webhook/telegram",
-        allowed_updates=["message", "callback_query"]
+        allowed_updates=["message", "callback_query"],
+        secret_token=secret_env if secret_env else None
     )
 
     comandos_menu = [
