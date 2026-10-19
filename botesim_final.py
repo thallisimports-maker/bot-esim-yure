@@ -1990,6 +1990,77 @@ async def admin_criar_cupom_giftcard(request: Request, authorization: str = Head
     finally:
         con.close()
 
+# ------------------------------------------------------------------------------
+# 🎟️ EXCLUSÃO / REMOÇÃO DE CUPOM / GIFTCARD (ADMIN)
+# ------------------------------------------------------------------------------
+@app.delete("/api/admin/cupons/{codigo}")
+@app.delete("/api/admin/giftcards/{codigo}")
+@app.post("/api/admin/excluir-giftcard")
+async def admin_excluir_cupom_giftcard(
+    codigo: str = None, 
+    request: Request = None, 
+    authorization: str = Header(None)
+):
+    # 1. Validação de Segurança Estrita
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
+    token_fornecido = (authorization.replace("Bearer ", "") if authorization else "").strip()
+
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    if not token_fornecido and isinstance(data, dict):
+        token_fornecido = str(data.get("senha_admin", "")).strip()
+
+    if not codigo and isinstance(data, dict):
+        codigo = data.get("codigo") or data.get("cupom") or ""
+
+    if not token_fornecido or not senha_env or token_fornecido != senha_env:
+        raise HTTPException(status_code=401, detail="Acesso não autorizado!")
+
+    codigo_clean = str(codigo).upper().strip()
+    if not codigo_clean:
+        raise HTTPException(status_code=400, detail="Código do cupom inválido.")
+
+    # 2. Exclusão no Banco de Dados (PostgreSQL / Supabase)
+    con = conectar_banco()
+    if not con:
+        raise HTTPException(status_code=500, detail="Sem conexão com o banco de dados.")
+    
+    cur = con.cursor()
+    try:
+        cur.execute("DELETE FROM giftcards WHERE UPPER(codigo) = ?", (codigo_clean,))
+        con.commit()
+    except Exception as e:
+        con.rollback()
+        raise HTTPException(status_code=500, detail=f"Erro ao excluir no banco: {str(e)}")
+    finally:
+        con.close()
+
+    # 3. Exclusão de segurança no estoque.json (e sincronização no GitHub)
+    try:
+        dados = carregar_dados()
+        cupons = dados.get("cupons", {})
+        
+        if isinstance(cupons, dict) and codigo_clean in cupons:
+            del cupons[codigo_clean]
+            dados["cupons"] = cupons
+            salvar_dados(dados)
+            salvar_dados_no_github(dados)
+        elif isinstance(cupons, list):
+            novos_cupons = [c for c in cupons if str(c.get("codigo", "")).upper() != codigo_clean]
+            dados["cupons"] = novos_cupons
+            salvar_dados(dados)
+            salvar_dados_no_github(dados)
+    except Exception as err_json:
+        print(f"Aviso ao sincronizar exclusão no JSON: {err_json}")
+
+    return {
+        "status": "sucesso", 
+        "mensagem": f"Cupom '{codigo_clean}' excluído com sucesso!"
+    }
+
 @app.post("/api/resgatar-giftcard")
 async def resgatar_giftcard(payload: ResgatarGiftcardPayload):
     codigo_clean = payload.codigo.upper().strip()
