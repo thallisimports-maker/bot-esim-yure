@@ -2102,6 +2102,13 @@ async def webhook_misticpay(request: Request, token: Optional[str] = None):
 
 @app.post("/webhook/telegram")
 async def webhook_telegram(request: Request):
+    secret_env = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "").strip()
+    secret_recebido = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "").strip()
+
+    # Bloqueia qualquer requisição se o segredo não for enviado ou for inválido
+    if not secret_env or secret_recebido != secret_env:
+        raise HTTPException(status_code=403, detail="Acesso negado. Token do Telegram inválido.")
+
     try:
         dados = await request.json()
         update = Update.de_json(dados, telegram_app.bot)
