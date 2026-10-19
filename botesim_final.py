@@ -1079,11 +1079,11 @@ async def admin_desbloquear_usuario(payload: DesbloquearUsuarioPayload, request:
 @app.post("/api/admin/zerar-saldo")
 @app.post("/api/admin/zerar_saldo")
 async def admin_zerar_saldo(payload: ZerarSaldoPayload, request: Request, authorization: str = Header(None)):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
-    token_fornecido = payload.senha_admin or (authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else "")
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
+    token_fornecido = (payload.senha_admin or (authorization.replace("Bearer ", "") if authorization else "")).strip()
 
-    if not token_fornecido or token_fornecido.strip().lower() not in [senha_env.lower(), "yuresantos26", "aguia2026"]:
-        raise HTTPException(status_code=401, detail="Acesso não autorizado!")
+    if not token_fornecido or not senha_env or token_fornecido != senha_env:
+        raise HTTPException(status_code=401, detail="Acesso não autorizado. Credenciais inválidas.")
 
     chat_id = str(payload.chat_id).strip()
     con = conectar_banco()
@@ -1131,11 +1131,11 @@ async def admin_adicionar_saldo(payload: AdicionarSaldoPayload, request: Request
 
 @app.get("/api/admin/usuarios-bloqueados")
 async def admin_listar_bloqueados(authorization: str = Header(None)):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
-    token_fornecido = authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else ""
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
+    token_fornecido = (payload.senha_admin or (authorization.replace("Bearer ", "") if authorization else "")).strip()
 
-    if not token_fornecido or token_fornecido.strip().lower() not in [senha_env.lower(), "yuresantos26", "aguia2026"]:
-        raise HTTPException(status_code=401, detail="Acesso não autorizado!")
+    if not token_fornecido or not senha_env or token_fornecido != senha_env:
+        raise HTTPException(status_code=401, detail="Acesso não autorizado. Credenciais inválidas.")
 
     con = conectar_banco()
     if not con:
@@ -1321,7 +1321,7 @@ async def obter_produtos_admin(authorization: str = Header(None)):
 @app.post("/api/admin/produtos")
 @app.post("/api/admin/adicionar-produto")
 async def adicionar_produto(request: Request, authorization: str = Header(None)):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
     token_fornecido = authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else ""
 
     try: 
@@ -1336,7 +1336,7 @@ async def adicionar_produto(request: Request, authorization: str = Header(None))
     if not token_fornecido and data.get("senha_admin"):
         token_fornecido = str(data.get("senha_admin")).strip()
 
-    if token_fornecido != senha_env:
+    if not token_fornecido or not senha_env or token_fornecido != senha_env:
         raise HTTPException(status_code=401, detail="Acesso negado! Não autorizado.")
 
     operadora = data.get("operadora") or data.get("categoria_nome") or "Claro"
@@ -1380,7 +1380,7 @@ async def adicionar_produto(request: Request, authorization: str = Header(None))
 
 @app.put("/api/admin/produtos/{produto_id}")
 async def editar_produto(produto_id: str, request: Request, authorization: str = Header(None)):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
     token_fornecido = authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else ""
 
     try: data = await request.json()
@@ -1389,7 +1389,7 @@ async def editar_produto(produto_id: str, request: Request, authorization: str =
     if not token_fornecido and data.get("senha_admin"):
         token_fornecido = str(data.get("senha_admin")).strip()
 
-    if token_fornecido != senha_env:
+    if not token_fornecido or not senha_env or token_fornecido != senha_env:
         raise HTTPException(status_code=401, detail="Acesso negado! Não autorizado.")
 
     dados = carregar_dados()
@@ -1417,12 +1417,11 @@ async def editar_produto(produto_id: str, request: Request, authorization: str =
 
 @app.delete("/api/admin/produtos/{produto_id}")
 async def excluir_produto(produto_id: str, request: Request, authorization: str = Header(None)):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
     token_fornecido = authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else ""
 
-    if token_fornecido != senha_env:
+    if not token_fornecido or not senha_env or token_fornecido != senha_env:
         raise HTTPException(status_code=401, detail="Acesso negado! Não autorizado.")
-
     dados = carregar_dados()
     produtos = dados.get("produtos", [])
 
@@ -1953,7 +1952,7 @@ async def obter_metricas_admin(
 @app.post("/api/admin/gerar-giftcard")
 @app.post("/api/admin/giftcards/novo")
 async def admin_criar_cupom_giftcard(request: Request, authorization: str = Header(None)):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
     token_fornecido = authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else ""
 
     try: data = await request.json()
@@ -1961,7 +1960,7 @@ async def admin_criar_cupom_giftcard(request: Request, authorization: str = Head
 
     senha_digitada = data.get("senha_admin", "").strip() if isinstance(data, dict) else ""
 
-    if token_fornecido != senha_env and senha_digitada != senha_env:
+    if not senha_env or (token_fornecido != senha_env and senha_digitada != senha_env):
         raise HTTPException(status_code=401, detail="Não autorizado. Senha incorreta!")
 
     codigo_raw = data.get("codigo") or data.get("cupom") or data.get("codigo_cupom") or ""
@@ -2104,9 +2103,9 @@ async def webhook_telegram(request: Request):
 
 @app.post("/api/admin/disparo")
 async def admin_disparo_mensagens(payload: EnviarMensagemPayload):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
-    
-    if payload.senha_admin != senha_env:
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
+
+    if not senha_env or payload.senha_admin != senha_env:
         raise HTTPException(status_code=401, detail="Não autorizado")
 
     if not payload.chat_ids or not payload.mensagem:
