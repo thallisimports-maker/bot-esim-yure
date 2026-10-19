@@ -1305,10 +1305,10 @@ async def obter_historico_usuario(chat_id: str):
 
 @app.get("/api/admin/produtos")
 async def obter_produtos_admin(authorization: str = Header(None)):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
     token_fornecido = authorization.replace("Bearer ", "").strip() if (authorization and authorization.startswith("Bearer ")) else ""
 
-    if not token_fornecido or token_fornecido != senha_env:
+    if not token_fornecido or not senha_env or token_fornecido != senha_env:
         raise HTTPException(status_code=401, detail="Erro de Autenticação/Conexão.")
 
     dados = carregar_dados()
