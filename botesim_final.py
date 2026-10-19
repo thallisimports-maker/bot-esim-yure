@@ -913,12 +913,11 @@ async def obter_dados_admin(
     senha_admin: str = None,
     authorization: str = Header(None)
 ):
-    token_enviado = senha_admin or (authorization.replace("Bearer ", "") if authorization else "")
-    token_enviado = token_enviado.strip().lower() if token_enviado else ""
+    # Verificação estrita de segurança no backend
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
+    token_enviado = (senha_admin or (authorization.replace("Bearer ", "") if authorization else "")).strip()
 
-    chaves_validas = [SENHA_ADMIN_SEGURA.strip().lower(), "yuresantos26", "aguia2026"]
-
-    if not token_enviado or token_enviado not in chaves_validas:
+    if not token_enviado or not senha_env or token_enviado != senha_env:
         raise HTTPException(
             status_code=401,
             detail="Acesso não autorizado. Credenciais de administrador inválidas."
