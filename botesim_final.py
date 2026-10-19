@@ -896,10 +896,11 @@ class AdicionarSaldoPayload(BaseModel):
 
 @app.post("/api/admin/login")
 async def admin_login(payload: AdminLoginPayload):
-    senha_env = globals().get("SENHA_ADMIN_SEGURA", "yuresantos26").strip()
+    async def admin_login(payload: AdminLoginPayload):
+    senha_env = os.environ.get("SENHA_ADMIN_SEGURA", "").strip()
     senha_digitada = payload.senha.strip()
 
-    if senha_digitada == senha_env:
+    if senha_env and senha_digitada == senha_env:
         return JSONResponse(content={"sucesso": True, "token": senha_digitada})
 
     return JSONResponse(
