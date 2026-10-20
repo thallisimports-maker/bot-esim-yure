@@ -330,20 +330,6 @@
       "imagem_qr": "",
       "imagem_url": "",
       "status": "vendido"
-    },
-    {
-      "id": "prod_30",
-      "operadora": "Claro",
-      "plano": "CLARO 45GB",
-      "preco": 30.0,
-      "descricao": "",
-      "categoria": "esim",
-      "dados_principais": "",
-      "informacoes_adicionais": "",
-      "conteudo_copia_cola": "",
-      "imagem_qr": "https://i.imgur.com/lGU7oy4.jpeg",
-      "imagem_url": "https://i.imgur.com/lGU7oy4.jpeg",
-      "status": "disponivel"
     }
   ],
   "utilizadores": {},
