@@ -56,10 +56,8 @@ class SmartRow:
         self.c_names = c_names
     def __getitem__(self, key):
         if isinstance(key, int): return self.t_row[key]
-        if key in self.c_names: return self.c_names.index(key)
+        if key in self.c_names: return self.t_row[self.c_names.index(key)]
         return None
-    def __iter__(self): return iter(self.t_row)
-    def keys(self): return self.c_names
 
 class CursorWrapper:
     def __init__(self, cursor):
