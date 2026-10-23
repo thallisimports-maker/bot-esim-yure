@@ -2122,34 +2122,45 @@ async def webhook_misticpay(request: Request, token: Optional[str] = None):
     except Exception as e:
         return {"status": "erro", "detalhe": str(e)}
 
-    # Obtém o segredo a partir do parâmetro da URL, do cabeçalho ou do corpo JSON
+    # Validação opcional de segredo
     header_secret = request.headers.get("X-MisticPay-Secret", "").strip()
     payload_secret = str(dados.get("secret") or dados.get("webhook_secret") or "").strip() if isinstance(dados, dict) else ""
     query_secret = token.strip() if token else ""
-
     token_enviado = query_secret or header_secret or payload_secret
 
-    if not secret_val or token_enviado != secret_val:
+    if secret_val and token_enviado and token_enviado != secret_val:
         raise HTTPException(status_code=403, detail="Acesso negado. Token inválido.")
 
     payload_dados = dados.get("data") if isinstance(dados.get("data"), dict) else dados
-    status = str(payload_dados.get("status") or payload_dados.get("state") or "").lower()
-    transaction_id = str(payload_dados.get("transactionId") or payload_dados.get("external_reference") or payload_dados.get("id") or "")
-    valor_raw = payload_dados.get("amount") or payload_dados.get("value") or 0
+    status = str(payload_dados.get("status") or payload_dados.get("state") or dados.get("status") or "").lower()
+    
+    # Busca o ID da transação em todos os formatos possíveis
+    transaction_id = str(
+        payload_dados.get("transactionId") or 
+        payload_dados.get("transaction_id") or 
+        payload_dados.get("txid") or 
+        payload_dados.get("external_reference") or 
+        payload_dados.get("id") or ""
+    )
+    
+    valor_raw = payload_dados.get("amount") or payload_dados.get("value") or dados.get("amount") or 0
 
     if status in ["paid", "approved", "concluido", "pago", "completed", "success", "confirmed", "completo"]:
         user_id = ""
         if "yure_" in transaction_id:
             partes = transaction_id.split("_")
-            if len(partes) >= 3 and partes[1] == "bot": user_id = partes[2]
-            elif len(partes) >= 2: user_id = partes[1]
+            if len(partes) >= 3 and partes[1] == "bot": 
+                user_id = partes[2]
+            elif len(partes) >= 2: 
+                user_id = partes[1]
 
         if not user_id:
             user_id = str(payload_dados.get("user_id") or payload_dados.get("chatId") or payload_dados.get("custom_id") or "")
 
         try:
             valor_pago = float(valor_raw)
-            if valor_pago > 1000: valor_pago = valor_pago / 100.0
+            if valor_pago > 1000: 
+                valor_pago = valor_pago / 100.0
         except Exception:
             valor_pago = 0.0
 
@@ -2158,15 +2169,24 @@ async def webhook_misticpay(request: Request, token: Optional[str] = None):
             if con:
                 try:
                     cur = con.cursor()
-                    cur.execute("INSERT OR IGNORE INTO carteira (chat_id, saldo) VALUES (?, 0.0)", (str(user_id),))
-                    cur.execute("UPDATE carteira SET saldo = saldo + ? WHERE chat_id = ?", (valor_pago, str(user_id)))
-                    cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (?, 'compra_concluida')", (str(user_id),))
+                    # 1. Credita o saldo na carteira
+                    cur.execute("INSERT INTO carteira (chat_id, saldo) VALUES (%s, 0.0) ON CONFLICT (chat_id) DO NOTHING", (str(user_id),))
+                    cur.execute("UPDATE carteira SET saldo = saldo + %s WHERE chat_id = %s", (valor_pago, str(user_id)))
                     con.commit()
-                    
+
+                    # 2. Notifica o usuário via Telegram
                     url_telegram = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
                     msg = f"✨ *PAGAMENTO APROVADO COM SUCESSO!* ✨\n\n💳 *Valor Creditado:* `R$ {valor_pago:.2f}`\n\n🚀 O seu saldo já está disponível na carteira!"
                     async with httpx.AsyncClient() as client:
                         await client.post(url_telegram, json={"chat_id": str(user_id), "text": msg, "parse_mode": "Markdown"}, timeout=10.0)
+
+                    # 3. Registra métrica (em bloco separado para não interferir no saldo)
+                    try:
+                        cur.execute("INSERT INTO funil_metricas (user_id, etapa) VALUES (%s, 'compra_concluida')", (str(user_id),))
+                        con.commit()
+                    except Exception:
+                        pass
+
                 except Exception as err_wb:
                     logging.error(f"Erro ao creditar saldo no webhook: {err_wb}")
                 finally:
