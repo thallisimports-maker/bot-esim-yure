@@ -1,20 +1,6 @@
 {
   "produtos": [
     {
-      "id": "prod_28",
-      "operadora": "InfoProduto",
-      "plano": "RENNER - 474525 - FEM - R$ 1789,00",
-      "preco": 100.0,
-      "descricao": "",
-      "categoria": "infoproduto",
-      "dados_principais": "",
-      "informacoes_adicionais": "CARTÃO: 4745 2529 2645 4918\nDATA: 04/2029\nCVV: 392\nNASCIMENTO: 1959\nSENHA: 4432\nNome: Edite Brostolin\nCPF: 35730188900",
-      "conteudo_copia_cola": "4745 2529 2645 4918",
-      "imagem_qr": "",
-      "imagem_url": "",
-      "status": "vendido"
-    },
-    {
       "id": "prod_13",
       "operadora": "Vivo",
       "plano": "eSIM VIVO 40GB 💜",
