@@ -779,14 +779,18 @@ async def responder_botoes(update: Update, context: ContextTypes.DEFAULT_TYPE) -
                         except Exception as e:
                             await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem)*", parse_mode="Markdown")
                     elif imagem_qr.startswith("http"):
+                        # 💡 Transfere os bytes da imagem com User-Agent de navegador para contornar o bloqueio do Imgur
                         try:
-                            await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
-                        except Exception as e:
-                            await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(Erro ao carregar a imagem via URL)*", parse_mode="Markdown")
+                            async with httpx.AsyncClient(headers={"User-Agent": "Mozilla/5.0"}) as img_client:
+                                img_resp = await img_client.get(imagem_qr, follow_redirects=True, timeout=10.0)
+                                if img_resp.status_code == 200:
+                                    await context.bot.send_photo(chat_id=user_id, photo=img_resp.content, caption=legenda, parse_mode="Markdown")
+                                else:
+                                    await context.bot.send_photo(chat_id=user_id, photo=imagem_qr, caption=legenda, parse_mode="Markdown")
+                        except Exception:
+                            await context.bot.send_message(chat_id=user_id, text=legenda + f"\n\n{imagem_qr}", parse_mode="Markdown")
                     else:
                         await context.bot.send_message(chat_id=user_id, text=legenda + f"\n\n{imagem_qr}", parse_mode="Markdown")
-                else:
-                    await context.bot.send_message(chat_id=user_id, text=legenda + "\n\n*(QR Code não disponível)*", parse_mode="Markdown")
 
             return
         except Exception as err:
