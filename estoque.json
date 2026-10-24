@@ -1,34 +1,6 @@
 {
   "produtos": [
     {
-      "id": "prod_25",
-      "operadora": "Tim",
-      "plano": "30GB 💙",
-      "preco": 25.0,
-      "descricao": "",
-      "categoria": "esim",
-      "dados_principais": "",
-      "informacoes_adicionais": "",
-      "conteudo_copia_cola": "",
-      "imagem_qr": "https://i.imgur.com/haXUiw2.jpeg",
-      "imagem_url": "https://i.imgur.com/haXUiw2.jpeg",
-      "status": "vendido"
-    },
-    {
-      "id": "prod_25",
-      "operadora": "Vivo",
-      "plano": "40 GB 💜",
-      "preco": 35.0,
-      "descricao": "Assim que instalar seu e-SIM chama nosso suporte @Yureconsul7 e envie o seguinte email para ativação da internet: renatosantoss998@outlook.com",
-      "categoria": "esim",
-      "dados_principais": "",
-      "informacoes_adicionais": "",
-      "conteudo_copia_cola": "",
-      "imagem_qr": "https://i.imgur.com/ndaHbpJ.jpeg",
-      "imagem_url": "https://i.imgur.com/ndaHbpJ.jpeg",
-      "status": "vendido"
-    },
-    {
       "id": "prod_26",
       "operadora": "Vivo",
       "plano": "30 GB 💜",
