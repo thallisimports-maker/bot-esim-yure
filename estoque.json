@@ -1,15 +1,6 @@
 {
   "produtos": [
     {
-      "id": "esim_3",
-      "operadora": "Claro",
-      "plano": "35gb",
-      "descricao": "ok",
-      "preco": 35.0,
-      "imagem_qr": "https://imgur.com/a/9pKounw",
-      "status": "vendido"
-    },
-    {
       "id": "esim_4",
       "operadora": "Claro",
       "plano": "35gb",
