@@ -1278,9 +1278,21 @@ async def comprar_miniapp(payload: PayloadCompraMiniApp):
                     files = {"photo": ("qrcode.png", image_data, "image/png")}
                     data = {"chat_id": user_id, "caption": caption_text, "parse_mode": "Markdown"}
                     await client.post(url_telegram_photo, data=data, files=files, timeout=10.0)
-                elif imagem_qr:
-                    json_payload = {"chat_id": user_id, "photo": imagem_qr, "caption": caption_text, "parse_mode": "Markdown"}
-                    await client.post(url_telegram_photo, json=json_payload, timeout=10.0)
+                elif imagem_qr and imagem_qr.startswith("http"):
+                    # 💡 Baixa a imagem primeiro via Python com User-Agent de navegador para burlar o bloqueio do Imgur
+                    try:
+                        async with httpx.AsyncClient(headers={"User-Agent": "Mozilla/5.0"}) as img_client:
+                            img_resp = await img_client.get(imagem_qr, follow_redirects=True, timeout=10.0)
+                            if img_resp.status_code == 200:
+                                files = {"photo": ("qrcode.png", img_resp.content, "image/png")}
+                                data = {"chat_id": user_id, "caption": caption_text, "parse_mode": "Markdown"}
+                                await client.post(url_telegram_photo, data=data, files=files, timeout=10.0)
+                            else:
+                                json_payload = {"chat_id": user_id, "photo": imagem_qr, "caption": caption_text, "parse_mode": "Markdown"}
+                                await client.post(url_telegram_photo, json=json_payload, timeout=10.0)
+                    except Exception:
+                        json_payload = {"chat_id": user_id, "photo": imagem_qr, "caption": caption_text, "parse_mode": "Markdown"}
+                        await client.post(url_telegram_photo, json=json_payload, timeout=10.0)
                 else:
                     url_telegram_msg = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
                     json_payload = {"chat_id": user_id, "text": caption_text, "parse_mode": "Markdown"}
