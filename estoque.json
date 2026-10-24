@@ -1,16 +1,6 @@
 {
   "produtos": [
     {
-      "id": "esim_11",
-      "operadora": "Tim",
-      "plano": "30GB 💙",
-      "preco": 25.0,
-      "descricao": "",
-      "imagem_qr": "https://i.imgur.com/paQxHkP.jpeg",
-      "imagem_url": "https://i.imgur.com/paQxHkP.jpeg",
-      "status": "vendido"
-    },
-    {
       "id": "esim_12",
       "operadora": "Tim",
       "plano": "30GB 💙",
