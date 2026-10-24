@@ -1,20 +1,6 @@
 {
   "produtos": [
     {
-      "id": "prod_17",
-      "operadora": "InfoProduto",
-      "plano": "Caixa - R$ 989 - F - 650507",
-      "preco": 80.0,
-      "descricao": "",
-      "categoria": "infoproduto",
-      "dados_principais": "4593830115611753\n05/2031\n090\nCINANDRACECHELERO\nCPF 051.371.309-31\nSALDO R$ 983,99 08/10",
-      "informacoes_adicionais": "Banco: Caixa",
-      "conteudo_copia_cola": "4593830115611753",
-      "imagem_qr": "",
-      "imagem_url": "",
-      "status": "vendido"
-    },
-    {
       "id": "prod_18",
       "operadora": "InfoProduto",
       "plano": "Caixa - 650507",
@@ -222,20 +208,6 @@
       "conteudo_copia_cola": "",
       "imagem_qr": "https://i.imgur.com/0f9X4VW.jpeg",
       "imagem_url": "https://i.imgur.com/0f9X4VW.jpeg",
-      "status": "disponivel"
-    },
-    {
-      "id": "prod_17",
-      "operadora": "Vivo",
-      "plano": "eSIM VIVO 40GB 💜",
-      "preco": 30.0,
-      "descricao": "Seu QR Code Acima\nSua Numerada: (51) 99766-1021",
-      "categoria": "esim",
-      "dados_principais": "",
-      "informacoes_adicionais": "",
-      "conteudo_copia_cola": "",
-      "imagem_qr": "https://i.imgur.com/SY77HZX.jpeg",
-      "imagem_url": "https://i.imgur.com/SY77HZX.jpeg",
       "status": "disponivel"
     }
   ],
