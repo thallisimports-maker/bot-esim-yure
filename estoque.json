@@ -1,20 +1,6 @@
 {
   "produtos": [
     {
-      "id": "prod_13",
-      "operadora": "Vivo",
-      "plano": "eSIM VIVO 40GB 💜",
-      "preco": 30.0,
-      "descricao": "",
-      "categoria": "esim",
-      "dados_principais": "",
-      "informacoes_adicionais": "",
-      "conteudo_copia_cola": "",
-      "imagem_qr": "https://i.imgur.com/smD7KZ0.jpeg",
-      "imagem_url": "https://i.imgur.com/smD7KZ0.jpeg",
-      "status": "vendido"
-    },
-    {
       "id": "prod_14",
       "operadora": "Vivo",
       "plano": "eSIM VIVO 40GB 💜",
