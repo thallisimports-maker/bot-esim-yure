@@ -1,20 +1,6 @@
 {
   "produtos": [
     {
-      "id": "prod_15",
-      "operadora": "Claro",
-      "plano": "Consultada Caixa",
-      "preco": 13.0,
-      "descricao": "",
-      "categoria": "infoproduto",
-      "dados_principais": "Nome Completo: PEDRO MARTINS\nNome Civil: Não informado\nNome da Mãe: EMILIA GOMES MARTINS\nNome do Pai: Não informado\nCPF: 27546730910",
-      "informacoes_adicionais": "CPF: 27546730910",
-      "conteudo_copia_cola": "CPF: 27546730910",
-      "imagem_qr": "",
-      "imagem_url": "",
-      "status": "vendido"
-    },
-    {
       "id": "prod_16",
       "operadora": "InfoProduto",
       "plano": "Consultada Caixa",
