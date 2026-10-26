@@ -54,7 +54,7 @@
       "conteudo_copia_cola": "",
       "imagem_qr": "https://i.imgur.com/SY77HZX.jpeg",
       "imagem_url": "https://i.imgur.com/SY77HZX.jpeg",
-      "status": "disponivel"
+      "status": "vendido"
     },
     {
       "id": "prod_5",
@@ -326,6 +326,14 @@
       "operadora": "Vivo",
       "valor": 30.0,
       "data": "2026-10-26 12:53:52"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Cliente (1890506390)",
+      "produto_id": "prod_4",
+      "operadora": "Vivo",
+      "valor": 30.0,
+      "data": "2026-10-26 15:38:43"
     }
   ],
   "cupons": {
