@@ -26,7 +26,7 @@
       "conteudo_copia_cola": "",
       "imagem_qr": "https://i.imgur.com/TanlFMZ.jpeg",
       "imagem_url": "https://i.imgur.com/TanlFMZ.jpeg",
-      "status": "disponivel"
+      "status": "vendido"
     },
     {
       "id": "prod_16",
@@ -334,6 +334,14 @@
       "operadora": "Vivo",
       "valor": 30.0,
       "data": "2026-10-26 15:38:43"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "prod_15",
+      "operadora": "Vivo",
+      "valor": 25.0,
+      "data": "2026-10-26 15:47:25"
     }
   ],
   "cupons": {
