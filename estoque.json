@@ -40,7 +40,7 @@
       "conteudo_copia_cola": "",
       "imagem_qr": "https://i.imgur.com/0f9X4VW.jpeg",
       "imagem_url": "https://i.imgur.com/0f9X4VW.jpeg",
-      "status": "disponivel"
+      "status": "vendido"
     },
     {
       "id": "prod_4",
@@ -342,6 +342,14 @@
       "operadora": "Vivo",
       "valor": 25.0,
       "data": "2026-10-26 15:47:25"
+    },
+    {
+      "user_id": "1890506390",
+      "cliente": "Yure",
+      "produto_id": "prod_16",
+      "operadora": "Vivo",
+      "valor": 25.0,
+      "data": "2026-10-26 15:48:19"
     }
   ],
   "cupons": {
