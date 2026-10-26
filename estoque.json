@@ -69,6 +69,20 @@
       "imagem_qr": "https://i.imgur.com/7DjrRna.jpeg",
       "imagem_url": "https://i.imgur.com/7DjrRna.jpeg",
       "status": "disponivel"
+    },
+    {
+      "id": "prod_6",
+      "operadora": "InfoProduto",
+      "plano": "RENNER - 474525 - FEM - $5598",
+      "preco": 140.0,
+      "descricao": "",
+      "categoria": "infoproduto",
+      "dados_principais": "",
+      "informacoes_adicionais": "SALDO R$ 5598,22\n\nCARTÃO: 4745 2562 1307 0089\nDATA: 09/2027\nCVV: 639\nNASCIMENTO: 1965\nDADOS:\nNome: Karla m krasinski\nCPF: 577.918.489-53",
+      "conteudo_copia_cola": "4745 2562 1307 0089",
+      "imagem_qr": "",
+      "imagem_url": "",
+      "status": "disponivel"
     }
   ],
   "utilizadores": {},
